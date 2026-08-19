@@ -1,0 +1,32 @@
+{
+  "name": "frontend-gatekeeper",
+  "version": "1.0.0",
+  "description": "Frontend Git Quality & AI Gatekeeper",
+  "type": "module",
+  "main": "src/engine.js",
+  "scripts": {
+    "build:bundle": "node build.js --bundle-only",
+    "build:exe": "node build.js",
+    "build": "node build.js"
+  },
+  "keywords": [
+    "git",
+    "pre-push",
+    "gatekeeper",
+    "gemini",
+    "quality",
+    "devsecops"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@google/genai": "^2.17.1",
+    "chalk": "^5.6.2",
+    "dotenv": "^17.4.2",
+    "prompts": "^2.4.2"
+  },
+  "devDependencies": {
+    "@yao-pkg/pkg": "^6.22.0",
+    "esbuild": "^0.28.2"
+  }
+}
