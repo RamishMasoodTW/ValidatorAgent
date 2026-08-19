@@ -45557,22 +45557,22 @@ function getApiKeyFromEnv() {
 
 // src/ascii-art.js
 var BANNER = `
-${source_default.cyan.bold("  \u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2557\u2588\u2588\u2588\u2588\u2588\u2588\u2557  \u2588\u2588\u2588\u2588\u2588\u2588\u2557 \u2588\u2588\u2588\u2557   \u2588\u2588\u2557\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2557\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2557\u2588\u2588\u2588\u2557   \u2588\u2588\u2557\u2588\u2588\u2588\u2588\u2588\u2588\u2557 ")}
-${source_default.cyan.bold("  \u2588\u2588\u2554\u2550\u2550\u2550\u2550\u255D\u2588\u2588\u2554\u2550\u2550\u2588\u2588\u2557\u2588\u2588\u2554\u2550\u2550\u2550\u2588\u2588\u2557\u2588\u2588\u2588\u2588\u2557  \u2588\u2588\u2551\u255A\u2550\u2550\u2588\u2588\u2554\u2550\u2550\u255D\u2588\u2588\u2554\u2550\u2550\u2550\u2550\u255D\u2588\u2588\u2588\u2588\u2557  \u2588\u2588\u2551\u2588\u2588\u2554\u2550\u2550\u2588\u2588\u2557")}
-${source_default.cyan.bold("  \u2588\u2588\u2588\u2588\u2588\u2557  \u2588\u2588\u2588\u2588\u2588\u2588\u2554\u255D\u2588\u2588\u2551   \u2588\u2588\u2551\u2588\u2588\u2554\u2588\u2588\u2557 \u2588\u2588\u2551   \u2588\u2588\u2551   \u2588\u2588\u2588\u2588\u2588\u2557  \u2588\u2588\u2554\u2588\u2588\u2557 \u2588\u2588\u2551\u2588\u2588\u2551  \u2588\u2588\u2551")}
-${source_default.cyan.bold("  \u2588\u2588\u2554\u2550\u2550\u255D  \u2588\u2588\u2554\u2550\u2550\u2588\u2588\u2557\u2588\u2588\u2551   \u2588\u2588\u2551\u2588\u2588\u2551\u255A\u2588\u2588\u2557\u2588\u2588\u2551   \u2588\u2588\u2551   \u2588\u2588\u2554\u2550\u2550\u255D  \u2588\u2588\u2551\u255A\u2588\u2588\u2557\u2588\u2588\u2551\u2588\u2588\u2551  \u2588\u2588\u2551")}
-${source_default.cyan.bold("  \u2588\u2588\u2551     \u2588\u2588\u2551  \u2588\u2588\u2551\u255A\u2588\u2588\u2588\u2588\u2588\u2588\u2554\u255D\u2588\u2588\u2551 \u255A\u2588\u2588\u2588\u2588\u2551   \u2588\u2588\u2551   \u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2557\u2588\u2588\u2551 \u255A\u2588\u2588\u2588\u2588\u2551\u2588\u2588\u2588\u2588\u2588\u2588\u2554\u255D")}
-${source_default.magenta.bold("  \u2588\u2588\u2588\u2588\u2588\u2588\u2557  \u2588\u2588\u2588\u2588\u2588\u2557 \u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2557\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2557\u2588\u2588\u2557  \u2588\u2588\u2557\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2557\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2557\u2588\u2588\u2588\u2588\u2588\u2588\u2557 \u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2557\u2588\u2588\u2588\u2588\u2588\u2588\u2557 ")}
-${source_default.magenta.bold("  \u2588\u2588\u2554\u2550\u2550\u2550\u2550\u255D \u2588\u2588\u2554\u2550\u2550\u2588\u2588\u2557\u255A\u2550\u2550\u2588\u2588\u2554\u2550\u2550\u255D\u2588\u2588\u2554\u2550\u2550\u2550\u2550\u255D\u2588\u2588\u2551 \u2588\u2588\u2554\u255D\u2588\u2588\u2554\u2550\u2550\u2550\u2550\u255D\u2588\u2588\u2554\u2550\u2550\u2550\u2550\u255D\u2588\u2588\u2554\u2550\u2550\u2588\u2588\u2557\u2588\u2588\u2554\u2550\u2550\u2550\u2550\u255D\u2588\u2588\u2554\u2550\u2550\u2588\u2588\u2557")}
-${source_default.magenta.bold("  \u2588\u2588\u2551  \u2588\u2588\u2588\u2557\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2551   \u2588\u2588\u2551   \u2588\u2588\u2588\u2588\u2588\u2557  \u2588\u2588\u2588\u2588\u2588\u2550\u255D \u2588\u2588\u2588\u2588\u2588\u2557  \u2588\u2588\u2588\u2588\u2588\u2557  \u2588\u2588\u2588\u2588\u2588\u2588\u2554\u255D\u2588\u2588\u2588\u2588\u2588\u2557  \u2588\u2588\u2588\u2588\u2588\u2588\u2554\u255D")}
-${source_default.magenta.bold("  \u2588\u2588\u2551   \u2588\u2588\u2551\u2588\u2588\u2554\u2550\u2550\u2588\u2588\u2551   \u2588\u2588\u2551   \u2588\u2588\u2554\u2550\u2550\u255D  \u2588\u2588\u2554\u2550\u2588\u2588\u2557 \u2588\u2588\u2554\u2550\u2550\u255D  \u2588\u2588\u2554\u2550\u2550\u255D  \u2588\u2588\u2554\u2550\u2550\u2550\u255D \u2588\u2588\u2554\u2550\u2550\u255D  \u2588\u2588\u2554\u2550\u2550\u2588\u2588\u2557")}
-${source_default.magenta.bold("  \u255A\u2588\u2588\u2588\u2588\u2588\u2588\u2554\u255D\u2588\u2588\u2551  \u2588\u2588\u2551   \u2588\u2588\u2551   \u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2557\u2588\u2588\u2551 \u255A\u2588\u2588\u2557\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2557\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2557\u2588\u2588\u2551     \u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2557\u2588\u2588\u2551  \u2588\u2588\u2551")}
-${source_default.blue("  \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550")}
-${source_default.yellow.bold("          [ DevSecOps Automated Git Push Quality & AI Knowledge Gatekeeper ]           ")}
-${source_default.blue("  \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550")}
+${source_default.red.bold("  \u2588\u2588\u2588\u2588\u2588\u2557 \u2588\u2588\u2588\u2557   \u2588\u2588\u2557 \u2588\u2588\u2588\u2588\u2588\u2588\u2557 \u2588\u2588\u2557   \u2588\u2588\u2557\u2588\u2588\u2557      \u2588\u2588\u2588\u2588\u2588\u2557 \u2588\u2588\u2588\u2588\u2588\u2588\u2557 ")}
+${source_default.red.bold(" \u2588\u2588\u2554\u2550\u2550\u2588\u2588\u2557\u2588\u2588\u2588\u2588\u2557  \u2588\u2588\u2551\u2588\u2588\u2554\u2550\u2550\u2550\u2550\u255D \u2588\u2588\u2551   \u2588\u2588\u2551\u2588\u2588\u2551     \u2588\u2588\u2554\u2550\u2550\u2588\u2588\u2557\u2588\u2588\u2554\u2550\u2550\u2588\u2588\u2557")}
+${source_default.red.bold(" \u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2551\u2588\u2588\u2554\u2588\u2588\u2557 \u2588\u2588\u2551\u2588\u2588\u2551  \u2588\u2588\u2588\u2557\u2588\u2588\u2551   \u2588\u2588\u2551\u2588\u2588\u2551     \u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2551\u2588\u2588\u2588\u2588\u2588\u2588\u2554\u255D")}
+${source_default.red.bold(" \u2588\u2588\u2554\u2550\u2550\u2588\u2588\u2551\u2588\u2588\u2551\u255A\u2588\u2588\u2557\u2588\u2588\u2551\u2588\u2588\u2551   \u2588\u2588\u2551\u2588\u2588\u2551   \u2588\u2588\u2551\u2588\u2588\u2551     \u2588\u2588\u2554\u2550\u2550\u2588\u2588\u2551\u2588\u2588\u2554\u2550\u2550\u2588\u2588\u2557")}
+${source_default.red.bold(" \u2588\u2588\u2551  \u2588\u2588\u2551\u2588\u2588\u2551 \u255A\u2588\u2588\u2588\u2588\u2551\u255A\u2588\u2588\u2588\u2588\u2588\u2588\u2554\u255D\u255A\u2588\u2588\u2588\u2588\u2588\u2588\u2554\u255D\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2557\u2588\u2588\u2551  \u2588\u2588\u2551\u2588\u2588\u2551  \u2588\u2588\u2551")}
+${source_default.cyan.bold("  \u2588\u2588\u2588\u2588\u2588\u2588\u2557  \u2588\u2588\u2588\u2588\u2588\u2557 \u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2557\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2557\u2588\u2588\u2557  \u2588\u2588\u2557\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2557\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2557\u2588\u2588\u2588\u2588\u2588\u2588\u2557 \u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2557\u2588\u2588\u2588\u2588\u2588\u2588\u2557 ")}
+${source_default.cyan.bold("  \u2588\u2588\u2554\u2550\u2550\u2550\u2550\u255D \u2588\u2588\u2554\u2550\u2550\u2588\u2588\u2557\u255A\u2550\u2550\u2588\u2588\u2554\u2550\u2550\u255D\u2588\u2588\u2554\u2550\u2550\u2550\u2550\u255D\u2588\u2588\u2551 \u2588\u2588\u2554\u255D\u2588\u2588\u2554\u2550\u2550\u2550\u2550\u255D\u2588\u2588\u2554\u2550\u2550\u2550\u2550\u255D\u2588\u2588\u2554\u2550\u2550\u2588\u2588\u2557\u2588\u2588\u2554\u2550\u2550\u2550\u2550\u255D\u2588\u2588\u2554\u2550\u2550\u2588\u2588\u2557")}
+${source_default.cyan.bold("  \u2588\u2588\u2551  \u2588\u2588\u2588\u2557\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2551   \u2588\u2588\u2551   \u2588\u2588\u2588\u2588\u2588\u2557  \u2588\u2588\u2588\u2588\u2588\u2550\u255D \u2588\u2588\u2588\u2588\u2588\u2557  \u2588\u2588\u2588\u2588\u2588\u2557  \u2588\u2588\u2588\u2588\u2588\u2588\u2554\u255D\u2588\u2588\u2588\u2588\u2588\u2557  \u2588\u2588\u2588\u2588\u2588\u2588\u2554\u255D")}
+${source_default.cyan.bold("  \u2588\u2588\u2551   \u2588\u2588\u2551\u2588\u2588\u2554\u2550\u2550\u2588\u2588\u2551   \u2588\u2588\u2551   \u2588\u2588\u2554\u2550\u2550\u255D  \u2588\u2588\u2554\u2550\u2588\u2588\u2557 \u2588\u2588\u2554\u2550\u2550\u255D  \u2588\u2588\u2554\u2550\u2550\u255D  \u2588\u2588\u2554\u2550\u2550\u2550\u255D \u2588\u2588\u2554\u2550\u2550\u255D  \u2588\u2588\u2554\u2550\u2550\u2588\u2588\u2557")}
+${source_default.cyan.bold("  \u255A\u2588\u2588\u2588\u2588\u2588\u2588\u2554\u255D\u2588\u2588\u2551  \u2588\u2588\u2551   \u2588\u2588\u2551   \u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2557\u2588\u2588\u2551 \u255A\u2588\u2588\u2557\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2557\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2557\u2588\u2588\u2551     \u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2557\u2588\u2588\u2551  \u2588\u2588\u2551")}
+${source_default.red("  \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550")}
+${source_default.yellow.bold("          [ Angular DevSecOps Automated Git Push Quality & AI Gatekeeper ]              ")}
+${source_default.red("  \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550")}
 `;
 var MINI_BANNER = `
-${source_default.cyan.bold(">>> [FRONTEND GATEKEEPER] Pre-Push Quality & AI Validation Engine <<<")}
+${source_default.red.bold(">>> [ANGULAR GATEKEEPER] Pre-Push Quality & AI Validation Engine <<<")}
 `;
 
 // src/engine.js
@@ -45584,7 +45584,7 @@ if (import_fs2.default.existsSync(envPath)) {
 import_dotenv.default.config();
 function logStep(stepNum, title) {
   console.log(`
-${source_default.cyan.bold(`[Step ${stepNum}]`)} ${source_default.white.bold(title)}`);
+${source_default.red.bold(`[Step ${stepNum}]`)} ${source_default.white.bold(title)}`);
   console.log(source_default.gray("\u2500".repeat(60)));
 }
 function logSuccess(msg) {
@@ -45610,21 +45610,27 @@ async function runGatekeeper() {
   console.log(MINI_BANNER);
   console.log(source_default.gray(`Working Directory: ${process.cwd()}
 `));
-  logStep(1, "Target Node.js Project Detection");
+  logStep(1, "Angular Project Detection");
+  const angularJsonPath = import_path.default.join(process.cwd(), "angular.json");
   const packageJsonPath = import_path.default.join(process.cwd(), "package.json");
-  if (!import_fs2.default.existsSync(packageJsonPath)) {
-    logWarning("No package.json found in current directory. Non-Node project detected.");
-    console.log(source_default.gray("  Bypassing frontend gatekeeper checks safely."));
+  let isAngular = false;
+  let projectPkg = {};
+  if (import_fs2.default.existsSync(packageJsonPath)) {
+    try {
+      projectPkg = JSON.parse(import_fs2.default.readFileSync(packageJsonPath, "utf8"));
+      const deps = { ...projectPkg.dependencies || {}, ...projectPkg.devDependencies || {} };
+      if (deps["@angular/core"] || deps["@angular/cli"] || import_fs2.default.existsSync(angularJsonPath)) {
+        isAngular = true;
+      }
+    } catch (e2) {
+    }
+  }
+  if (!isAngular) {
+    logWarning("Non-Angular repository detected (no angular.json or @angular/core found).");
+    console.log(source_default.gray("  Bypassing Angular Gatekeeper checks safely."));
     process.exit(0);
   }
-  logSuccess("Node.js project detected with package.json.");
-  let projectPkg = {};
-  try {
-    projectPkg = JSON.parse(import_fs2.default.readFileSync(packageJsonPath, "utf8"));
-  } catch (e2) {
-    logError("Invalid package.json format.");
-    process.exit(1);
-  }
+  logSuccess("Angular project verified (angular.json / @angular/core detected).");
   logStep(2, "Remote Repository Sync Check");
   try {
     const currentBranch = runGit("git rev-parse --abbrev-ref HEAD", true) || "main";
@@ -45647,27 +45653,18 @@ async function runGatekeeper() {
   } catch (err) {
     logWarning(`Sync check warning: ${err.message || err}. Continuing...`);
   }
-  logStep(3, "Critical Frontend Files & Directory Structure Validation");
+  logStep(3, "Critical Angular Architecture & File Validation");
   const requiredItems = [
+    { name: "angular.json", path: import_path.default.join(process.cwd(), "angular.json"), type: "file" },
     { name: "package.json", path: import_path.default.join(process.cwd(), "package.json"), type: "file" },
-    { name: "index.html", path: import_path.default.join(process.cwd(), "index.html"), type: "file", optionalIfNoIndexHtml: false },
-    { name: "src/ directory", path: import_path.default.join(process.cwd(), "src"), type: "dir" }
+    { name: "src/ directory", path: import_path.default.join(process.cwd(), "src"), type: "dir" },
+    { name: "src/app/ directory", path: import_path.default.join(process.cwd(), "src", "app"), type: "dir" }
   ];
   let missingItems = [];
   for (const item of requiredItems) {
     if (item.type === "file") {
       if (!import_fs2.default.existsSync(item.path)) {
-        if (item.name === "index.html") {
-          const altPaths = [
-            import_path.default.join(process.cwd(), "public", "index.html"),
-            import_path.default.join(process.cwd(), "src", "index.html")
-          ];
-          if (!altPaths.some((p) => import_fs2.default.existsSync(p))) {
-            missingItems.push(item.name);
-          }
-        } else {
-          missingItems.push(item.name);
-        }
+        missingItems.push(item.name);
       }
     } else if (item.type === "dir") {
       if (!import_fs2.default.existsSync(item.path) || !import_fs2.default.statSync(item.path).isDirectory()) {
@@ -45676,27 +45673,25 @@ async function runGatekeeper() {
     }
   }
   if (missingItems.length > 0) {
-    logError(`Missing critical frontend file(s)/directory: ${missingItems.join(", ")}`);
-    console.log(source_default.red("  Push rejected: Ensure your project structure adheres to frontend standards.\n"));
+    logError(`Missing critical Angular file(s)/directory: ${missingItems.join(", ")}`);
+    console.log(source_default.red("  Push rejected: Ensure your project structure adheres to Angular CLI standards.\n"));
     process.exit(1);
   }
-  logSuccess("All critical frontend files and directories verified.");
-  logStep(4, "Code Quality, Linting & Type Checks");
+  logSuccess("All critical Angular files and directories verified.");
+  logStep(4, "Angular Code Quality, Linting & Type Checks");
   const scripts = projectPkg.scripts || {};
   const checksToRun = [];
   if (scripts["type-check"] || scripts["typecheck"]) {
-    checksToRun.push({ name: "Type Check", script: scripts["type-check"] ? "type-check" : "typecheck" });
+    checksToRun.push({ name: "TypeScript Check", script: scripts["type-check"] ? "type-check" : "typecheck", cmd: null });
   }
   if (scripts["lint"]) {
-    checksToRun.push({ name: "Linter", script: "lint" });
+    checksToRun.push({ name: "Angular Linter", script: "lint", cmd: null });
   }
-  if (scripts["test"]) {
-    if (!scripts["test"].includes("no test specified")) {
-      checksToRun.push({ name: "Automated Tests", script: "test" });
-    }
+  if (scripts["test:ci"] || scripts["test-ci"]) {
+    checksToRun.push({ name: "Automated CI Tests", script: scripts["test:ci"] ? "test:ci" : "test-ci", cmd: null });
   }
   if (checksToRun.length === 0) {
-    console.log(source_default.gray("  No type-check, lint, or test scripts configured in package.json."));
+    console.log(source_default.gray("  No custom type-check, lint, or test:ci scripts configured in package.json."));
   } else {
     for (const check of checksToRun) {
       console.log(source_default.blue(`  Running: npm run ${check.script}...`));
@@ -45712,7 +45707,7 @@ async function runGatekeeper() {
       }
     }
   }
-  logStep(5, "Automated Build Versioning");
+  logStep(5, "Automated Angular Build Versioning");
   const srcDir = import_path.default.join(process.cwd(), "src");
   if (import_fs2.default.existsSync(srcDir) && import_fs2.default.statSync(srcDir).isDirectory()) {
     const buildMetaPath = import_path.default.join(srcDir, "build-metadata.json");
@@ -45739,7 +45734,7 @@ async function runGatekeeper() {
   } else {
     console.log(source_default.gray("  Skipped: src directory not found."));
   }
-  logStep(6, "AI Knowledge Base Regression Audit (Gemini 2.5 Flash)");
+  logStep(6, "Angular AI Knowledge Base Regression Audit (Gemini 2.5 Flash)");
   const resolvedIssuesPath = import_path.default.join(process.cwd(), "resolved_issues.md");
   if (!import_fs2.default.existsSync(resolvedIssuesPath)) {
     console.log(source_default.gray("  No resolved_issues.md found at repository root. AI audit skipped."));
@@ -45750,7 +45745,7 @@ async function runGatekeeper() {
       console.log(source_default.gray("  To enable AI audits, run FrontendGatekeeperSetup.exe or set GEMINI_API_KEY."));
     } else {
       const knowledgeBase = import_fs2.default.readFileSync(resolvedIssuesPath, "utf8");
-      console.log(source_default.blue("  Reading git diff for current changes..."));
+      console.log(source_default.blue("  Reading git diff for current Angular changes..."));
       let diffOutput = runGit("git diff origin/main...HEAD", true);
       if (!diffOutput || diffOutput.trim() === "") {
         diffOutput = runGit("git diff origin/master...HEAD", true);
@@ -45767,12 +45762,12 @@ async function runGatekeeper() {
       if (!diffOutput || diffOutput.trim() === "") {
         console.log(source_default.gray("  No diff detected against baseline. AI audit passed."));
       } else {
-        console.log(source_default.cyan("  Consulting Gemini 2.5 Flash to audit code against known issues..."));
+        console.log(source_default.cyan("  Consulting Gemini 2.5 Flash to audit Angular code against known issues..."));
         try {
           const ai = new GoogleGenAI2({ apiKey });
           const prompt = `
-You are an expert Senior DevSecOps & Frontend Quality Assurance AI Gatekeeper.
-Your job is to audit incoming Git code changes against our repository's historical Knowledge Base of previously resolved issues, anti-patterns, bugs, and architecture rules.
+You are a Principal Angular Architect, DevSecOps Specialist, and Code Quality Gatekeeper.
+Your job is to audit incoming Git code changes in an Angular application against our repository's historical Knowledge Base of previously resolved issues, anti-patterns, bugs, and architecture rules.
 
 ### HISTORICAL RESOLVED ISSUES KNOWLEDGE BASE:
 \`\`\`markdown
@@ -45784,12 +45779,16 @@ ${knowledgeBase.slice(0, 15e3)}
 ${diffOutput.slice(0, 25e3)}
 \`\`\`
 
-### TASK:
+### ANGULAR AUDIT CRITERIA:
 1. Thoroughly analyze the Git diff against each rule/bug in the Knowledge Base.
-2. If the diff reintroduces any previously resolved bugs, repeats documented bad patterns, violates forbidden patterns, or ignores critical requirements:
+2. Specifically check for critical Angular regressions:
+   - Unhandled RxJS subscription memory leaks (missing takeUntilDestroyed / async pipe).
+   - Direct DOM mutations (e.g. element.nativeElement.innerHTML or document.getElementById) bypassing Angular renderer/templates.
+   - Any violation of documented business rules, security rules, or architectural standards in resolved_issues.md.
+3. If the diff reintroduces any previously resolved bugs or violates forbidden patterns:
    - Output: "VERDICT: FAILED"
-   - Provide a concise list of specific violations with line numbers or code snippets from the diff, explaining why it violates the rule and how to fix it.
-3. If the diff is clean and adheres to all documented best practices:
+   - Provide a concise list of specific violations with line numbers or code snippets from the diff, explaining why it violates the rule and how to fix it in Angular.
+4. If the diff is clean and adheres to all documented best practices:
    - Output: "VERDICT: PASSED"
    - Provide a 1-2 sentence positive summary.
 
@@ -45819,7 +45818,7 @@ Ensure your response clearly includes either "VERDICT: PASSED" or "VERDICT: FAIL
     }
   }
   console.log("\n" + source_default.green.bold("\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550"));
-  console.log(source_default.green.bold("       \u2714 ALL GATEKEEPER PRE-PUSH VALIDATIONS PASSED!           "));
+  console.log(source_default.green.bold("     \u2714 ALL ANGULAR GATEKEEPER PRE-PUSH VALIDATIONS PASSED!     "));
   console.log(source_default.green.bold("\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\n"));
   process.exit(0);
 }

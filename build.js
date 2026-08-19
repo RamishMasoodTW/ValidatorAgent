@@ -100,9 +100,11 @@ async function build() {
     const engineSizeMb = (fs.statSync(engineExePath).size / (1024 * 1024)).toFixed(2);
     const installerSizeMb = (fs.statSync(installerExePath).size / (1024 * 1024)).toFixed(2);
     
+    fs.copyFileSync(installerExePath, path.join(distDir, 'AngularGatekeeperSetup.exe'));
     console.log(`\n✔ Generated Binaries in dist/:`);
     console.log(`  ├── dist/engine.exe (${engineSizeMb} MB)`);
-    console.log(`  └── dist/FrontendGatekeeperSetup.exe (${installerSizeMb} MB)`);
+    console.log(`  ├── dist/FrontendGatekeeperSetup.exe (${installerSizeMb} MB)`);
+    console.log(`  └── dist/AngularGatekeeperSetup.exe (${installerSizeMb} MB)`);
     console.log('\n✨ Build process completed successfully!\n');
   } else {
     console.error('✖ One or more expected binary files are missing in dist/.');

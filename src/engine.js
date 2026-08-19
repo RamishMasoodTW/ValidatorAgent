@@ -19,7 +19,7 @@ if (fs.existsSync(envPath)) {
 dotenv.config(); // Also check local repo .env
 
 function logStep(stepNum, title) {
-  console.log(`\n${chalk.cyan.bold(`[Step ${stepNum}]`)} ${chalk.white.bold(title)}`);
+  console.log(`\n${chalk.red.bold(`[Step ${stepNum}]`)} ${chalk.white.bold(title)}`);
   console.log(chalk.gray('─'.repeat(60)));
 }
 
@@ -51,24 +51,34 @@ async function runGatekeeper() {
   console.log(chalk.gray(`Working Directory: ${process.cwd()}\n`));
 
   // =========================================================================
-  // STEP 1: TARGET DETECTION
+  // STEP 1: TARGET DETECTION (ANGULAR PROJECTS ONLY)
   // =========================================================================
-  logStep(1, 'Target Node.js Project Detection');
+  logStep(1, 'Angular Project Detection');
+  const angularJsonPath = path.join(process.cwd(), 'angular.json');
   const packageJsonPath = path.join(process.cwd(), 'package.json');
-  if (!fs.existsSync(packageJsonPath)) {
-    logWarning('No package.json found in current directory. Non-Node project detected.');
-    console.log(chalk.gray('  Bypassing frontend gatekeeper checks safely.'));
+
+  let isAngular = false;
+  let projectPkg = {};
+
+  if (fs.existsSync(packageJsonPath)) {
+    try {
+      projectPkg = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+      const deps = { ...(projectPkg.dependencies || {}), ...(projectPkg.devDependencies || {}) };
+      if (deps['@angular/core'] || deps['@angular/cli'] || fs.existsSync(angularJsonPath)) {
+        isAngular = true;
+      }
+    } catch (e) {
+      // ignore parse error for check
+    }
+  }
+
+  if (!isAngular) {
+    logWarning('Non-Angular repository detected (no angular.json or @angular/core found).');
+    console.log(chalk.gray('  Bypassing Angular Gatekeeper checks safely.'));
     process.exit(0);
   }
-  logSuccess('Node.js project detected with package.json.');
 
-  let projectPkg = {};
-  try {
-    projectPkg = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
-  } catch (e) {
-    logError('Invalid package.json format.');
-    process.exit(1);
-  }
+  logSuccess('Angular project verified (angular.json / @angular/core detected).');
 
   // =========================================================================
   // STEP 2: REMOTE REPO SYNC CHECK
@@ -101,31 +111,21 @@ async function runGatekeeper() {
   }
 
   // =========================================================================
-  // STEP 3: CRITICAL FILES VALIDATION
+  // STEP 3: CRITICAL ANGULAR FILES VALIDATION
   // =========================================================================
-  logStep(3, 'Critical Frontend Files & Directory Structure Validation');
+  logStep(3, 'Critical Angular Architecture & File Validation');
   const requiredItems = [
+    { name: 'angular.json', path: path.join(process.cwd(), 'angular.json'), type: 'file' },
     { name: 'package.json', path: path.join(process.cwd(), 'package.json'), type: 'file' },
-    { name: 'index.html', path: path.join(process.cwd(), 'index.html'), type: 'file', optionalIfNoIndexHtml: false },
-    { name: 'src/ directory', path: path.join(process.cwd(), 'src'), type: 'dir' }
+    { name: 'src/ directory', path: path.join(process.cwd(), 'src'), type: 'dir' },
+    { name: 'src/app/ directory', path: path.join(process.cwd(), 'src', 'app'), type: 'dir' }
   ];
 
   let missingItems = [];
   for (const item of requiredItems) {
     if (item.type === 'file') {
       if (!fs.existsSync(item.path)) {
-        // Special check: some projects have index.html inside public/ or client/ or src/
-        if (item.name === 'index.html') {
-          const altPaths = [
-            path.join(process.cwd(), 'public', 'index.html'),
-            path.join(process.cwd(), 'src', 'index.html')
-          ];
-          if (!altPaths.some(p => fs.existsSync(p))) {
-            missingItems.push(item.name);
-          }
-        } else {
-          missingItems.push(item.name);
-        }
+        missingItems.push(item.name);
       }
     } else if (item.type === 'dir') {
       if (!fs.existsSync(item.path) || !fs.statSync(item.path).isDirectory()) {
@@ -135,34 +135,31 @@ async function runGatekeeper() {
   }
 
   if (missingItems.length > 0) {
-    logError(`Missing critical frontend file(s)/directory: ${missingItems.join(', ')}`);
-    console.log(chalk.red('  Push rejected: Ensure your project structure adheres to frontend standards.\n'));
+    logError(`Missing critical Angular file(s)/directory: ${missingItems.join(', ')}`);
+    console.log(chalk.red('  Push rejected: Ensure your project structure adheres to Angular CLI standards.\n'));
     process.exit(1);
   }
-  logSuccess('All critical frontend files and directories verified.');
+  logSuccess('All critical Angular files and directories verified.');
 
   // =========================================================================
-  // STEP 4: CODE QUALITY & TYPE CHECKS
+  // STEP 4: ANGULAR CODE QUALITY & TYPE CHECKS
   // =========================================================================
-  logStep(4, 'Code Quality, Linting & Type Checks');
+  logStep(4, 'Angular Code Quality, Linting & Type Checks');
   const scripts = projectPkg.scripts || {};
   const checksToRun = [];
 
   if (scripts['type-check'] || scripts['typecheck']) {
-    checksToRun.push({ name: 'Type Check', script: scripts['type-check'] ? 'type-check' : 'typecheck' });
+    checksToRun.push({ name: 'TypeScript Check', script: scripts['type-check'] ? 'type-check' : 'typecheck', cmd: null });
   }
   if (scripts['lint']) {
-    checksToRun.push({ name: 'Linter', script: 'lint' });
+    checksToRun.push({ name: 'Angular Linter', script: 'lint', cmd: null });
   }
-  if (scripts['test']) {
-    // Only run test if it's not the default placeholder
-    if (!scripts['test'].includes('no test specified')) {
-      checksToRun.push({ name: 'Automated Tests', script: 'test' });
-    }
+  if (scripts['test:ci'] || scripts['test-ci']) {
+    checksToRun.push({ name: 'Automated CI Tests', script: scripts['test:ci'] ? 'test:ci' : 'test-ci', cmd: null });
   }
 
   if (checksToRun.length === 0) {
-    console.log(chalk.gray('  No type-check, lint, or test scripts configured in package.json.'));
+    console.log(chalk.gray('  No custom type-check, lint, or test:ci scripts configured in package.json.'));
   } else {
     for (const check of checksToRun) {
       console.log(chalk.blue(`  Running: npm run ${check.script}...`));
@@ -180,7 +177,7 @@ async function runGatekeeper() {
   // =========================================================================
   // STEP 5: AUTOMATED BUILD VERSIONING
   // =========================================================================
-  logStep(5, 'Automated Build Versioning');
+  logStep(5, 'Automated Angular Build Versioning');
   const srcDir = path.join(process.cwd(), 'src');
   if (fs.existsSync(srcDir) && fs.statSync(srcDir).isDirectory()) {
     const buildMetaPath = path.join(srcDir, 'build-metadata.json');
@@ -215,7 +212,7 @@ async function runGatekeeper() {
   // =========================================================================
   // STEP 6: AI KNOWLEDGE BASE AUDIT (GEMINI 2.5 FLASH)
   // =========================================================================
-  logStep(6, 'AI Knowledge Base Regression Audit (Gemini 2.5 Flash)');
+  logStep(6, 'Angular AI Knowledge Base Regression Audit (Gemini 2.5 Flash)');
   const resolvedIssuesPath = path.join(process.cwd(), 'resolved_issues.md');
 
   if (!fs.existsSync(resolvedIssuesPath)) {
@@ -227,7 +224,7 @@ async function runGatekeeper() {
       console.log(chalk.gray('  To enable AI audits, run FrontendGatekeeperSetup.exe or set GEMINI_API_KEY.'));
     } else {
       const knowledgeBase = fs.readFileSync(resolvedIssuesPath, 'utf8');
-      console.log(chalk.blue('  Reading git diff for current changes...'));
+      console.log(chalk.blue('  Reading git diff for current Angular changes...'));
 
       // Extract diff
       let diffOutput = runGit('git diff origin/main...HEAD', true);
@@ -247,12 +244,12 @@ async function runGatekeeper() {
       if (!diffOutput || diffOutput.trim() === '') {
         console.log(chalk.gray('  No diff detected against baseline. AI audit passed.'));
       } else {
-        console.log(chalk.cyan('  Consulting Gemini 2.5 Flash to audit code against known issues...'));
+        console.log(chalk.cyan('  Consulting Gemini 2.5 Flash to audit Angular code against known issues...'));
         try {
           const ai = new GoogleGenAI({ apiKey });
           const prompt = `
-You are an expert Senior DevSecOps & Frontend Quality Assurance AI Gatekeeper.
-Your job is to audit incoming Git code changes against our repository's historical Knowledge Base of previously resolved issues, anti-patterns, bugs, and architecture rules.
+You are a Principal Angular Architect, DevSecOps Specialist, and Code Quality Gatekeeper.
+Your job is to audit incoming Git code changes in an Angular application against our repository's historical Knowledge Base of previously resolved issues, anti-patterns, bugs, and architecture rules.
 
 ### HISTORICAL RESOLVED ISSUES KNOWLEDGE BASE:
 \`\`\`markdown
@@ -264,12 +261,16 @@ ${knowledgeBase.slice(0, 15000)}
 ${diffOutput.slice(0, 25000)}
 \`\`\`
 
-### TASK:
+### ANGULAR AUDIT CRITERIA:
 1. Thoroughly analyze the Git diff against each rule/bug in the Knowledge Base.
-2. If the diff reintroduces any previously resolved bugs, repeats documented bad patterns, violates forbidden patterns, or ignores critical requirements:
+2. Specifically check for critical Angular regressions:
+   - Unhandled RxJS subscription memory leaks (missing takeUntilDestroyed / async pipe).
+   - Direct DOM mutations (e.g. element.nativeElement.innerHTML or document.getElementById) bypassing Angular renderer/templates.
+   - Any violation of documented business rules, security rules, or architectural standards in resolved_issues.md.
+3. If the diff reintroduces any previously resolved bugs or violates forbidden patterns:
    - Output: "VERDICT: FAILED"
-   - Provide a concise list of specific violations with line numbers or code snippets from the diff, explaining why it violates the rule and how to fix it.
-3. If the diff is clean and adheres to all documented best practices:
+   - Provide a concise list of specific violations with line numbers or code snippets from the diff, explaining why it violates the rule and how to fix it in Angular.
+4. If the diff is clean and adheres to all documented best practices:
    - Output: "VERDICT: PASSED"
    - Provide a 1-2 sentence positive summary.
 
@@ -306,7 +307,7 @@ Ensure your response clearly includes either "VERDICT: PASSED" or "VERDICT: FAIL
   // FINAL VERDICT
   // =========================================================================
   console.log('\n' + chalk.green.bold('═══════════════════════════════════════════════════════════════'));
-  console.log(chalk.green.bold('       ✔ ALL GATEKEEPER PRE-PUSH VALIDATIONS PASSED!           '));
+  console.log(chalk.green.bold('     ✔ ALL ANGULAR GATEKEEPER PRE-PUSH VALIDATIONS PASSED!     '));
   console.log(chalk.green.bold('═══════════════════════════════════════════════════════════════\n'));
   process.exit(0);
 }

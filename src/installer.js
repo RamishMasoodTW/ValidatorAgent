@@ -23,9 +23,9 @@ async function waitPrompt(message = 'Press [Enter] to exit...') {
 async function runInstaller() {
   console.clear();
   console.log(BANNER);
-  console.log(chalk.cyan.bold('  Welcome to the Frontend Git Quality & AI Gatekeeper Setup Wizard!\n'));
-  console.log(chalk.white('  This installer will configure a global Git pre-push hook and set up'));
-  console.log(chalk.white('  Gemini 2.5 Flash AI-powered regression audits across all your repositories.\n'));
+  console.log(chalk.red.bold('  Welcome to the Angular Git Quality & AI Gatekeeper Setup Wizard!\n'));
+  console.log(chalk.white('  This installer configures a global Git pre-push hook for all your Angular repositories,'));
+  console.log(chalk.white('  enforcing strict quality, architecture standards, and Gemini 2.5 Flash AI regression audits.\n'));
 
   // 1. Prompt for Gemini API Key
   console.log(chalk.yellow('┌─────────────────────────────────────────────────────────────┐'));
