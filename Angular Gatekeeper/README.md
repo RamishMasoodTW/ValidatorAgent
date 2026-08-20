@@ -25,7 +25,7 @@ and merge conflicts with automatic background monitoring and desktop alerts.
 3. The installer will automatically:
    - Register the global 'a-gatekeeper' CLI in your system PATH.
    - Configure Git hooks and Windows Notification protocol.
-4. Restart your terminal (CMD, PowerShell, Git Bash, or VS Code) (Optional).
+4. Restart your terminal (CMD, PowerShell, Git Bash, or VS Code).
 
 --------------------------------------------------------------------------------
 🌿 STEP 2: HOW TO USE IN ANY REPOSITORY
