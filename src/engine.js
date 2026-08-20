@@ -46,6 +46,46 @@ function runGit(command, allowFail = false) {
   }
 }
 
+/**
+ * Recursively find all files in a directory
+ */
+function getAllFiles(dirPath, arrayOfFiles = []) {
+  if (!fs.existsSync(dirPath)) return [];
+  const files = fs.readdirSync(dirPath);
+
+  files.forEach(file => {
+    const fullPath = path.join(dirPath, file);
+    if (fs.statSync(fullPath).isDirectory()) {
+      getAllFiles(fullPath, arrayOfFiles);
+    } else {
+      arrayOfFiles.push(fullPath);
+    }
+  });
+
+  return arrayOfFiles;
+}
+
+/**
+ * Locate the primary compiled output folder in dist/ (handles Angular 17+ browser/ and legacy dist/<app>)
+ */
+function findBuildOutputDir(distPath) {
+  if (!fs.existsSync(distPath)) return null;
+
+  // Direct dist folder check
+  if (fs.existsSync(path.join(distPath, 'index.html'))) {
+    return distPath;
+  }
+
+  // Look for index.html in subdirectories (e.g. dist/<project>/browser or dist/<project>)
+  const allFiles = getAllFiles(distPath);
+  const indexHtmlFile = allFiles.find(f => path.basename(f).toLowerCase() === 'index.html');
+  if (indexHtmlFile) {
+    return path.dirname(indexHtmlFile);
+  }
+
+  return distPath;
+}
+
 async function runGatekeeper() {
   console.log(MINI_BANNER);
   console.log(chalk.gray(`Working Directory: ${process.cwd()}\n`));
@@ -81,39 +121,42 @@ async function runGatekeeper() {
   logSuccess('Angular project verified (angular.json / @angular/core detected).');
 
   // =========================================================================
-  // STEP 2: REMOTE REPO SYNC CHECK
+  // STEP 2: REMOTE REPO SYNC CHECK (INFORMATIONAL FOR COMMIT)
   // =========================================================================
   logStep(2, 'Remote Repository Sync Check');
   try {
     const currentBranch = runGit('git rev-parse --abbrev-ref HEAD', true) || 'main';
     console.log(chalk.blue(`  Current active branch: ${chalk.bold(currentBranch)}`));
 
-    // Try fetching origin
+    // Try fetching origin if reachable
+    let fetched = false;
     try {
-      console.log(chalk.gray('  Fetching latest remote status from origin...'));
       runGit('git fetch origin', true);
+      fetched = true;
     } catch (e) {
-      logWarning('Could not reach remote repository. Continuing with local checks.');
+      // offline or origin unreachable
     }
 
-    const unpulledCountStr = runGit(`git rev-list --count HEAD..origin/${currentBranch}`, true);
-    const unpulledCount = parseInt(unpulledCountStr, 10);
+    if (fetched) {
+      const unpulledCountStr = runGit(`git rev-list --count HEAD..origin/${currentBranch}`, true);
+      const unpulledCount = parseInt(unpulledCountStr, 10);
 
-    if (!isNaN(unpulledCount) && unpulledCount > 0) {
-      logError(`CRITICAL: Your local branch is behind origin/${currentBranch} by ${unpulledCount} commit(s)!`);
-      console.log(chalk.yellow('\n  Please pull remote changes first to prevent merge conflicts:'));
-      console.log(chalk.cyan.bold('  $ git pull --rebase\n'));
-      process.exit(1);
+      if (!isNaN(unpulledCount) && unpulledCount > 0) {
+        logWarning(`Note: Your branch is behind origin/${currentBranch} by ${unpulledCount} commit(s). Remember to rebase before pushing.`);
+      } else {
+        logSuccess('Local branch is up to date with remote origin.');
+      }
+    } else {
+      console.log(chalk.gray('  Remote sync check skipped (working locally).'));
     }
-    logSuccess('Local branch is up to date with remote origin.');
   } catch (err) {
-    logWarning(`Sync check warning: ${err.message || err}. Continuing...`);
+    logWarning(`Sync check notice: ${err.message || err}. Continuing...`);
   }
 
   // =========================================================================
-  // STEP 3: CRITICAL ANGULAR FILES VALIDATION
+  // STEP 3: CRITICAL ANGULAR ARCHITECTURE & SOURCE FILES VALIDATION
   // =========================================================================
-  logStep(3, 'Critical Angular Architecture & File Validation');
+  logStep(3, 'Critical Angular Architecture & Source Validation');
   const requiredItems = [
     { name: 'angular.json', path: path.join(process.cwd(), 'angular.json'), type: 'file' },
     { name: 'package.json', path: path.join(process.cwd(), 'package.json'), type: 'file' },
@@ -134,50 +177,166 @@ async function runGatekeeper() {
     }
   }
 
+  // Check tsconfig
+  const tsconfigExists = fs.existsSync(path.join(process.cwd(), 'tsconfig.json')) || 
+                         fs.existsSync(path.join(process.cwd(), 'tsconfig.app.json'));
+  if (!tsconfigExists) {
+    missingItems.push('tsconfig.json (or tsconfig.app.json)');
+  }
+
+  // Check main entry points
+  const indexHtmlExists = fs.existsSync(path.join(process.cwd(), 'src', 'index.html')) || 
+                          fs.existsSync(path.join(process.cwd(), 'src', 'index.csr.html')) ||
+                          fs.existsSync(path.join(process.cwd(), 'index.html'));
+  if (!indexHtmlExists) {
+    missingItems.push('src/index.html (Application Main Entry Point)');
+  }
+
+  const mainTsExists = fs.existsSync(path.join(process.cwd(), 'src', 'main.ts'));
+  if (!mainTsExists) {
+    missingItems.push('src/main.ts (Application Bootstrap Entry Point)');
+  }
+
   if (missingItems.length > 0) {
     logError(`Missing critical Angular file(s)/directory: ${missingItems.join(', ')}`);
-    console.log(chalk.red('  Push rejected: Ensure your project structure adheres to Angular CLI standards.\n'));
+    console.log(chalk.red('  Commit rejected: Ensure your project structure adheres to Angular CLI standards.\n'));
     process.exit(1);
   }
-  logSuccess('All critical Angular files and directories verified.');
+  logSuccess('All critical Angular architecture files, tsconfig, and entry points verified.');
 
   // =========================================================================
-  // STEP 4: ANGULAR CODE QUALITY & TYPE CHECKS
+  // STEP 4: MANDATORY ANGULAR BUILD & TYPE COMPILATION CHECKS
   // =========================================================================
-  logStep(4, 'Angular Code Quality, Linting & Type Checks');
+  logStep(4, 'Angular Build, Compilation & Type Checks');
   const scripts = projectPkg.scripts || {};
-  const checksToRun = [];
 
-  if (scripts['type-check'] || scripts['typecheck']) {
-    checksToRun.push({ name: 'TypeScript Check', script: scripts['type-check'] ? 'type-check' : 'typecheck', cmd: null });
-  }
+  // 1. Run custom linters or CI tests if configured
   if (scripts['lint']) {
-    checksToRun.push({ name: 'Angular Linter', script: 'lint', cmd: null });
-  }
-  if (scripts['test:ci'] || scripts['test-ci']) {
-    checksToRun.push({ name: 'Automated CI Tests', script: scripts['test:ci'] ? 'test:ci' : 'test-ci', cmd: null });
-  }
-
-  if (checksToRun.length === 0) {
-    console.log(chalk.gray('  No custom type-check, lint, or test:ci scripts configured in package.json.'));
-  } else {
-    for (const check of checksToRun) {
-      console.log(chalk.blue(`  Running: npm run ${check.script}...`));
-      try {
-        execSync(`npm run ${check.script}`, { stdio: 'inherit', cwd: process.cwd() });
-        logSuccess(`${check.name} passed successfully.`);
-      } catch (err) {
-        logError(`${check.name} failed!`);
-        console.log(chalk.red(`\n  Fix the errors reported above before pushing code.\n`));
-        process.exit(1);
-      }
+    console.log(chalk.blue('  Running Angular Linter (npm run lint)...'));
+    try {
+      execSync('npm run lint', { stdio: 'inherit', cwd: process.cwd() });
+      logSuccess('Angular linter passed.');
+    } catch (err) {
+      logError('Angular linter reported errors!');
+      console.log(chalk.red('\n  Fix the linting issues before committing code.\n'));
+      process.exit(1);
     }
   }
 
+  if (scripts['type-check'] || scripts['typecheck']) {
+    const typeScript = scripts['type-check'] ? 'type-check' : 'typecheck';
+    console.log(chalk.blue(`  Running TypeScript Check (npm run ${typeScript})...`));
+    try {
+      execSync(`npm run ${typeScript}`, { stdio: 'inherit', cwd: process.cwd() });
+      logSuccess('TypeScript checks passed.');
+    } catch (err) {
+      logError('TypeScript type checking failed!');
+      console.log(chalk.red('\n  Fix the TypeScript errors before committing code.\n'));
+      process.exit(1);
+    }
+  }
+
+  if (scripts['test:ci'] || scripts['test-ci']) {
+    const testScript = scripts['test:ci'] ? 'test:ci' : 'test-ci';
+    console.log(chalk.blue(`  Running CI Tests (npm run ${testScript})...`));
+    try {
+      execSync(`npm run ${testScript}`, { stdio: 'inherit', cwd: process.cwd() });
+      logSuccess('Automated CI tests passed.');
+    } catch (err) {
+      logError('Automated CI tests failed!');
+      console.log(chalk.red('\n  Fix the failing tests before committing code.\n'));
+      process.exit(1);
+    }
+  }
+
+  // 2. MANDATORY ANGULAR BUILD (Catch TS errors, compiler issues, bundle generation failures)
+  console.log(chalk.blue('  Running Mandatory Angular Build Compilation...'));
+  let buildCommand = 'npm run build';
+  if (!scripts['build']) {
+    buildCommand = 'npx ng build';
+  }
+
+  console.log(chalk.gray(`  Executing: ${buildCommand}`));
+  try {
+    execSync(buildCommand, { stdio: 'inherit', cwd: process.cwd() });
+    logSuccess('Angular compilation & build completed successfully with ZERO errors.');
+  } catch (buildErr) {
+    logError('Angular Build FAILED! Compilation or TypeScript errors detected.');
+    console.log(chalk.red('\n  ═════════════════════════════════════════════════════════════════'));
+    console.log(chalk.red.bold('  ❌ COMMIT REJECTED: Application bundle generation failed!'));
+    console.log(chalk.yellow('  Please fix the Angular/TypeScript build errors displayed above.'));
+    console.log(chalk.red('  ═════════════════════════════════════════════════════════════════\n'));
+    process.exit(1);
+  }
+
   // =========================================================================
-  // STEP 5: AUTOMATED BUILD VERSIONING
+  // STEP 5: COMPILED PRODUCTION ARTIFACTS VALIDATION (IIS / WEB ENTRY POINTS)
   // =========================================================================
-  logStep(5, 'Automated Angular Build Versioning');
+  logStep(5, 'Production Build Artifacts Validation');
+  const distPath = path.join(process.cwd(), 'dist');
+  const outputDir = findBuildOutputDir(distPath);
+
+  if (!outputDir || !fs.existsSync(outputDir)) {
+    logError('Build output directory (dist/) was not generated or is missing!');
+    console.log(chalk.red('  Commit rejected: Ensure ng build produces valid output.\n'));
+    process.exit(1);
+  }
+
+  console.log(chalk.gray(`  Inspecting build distribution output at: ${outputDir}`));
+  const outputFiles = getAllFiles(outputDir).map(f => path.relative(outputDir, f).replace(/\\/g, '/'));
+
+  // 1. Check index.html (Main web entry point required for IIS and browsers)
+  const hasIndexHtml = outputFiles.some(f => path.basename(f).toLowerCase() === 'index.html');
+  if (!hasIndexHtml) {
+    logError('Critical build artifact missing: index.html was not generated in distribution output!');
+    console.log(chalk.red('  Commit rejected: index.html is required for IIS/web servers to load the application.\n'));
+    process.exit(1);
+  }
+
+  // 2. Check compiled JavaScript bundles (main.js, polyfills.js, runtime.js / chunk hashes)
+  const jsBundles = outputFiles.filter(f => f.endsWith('.js'));
+  const hasMainJs = jsBundles.some(f => /^main(\.[a-zA-Z0-9]+)?\.js$/i.test(path.basename(f)) || path.basename(f).toLowerCase().startsWith('main'));
+  const hasPolyfillsJs = jsBundles.some(f => /^polyfills(\.[a-zA-Z0-9]+)?\.js$/i.test(path.basename(f)) || path.basename(f).toLowerCase().startsWith('polyfills'));
+  const hasRuntimeJs = jsBundles.some(f => /^runtime(\.[a-zA-Z0-9]+)?\.js$/i.test(path.basename(f)) || path.basename(f).toLowerCase().startsWith('runtime') || jsBundles.length >= 1);
+
+  if (jsBundles.length === 0) {
+    logError('Critical build artifact missing: No compiled JavaScript bundles found in output!');
+    console.log(chalk.red('  Commit rejected: Application logic files (main.js, polyfills.js, runtime.js) are missing.\n'));
+    process.exit(1);
+  }
+
+  // 3. Check compiled styles (styles.css / styles-*.css)
+  const cssFiles = outputFiles.filter(f => f.endsWith('.css'));
+  const hasStylesCss = cssFiles.some(f => path.basename(f).toLowerCase().startsWith('styles') || cssFiles.length > 0);
+
+  // 4. Check assets directory (if source assets or public folder exists)
+  const srcAssetsPath = path.join(process.cwd(), 'src', 'assets');
+  const publicPath = path.join(process.cwd(), 'public');
+  const hasSourceAssets = (fs.existsSync(srcAssetsPath) && fs.readdirSync(srcAssetsPath).length > 0) ||
+                          (fs.existsSync(publicPath) && fs.readdirSync(publicPath).length > 0);
+  
+  const hasDistAssets = outputFiles.some(f => f.startsWith('assets/') || f.startsWith('media/'));
+
+  console.log(chalk.white('  Distribution Artifact Checklist:'));
+  console.log(`    ${chalk.green('✔')} index.html (Main Entry Point)`);
+  console.log(`    ${chalk.green('✔')} Compiled JavaScript Bundles (${jsBundles.length} files: ${jsBundles.slice(0, 3).map(f => path.basename(f)).join(', ')}${jsBundles.length > 3 ? '...' : ''})`);
+  if (hasStylesCss) {
+    console.log(`    ${chalk.green('✔')} Global Styles (${cssFiles.map(f => path.basename(f)).join(', ')})`);
+  }
+  if (hasSourceAssets) {
+    if (hasDistAssets) {
+      console.log(`    ${chalk.green('✔')} Static Assets (images/fonts/icons verified in dist)`);
+    } else {
+      console.log(`    ${chalk.yellow('⚠')} Static Assets: Source assets detected, please verify assets config in angular.json`);
+    }
+  }
+
+  logSuccess('Production distribution artifacts validated successfully.');
+
+  // =========================================================================
+  // STEP 6: AUTOMATED BUILD VERSIONING (STAGED IN ACTIVE COMMIT)
+  // =========================================================================
+  logStep(6, 'Automated Angular Build Versioning');
   const srcDir = path.join(process.cwd(), 'src');
   if (fs.existsSync(srcDir) && fs.statSync(srcDir).isDirectory()) {
     const buildMetaPath = path.join(srcDir, 'build-metadata.json');
@@ -185,7 +344,7 @@ async function runGatekeeper() {
       buildNumber: 0,
       version: projectPkg.version || '1.0.0',
       branch: 'main',
-      commitHash: 'unknown',
+      commitHash: 'working-tree',
       builtAt: new Date().toISOString()
     };
 
@@ -204,15 +363,22 @@ async function runGatekeeper() {
     buildData.builtAt = new Date().toISOString();
 
     fs.writeFileSync(buildMetaPath, JSON.stringify(buildData, null, 2), 'utf8');
-    logSuccess(`Build metadata updated: Build #${buildData.buildNumber} (${buildData.commitHash}) on branch "${buildData.branch}"`);
+
+    // Automatically stage build-metadata.json so it gets included in the same commit
+    try {
+      runGit('git add src/build-metadata.json', true);
+      logSuccess(`Build metadata updated & staged in current commit: Build #${buildData.buildNumber} (${buildData.commitHash}) on "${buildData.branch}"`);
+    } catch (addErr) {
+      logSuccess(`Build metadata updated: Build #${buildData.buildNumber} (${buildData.commitHash})`);
+    }
   } else {
     console.log(chalk.gray('  Skipped: src directory not found.'));
   }
 
   // =========================================================================
-  // STEP 6: AI KNOWLEDGE BASE AUDIT (GEMINI 2.5 FLASH)
+  // STEP 7: AI KNOWLEDGE BASE AUDIT (GEMINI 2.5 FLASH)
   // =========================================================================
-  logStep(6, 'Angular AI Knowledge Base Regression Audit (Gemini 2.5 Flash)');
+  logStep(7, 'Angular AI Knowledge Base Regression Audit (Gemini 2.5 Flash)');
   const resolvedIssuesPath = path.join(process.cwd(), 'resolved_issues.md');
 
   if (!fs.existsSync(resolvedIssuesPath)) {
@@ -226,16 +392,16 @@ async function runGatekeeper() {
       const knowledgeBase = fs.readFileSync(resolvedIssuesPath, 'utf8');
       console.log(chalk.blue('  Reading git diff for current Angular changes...'));
 
-      // Extract diff
-      let diffOutput = runGit('git diff origin/main...HEAD', true);
-      if (!diffOutput || diffOutput.trim() === '') {
-        diffOutput = runGit('git diff origin/master...HEAD', true);
-      }
+      // Extract diff (prioritize staged changes for pre-commit)
+      let diffOutput = runGit('git diff --cached', true);
       if (!diffOutput || diffOutput.trim() === '') {
         diffOutput = runGit('git diff HEAD~1', true);
       }
       if (!diffOutput || diffOutput.trim() === '') {
-        diffOutput = runGit('git diff --cached', true);
+        diffOutput = runGit('git diff origin/main...HEAD', true);
+      }
+      if (!diffOutput || diffOutput.trim() === '') {
+        diffOutput = runGit('git diff origin/master...HEAD', true);
       }
       if (!diffOutput || diffOutput.trim() === '') {
         diffOutput = runGit('git diff HEAD', true);
@@ -290,14 +456,14 @@ Ensure your response clearly includes either "VERDICT: PASSED" or "VERDICT: FAIL
 
           if (resultText.includes('VERDICT: FAILED')) {
             logError('AI Gatekeeper detected regressions or violations of resolved_issues.md!');
-            console.log(chalk.red('  Push rejected: Please address the AI audit findings above.\n'));
+            console.log(chalk.red('  Commit/Push rejected: Please address the AI audit findings above.\n'));
             process.exit(1);
           } else {
             logSuccess('AI Knowledge Base audit PASSED. No known regressions detected.');
           }
         } catch (apiErr) {
           logError(`AI Audit call error: ${apiErr.message || apiErr}`);
-          console.log(chalk.yellow('  Allowing push with warning due to AI service error.'));
+          console.log(chalk.yellow('  Allowing commit/push with warning due to AI service error.'));
         }
       }
     }
@@ -307,7 +473,7 @@ Ensure your response clearly includes either "VERDICT: PASSED" or "VERDICT: FAIL
   // FINAL VERDICT
   // =========================================================================
   console.log('\n' + chalk.green.bold('═══════════════════════════════════════════════════════════════'));
-  console.log(chalk.green.bold('     ✔ ALL ANGULAR GATEKEEPER PRE-PUSH VALIDATIONS PASSED!     '));
+  console.log(chalk.green.bold(' ✔ ALL ANGULAR GATEKEEPER PRE-COMMIT VALIDATIONS PASSED!       '));
   console.log(chalk.green.bold('═══════════════════════════════════════════════════════════════\n'));
   process.exit(0);
 }

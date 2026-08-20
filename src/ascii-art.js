@@ -12,10 +12,12 @@ ${chalk.cyan.bold('  ██║  ███╗███████║   ██║
 ${chalk.cyan.bold('  ██║   ██║██╔══██║   ██║   ██╔══╝  ██╔═██╗ ██╔══╝  ██╔══╝  ██╔═══╝ ██╔══╝  ██╔══██╗')}
 ${chalk.cyan.bold('  ╚██████╔╝██║  ██║   ██║   ███████╗██║ ╚██╗███████╗███████╗██║     ███████╗██║  ██║')}
 ${chalk.red('  ═══════════════════════════════════════════════════════════════════════════════════════')}
-${chalk.yellow.bold('          [ Angular DevSecOps Automated Git Push Quality & AI Gatekeeper ]              ')}
+${chalk.yellow.bold('          [ Angular DevSecOps Automated Git Pre-Commit Quality & AI Gatekeeper ]         ')}
 ${chalk.red('  ═══════════════════════════════════════════════════════════════════════════════════════')}
 `;
 
 export const MINI_BANNER = `
-${chalk.red.bold('>>> [ANGULAR GATEKEEPER] Pre-Push Quality & AI Validation Engine <<<')}
+${chalk.red.bold('>>> [ANGULAR GATEKEEPER] Pre-Commit AI Validation Engine <<<')}
 `;
+
+

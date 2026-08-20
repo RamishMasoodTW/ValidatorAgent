@@ -112,10 +112,22 @@ async function runInstaller() {
     console.log(chalk.gray(`  Place engine.exe in ${targetDir} or build it using npm run build:exe.`));
   }
 
-  // 5. Generate Global Hook Script (%APPDATA%/FrontendGatekeeper/hooks/pre-push)
+  // 5. Generate Global Pre-Commit Hook Script (%APPDATA%/FrontendGatekeeper/hooks/pre-commit)
+  const preCommitScriptPath = path.join(hooksDir, 'pre-commit');
   const prePushScriptPath = path.join(hooksDir, 'pre-push');
-  const prePushScriptContent = `#!/usr/bin/env sh
-# Frontend Git Quality & AI Gatekeeper Pre-Push Hook
+
+  // Clean up any old pre-push hook so verifications happen ONLY on commit
+  if (fs.existsSync(prePushScriptPath)) {
+    try {
+      fs.unlinkSync(prePushScriptPath);
+      console.log(chalk.gray('✔ Cleaned up legacy pre-push hook (verifications now strictly on commit).'));
+    } catch (e) {
+      // ignore unlink error
+    }
+  }
+
+  const preCommitScriptContent = `#!/usr/bin/env sh
+# Frontend Git Quality & AI Gatekeeper Pre-Commit Hook
 # Compatible with Git CLI, Git Bash, GitHub Desktop, and IDEs
 
 if [ -n "$APPDATA" ]; then
@@ -135,10 +147,10 @@ fi
 `;
 
   try {
-    fs.writeFileSync(prePushScriptPath, prePushScriptContent, { encoding: 'utf8', mode: 0o777 });
-    console.log(chalk.green('✔ Global pre-push hook script generated.'));
+    fs.writeFileSync(preCommitScriptPath, preCommitScriptContent, { encoding: 'utf8', mode: 0o777 });
+    console.log(chalk.green('✔ Global pre-commit hook script generated.'));
   } catch (err) {
-    console.log(chalk.red(`✖ Failed to write pre-push hook script: ${err.message}`));
+    console.log(chalk.red(`✖ Failed to write pre-commit hook script: ${err.message}`));
     await waitPrompt();
     process.exit(1);
   }
@@ -160,15 +172,16 @@ fi
   console.log(chalk.green.bold('═══════════════════════════════════════════════════════════════'));
   console.log(chalk.white('\n  Summary of installed components:'));
   console.log(chalk.cyan(`  • Engine Binary:     ${targetEnginePath}`));
-  console.log(chalk.cyan(`  • Global Git Hook:   ${prePushScriptPath}`));
+  console.log(chalk.cyan(`  • Hook Trigger:      ${preCommitScriptPath} (COMMIT ONLY)`));
   console.log(chalk.cyan(`  • Config & AI Key:   ${envFilePath}`));
   console.log(chalk.cyan(`  • Git Hook Path:     ${hooksDir.replace(/\\/g, '/')}`));
   console.log(chalk.magenta('\n  Compatibility:'));
   console.log(chalk.white('  ✔ GitHub Desktop'));
   console.log(chalk.white('  ✔ Git Bash / Windows Terminal / CMD / PowerShell'));
   console.log(chalk.white('  ✔ VS Code / Cursor / IntelliJ / WebStorm Git integrations'));
-  console.log(chalk.white('\n  Every `git push` in your repositories will now be validated'));
-  console.log(chalk.white('  by the DevSecOps Quality & Gemini 2.5 Flash AI Gatekeeper!'));
+  console.log(chalk.white('\n  Every `git commit` in your Angular repositories will now be validated'));
+  console.log(chalk.white('  and build versioning updated automatically inside the commit!'));
+  console.log(chalk.green('  (Push verification is disabled; push remains fast and direct).'));
 
   await waitPrompt('Press [Enter] to exit installer...');
   process.exit(0);

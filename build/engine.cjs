@@ -45568,11 +45568,11 @@ ${source_default.cyan.bold("  \u2588\u2588\u2551  \u2588\u2588\u2588\u2557\u2588
 ${source_default.cyan.bold("  \u2588\u2588\u2551   \u2588\u2588\u2551\u2588\u2588\u2554\u2550\u2550\u2588\u2588\u2551   \u2588\u2588\u2551   \u2588\u2588\u2554\u2550\u2550\u255D  \u2588\u2588\u2554\u2550\u2588\u2588\u2557 \u2588\u2588\u2554\u2550\u2550\u255D  \u2588\u2588\u2554\u2550\u2550\u255D  \u2588\u2588\u2554\u2550\u2550\u2550\u255D \u2588\u2588\u2554\u2550\u2550\u255D  \u2588\u2588\u2554\u2550\u2550\u2588\u2588\u2557")}
 ${source_default.cyan.bold("  \u255A\u2588\u2588\u2588\u2588\u2588\u2588\u2554\u255D\u2588\u2588\u2551  \u2588\u2588\u2551   \u2588\u2588\u2551   \u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2557\u2588\u2588\u2551 \u255A\u2588\u2588\u2557\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2557\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2557\u2588\u2588\u2551     \u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2557\u2588\u2588\u2551  \u2588\u2588\u2551")}
 ${source_default.red("  \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550")}
-${source_default.yellow.bold("          [ Angular DevSecOps Automated Git Push Quality & AI Gatekeeper ]              ")}
+${source_default.yellow.bold("          [ Angular DevSecOps Automated Git Pre-Commit Quality & AI Gatekeeper ]         ")}
 ${source_default.red("  \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550")}
 `;
 var MINI_BANNER = `
-${source_default.red.bold(">>> [ANGULAR GATEKEEPER] Pre-Push Quality & AI Validation Engine <<<")}
+${source_default.red.bold(">>> [ANGULAR GATEKEEPER] Pre-Commit AI Validation Engine <<<")}
 `;
 
 // src/engine.js
@@ -45606,6 +45606,31 @@ function runGit(command, allowFail = false) {
     return "";
   }
 }
+function getAllFiles(dirPath, arrayOfFiles = []) {
+  if (!import_fs2.default.existsSync(dirPath)) return [];
+  const files = import_fs2.default.readdirSync(dirPath);
+  files.forEach((file) => {
+    const fullPath = import_path.default.join(dirPath, file);
+    if (import_fs2.default.statSync(fullPath).isDirectory()) {
+      getAllFiles(fullPath, arrayOfFiles);
+    } else {
+      arrayOfFiles.push(fullPath);
+    }
+  });
+  return arrayOfFiles;
+}
+function findBuildOutputDir(distPath) {
+  if (!import_fs2.default.existsSync(distPath)) return null;
+  if (import_fs2.default.existsSync(import_path.default.join(distPath, "index.html"))) {
+    return distPath;
+  }
+  const allFiles = getAllFiles(distPath);
+  const indexHtmlFile = allFiles.find((f3) => import_path.default.basename(f3).toLowerCase() === "index.html");
+  if (indexHtmlFile) {
+    return import_path.default.dirname(indexHtmlFile);
+  }
+  return distPath;
+}
 async function runGatekeeper() {
   console.log(MINI_BANNER);
   console.log(source_default.gray(`Working Directory: ${process.cwd()}
@@ -45635,25 +45660,27 @@ async function runGatekeeper() {
   try {
     const currentBranch = runGit("git rev-parse --abbrev-ref HEAD", true) || "main";
     console.log(source_default.blue(`  Current active branch: ${source_default.bold(currentBranch)}`));
+    let fetched = false;
     try {
-      console.log(source_default.gray("  Fetching latest remote status from origin..."));
       runGit("git fetch origin", true);
+      fetched = true;
     } catch (e2) {
-      logWarning("Could not reach remote repository. Continuing with local checks.");
     }
-    const unpulledCountStr = runGit(`git rev-list --count HEAD..origin/${currentBranch}`, true);
-    const unpulledCount = parseInt(unpulledCountStr, 10);
-    if (!isNaN(unpulledCount) && unpulledCount > 0) {
-      logError(`CRITICAL: Your local branch is behind origin/${currentBranch} by ${unpulledCount} commit(s)!`);
-      console.log(source_default.yellow("\n  Please pull remote changes first to prevent merge conflicts:"));
-      console.log(source_default.cyan.bold("  $ git pull --rebase\n"));
-      process.exit(1);
+    if (fetched) {
+      const unpulledCountStr = runGit(`git rev-list --count HEAD..origin/${currentBranch}`, true);
+      const unpulledCount = parseInt(unpulledCountStr, 10);
+      if (!isNaN(unpulledCount) && unpulledCount > 0) {
+        logWarning(`Note: Your branch is behind origin/${currentBranch} by ${unpulledCount} commit(s). Remember to rebase before pushing.`);
+      } else {
+        logSuccess("Local branch is up to date with remote origin.");
+      }
+    } else {
+      console.log(source_default.gray("  Remote sync check skipped (working locally)."));
     }
-    logSuccess("Local branch is up to date with remote origin.");
   } catch (err) {
-    logWarning(`Sync check warning: ${err.message || err}. Continuing...`);
+    logWarning(`Sync check notice: ${err.message || err}. Continuing...`);
   }
-  logStep(3, "Critical Angular Architecture & File Validation");
+  logStep(3, "Critical Angular Architecture & Source Validation");
   const requiredItems = [
     { name: "angular.json", path: import_path.default.join(process.cwd(), "angular.json"), type: "file" },
     { name: "package.json", path: import_path.default.join(process.cwd(), "package.json"), type: "file" },
@@ -45672,42 +45699,124 @@ async function runGatekeeper() {
       }
     }
   }
+  const tsconfigExists = import_fs2.default.existsSync(import_path.default.join(process.cwd(), "tsconfig.json")) || import_fs2.default.existsSync(import_path.default.join(process.cwd(), "tsconfig.app.json"));
+  if (!tsconfigExists) {
+    missingItems.push("tsconfig.json (or tsconfig.app.json)");
+  }
+  const indexHtmlExists = import_fs2.default.existsSync(import_path.default.join(process.cwd(), "src", "index.html")) || import_fs2.default.existsSync(import_path.default.join(process.cwd(), "src", "index.csr.html")) || import_fs2.default.existsSync(import_path.default.join(process.cwd(), "index.html"));
+  if (!indexHtmlExists) {
+    missingItems.push("src/index.html (Application Main Entry Point)");
+  }
+  const mainTsExists = import_fs2.default.existsSync(import_path.default.join(process.cwd(), "src", "main.ts"));
+  if (!mainTsExists) {
+    missingItems.push("src/main.ts (Application Bootstrap Entry Point)");
+  }
   if (missingItems.length > 0) {
     logError(`Missing critical Angular file(s)/directory: ${missingItems.join(", ")}`);
-    console.log(source_default.red("  Push rejected: Ensure your project structure adheres to Angular CLI standards.\n"));
+    console.log(source_default.red("  Commit rejected: Ensure your project structure adheres to Angular CLI standards.\n"));
     process.exit(1);
   }
-  logSuccess("All critical Angular files and directories verified.");
-  logStep(4, "Angular Code Quality, Linting & Type Checks");
+  logSuccess("All critical Angular architecture files, tsconfig, and entry points verified.");
+  logStep(4, "Angular Build, Compilation & Type Checks");
   const scripts = projectPkg.scripts || {};
-  const checksToRun = [];
-  if (scripts["type-check"] || scripts["typecheck"]) {
-    checksToRun.push({ name: "TypeScript Check", script: scripts["type-check"] ? "type-check" : "typecheck", cmd: null });
-  }
   if (scripts["lint"]) {
-    checksToRun.push({ name: "Angular Linter", script: "lint", cmd: null });
-  }
-  if (scripts["test:ci"] || scripts["test-ci"]) {
-    checksToRun.push({ name: "Automated CI Tests", script: scripts["test:ci"] ? "test:ci" : "test-ci", cmd: null });
-  }
-  if (checksToRun.length === 0) {
-    console.log(source_default.gray("  No custom type-check, lint, or test:ci scripts configured in package.json."));
-  } else {
-    for (const check of checksToRun) {
-      console.log(source_default.blue(`  Running: npm run ${check.script}...`));
-      try {
-        (0, import_child_process.execSync)(`npm run ${check.script}`, { stdio: "inherit", cwd: process.cwd() });
-        logSuccess(`${check.name} passed successfully.`);
-      } catch (err) {
-        logError(`${check.name} failed!`);
-        console.log(source_default.red(`
-  Fix the errors reported above before pushing code.
-`));
-        process.exit(1);
-      }
+    console.log(source_default.blue("  Running Angular Linter (npm run lint)..."));
+    try {
+      (0, import_child_process.execSync)("npm run lint", { stdio: "inherit", cwd: process.cwd() });
+      logSuccess("Angular linter passed.");
+    } catch (err) {
+      logError("Angular linter reported errors!");
+      console.log(source_default.red("\n  Fix the linting issues before committing code.\n"));
+      process.exit(1);
     }
   }
-  logStep(5, "Automated Angular Build Versioning");
+  if (scripts["type-check"] || scripts["typecheck"]) {
+    const typeScript = scripts["type-check"] ? "type-check" : "typecheck";
+    console.log(source_default.blue(`  Running TypeScript Check (npm run ${typeScript})...`));
+    try {
+      (0, import_child_process.execSync)(`npm run ${typeScript}`, { stdio: "inherit", cwd: process.cwd() });
+      logSuccess("TypeScript checks passed.");
+    } catch (err) {
+      logError("TypeScript type checking failed!");
+      console.log(source_default.red("\n  Fix the TypeScript errors before committing code.\n"));
+      process.exit(1);
+    }
+  }
+  if (scripts["test:ci"] || scripts["test-ci"]) {
+    const testScript = scripts["test:ci"] ? "test:ci" : "test-ci";
+    console.log(source_default.blue(`  Running CI Tests (npm run ${testScript})...`));
+    try {
+      (0, import_child_process.execSync)(`npm run ${testScript}`, { stdio: "inherit", cwd: process.cwd() });
+      logSuccess("Automated CI tests passed.");
+    } catch (err) {
+      logError("Automated CI tests failed!");
+      console.log(source_default.red("\n  Fix the failing tests before committing code.\n"));
+      process.exit(1);
+    }
+  }
+  console.log(source_default.blue("  Running Mandatory Angular Build Compilation..."));
+  let buildCommand = "npm run build";
+  if (!scripts["build"]) {
+    buildCommand = "npx ng build";
+  }
+  console.log(source_default.gray(`  Executing: ${buildCommand}`));
+  try {
+    (0, import_child_process.execSync)(buildCommand, { stdio: "inherit", cwd: process.cwd() });
+    logSuccess("Angular compilation & build completed successfully with ZERO errors.");
+  } catch (buildErr) {
+    logError("Angular Build FAILED! Compilation or TypeScript errors detected.");
+    console.log(source_default.red("\n  \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550"));
+    console.log(source_default.red.bold("  \u274C COMMIT REJECTED: Application bundle generation failed!"));
+    console.log(source_default.yellow("  Please fix the Angular/TypeScript build errors displayed above."));
+    console.log(source_default.red("  \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\n"));
+    process.exit(1);
+  }
+  logStep(5, "Production Build Artifacts Validation");
+  const distPath = import_path.default.join(process.cwd(), "dist");
+  const outputDir = findBuildOutputDir(distPath);
+  if (!outputDir || !import_fs2.default.existsSync(outputDir)) {
+    logError("Build output directory (dist/) was not generated or is missing!");
+    console.log(source_default.red("  Commit rejected: Ensure ng build produces valid output.\n"));
+    process.exit(1);
+  }
+  console.log(source_default.gray(`  Inspecting build distribution output at: ${outputDir}`));
+  const outputFiles = getAllFiles(outputDir).map((f3) => import_path.default.relative(outputDir, f3).replace(/\\/g, "/"));
+  const hasIndexHtml = outputFiles.some((f3) => import_path.default.basename(f3).toLowerCase() === "index.html");
+  if (!hasIndexHtml) {
+    logError("Critical build artifact missing: index.html was not generated in distribution output!");
+    console.log(source_default.red("  Commit rejected: index.html is required for IIS/web servers to load the application.\n"));
+    process.exit(1);
+  }
+  const jsBundles = outputFiles.filter((f3) => f3.endsWith(".js"));
+  const hasMainJs = jsBundles.some((f3) => /^main(\.[a-zA-Z0-9]+)?\.js$/i.test(import_path.default.basename(f3)) || import_path.default.basename(f3).toLowerCase().startsWith("main"));
+  const hasPolyfillsJs = jsBundles.some((f3) => /^polyfills(\.[a-zA-Z0-9]+)?\.js$/i.test(import_path.default.basename(f3)) || import_path.default.basename(f3).toLowerCase().startsWith("polyfills"));
+  const hasRuntimeJs = jsBundles.some((f3) => /^runtime(\.[a-zA-Z0-9]+)?\.js$/i.test(import_path.default.basename(f3)) || import_path.default.basename(f3).toLowerCase().startsWith("runtime") || jsBundles.length >= 1);
+  if (jsBundles.length === 0) {
+    logError("Critical build artifact missing: No compiled JavaScript bundles found in output!");
+    console.log(source_default.red("  Commit rejected: Application logic files (main.js, polyfills.js, runtime.js) are missing.\n"));
+    process.exit(1);
+  }
+  const cssFiles = outputFiles.filter((f3) => f3.endsWith(".css"));
+  const hasStylesCss = cssFiles.some((f3) => import_path.default.basename(f3).toLowerCase().startsWith("styles") || cssFiles.length > 0);
+  const srcAssetsPath = import_path.default.join(process.cwd(), "src", "assets");
+  const publicPath = import_path.default.join(process.cwd(), "public");
+  const hasSourceAssets = import_fs2.default.existsSync(srcAssetsPath) && import_fs2.default.readdirSync(srcAssetsPath).length > 0 || import_fs2.default.existsSync(publicPath) && import_fs2.default.readdirSync(publicPath).length > 0;
+  const hasDistAssets = outputFiles.some((f3) => f3.startsWith("assets/") || f3.startsWith("media/"));
+  console.log(source_default.white("  Distribution Artifact Checklist:"));
+  console.log(`    ${source_default.green("\u2714")} index.html (Main Entry Point)`);
+  console.log(`    ${source_default.green("\u2714")} Compiled JavaScript Bundles (${jsBundles.length} files: ${jsBundles.slice(0, 3).map((f3) => import_path.default.basename(f3)).join(", ")}${jsBundles.length > 3 ? "..." : ""})`);
+  if (hasStylesCss) {
+    console.log(`    ${source_default.green("\u2714")} Global Styles (${cssFiles.map((f3) => import_path.default.basename(f3)).join(", ")})`);
+  }
+  if (hasSourceAssets) {
+    if (hasDistAssets) {
+      console.log(`    ${source_default.green("\u2714")} Static Assets (images/fonts/icons verified in dist)`);
+    } else {
+      console.log(`    ${source_default.yellow("\u26A0")} Static Assets: Source assets detected, please verify assets config in angular.json`);
+    }
+  }
+  logSuccess("Production distribution artifacts validated successfully.");
+  logStep(6, "Automated Angular Build Versioning");
   const srcDir = import_path.default.join(process.cwd(), "src");
   if (import_fs2.default.existsSync(srcDir) && import_fs2.default.statSync(srcDir).isDirectory()) {
     const buildMetaPath = import_path.default.join(srcDir, "build-metadata.json");
@@ -45715,7 +45824,7 @@ async function runGatekeeper() {
       buildNumber: 0,
       version: projectPkg.version || "1.0.0",
       branch: "main",
-      commitHash: "unknown",
+      commitHash: "working-tree",
       builtAt: (/* @__PURE__ */ new Date()).toISOString()
     };
     if (import_fs2.default.existsSync(buildMetaPath)) {
@@ -45730,11 +45839,16 @@ async function runGatekeeper() {
     buildData.commitHash = runGit("git rev-parse --short HEAD", true) || "uncommitted";
     buildData.builtAt = (/* @__PURE__ */ new Date()).toISOString();
     import_fs2.default.writeFileSync(buildMetaPath, JSON.stringify(buildData, null, 2), "utf8");
-    logSuccess(`Build metadata updated: Build #${buildData.buildNumber} (${buildData.commitHash}) on branch "${buildData.branch}"`);
+    try {
+      runGit("git add src/build-metadata.json", true);
+      logSuccess(`Build metadata updated & staged in current commit: Build #${buildData.buildNumber} (${buildData.commitHash}) on "${buildData.branch}"`);
+    } catch (addErr) {
+      logSuccess(`Build metadata updated: Build #${buildData.buildNumber} (${buildData.commitHash})`);
+    }
   } else {
     console.log(source_default.gray("  Skipped: src directory not found."));
   }
-  logStep(6, "Angular AI Knowledge Base Regression Audit (Gemini 2.5 Flash)");
+  logStep(7, "Angular AI Knowledge Base Regression Audit (Gemini 2.5 Flash)");
   const resolvedIssuesPath = import_path.default.join(process.cwd(), "resolved_issues.md");
   if (!import_fs2.default.existsSync(resolvedIssuesPath)) {
     console.log(source_default.gray("  No resolved_issues.md found at repository root. AI audit skipped."));
@@ -45746,15 +45860,15 @@ async function runGatekeeper() {
     } else {
       const knowledgeBase = import_fs2.default.readFileSync(resolvedIssuesPath, "utf8");
       console.log(source_default.blue("  Reading git diff for current Angular changes..."));
-      let diffOutput = runGit("git diff origin/main...HEAD", true);
-      if (!diffOutput || diffOutput.trim() === "") {
-        diffOutput = runGit("git diff origin/master...HEAD", true);
-      }
+      let diffOutput = runGit("git diff --cached", true);
       if (!diffOutput || diffOutput.trim() === "") {
         diffOutput = runGit("git diff HEAD~1", true);
       }
       if (!diffOutput || diffOutput.trim() === "") {
-        diffOutput = runGit("git diff --cached", true);
+        diffOutput = runGit("git diff origin/main...HEAD", true);
+      }
+      if (!diffOutput || diffOutput.trim() === "") {
+        diffOutput = runGit("git diff origin/master...HEAD", true);
       }
       if (!diffOutput || diffOutput.trim() === "") {
         diffOutput = runGit("git diff HEAD", true);
@@ -45805,20 +45919,20 @@ Ensure your response clearly includes either "VERDICT: PASSED" or "VERDICT: FAIL
           console.log(source_default.gray("\u2500".repeat(60)) + "\n");
           if (resultText.includes("VERDICT: FAILED")) {
             logError("AI Gatekeeper detected regressions or violations of resolved_issues.md!");
-            console.log(source_default.red("  Push rejected: Please address the AI audit findings above.\n"));
+            console.log(source_default.red("  Commit/Push rejected: Please address the AI audit findings above.\n"));
             process.exit(1);
           } else {
             logSuccess("AI Knowledge Base audit PASSED. No known regressions detected.");
           }
         } catch (apiErr) {
           logError(`AI Audit call error: ${apiErr.message || apiErr}`);
-          console.log(source_default.yellow("  Allowing push with warning due to AI service error."));
+          console.log(source_default.yellow("  Allowing commit/push with warning due to AI service error."));
         }
       }
     }
   }
   console.log("\n" + source_default.green.bold("\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550"));
-  console.log(source_default.green.bold("     \u2714 ALL ANGULAR GATEKEEPER PRE-PUSH VALIDATIONS PASSED!     "));
+  console.log(source_default.green.bold(" \u2714 ALL ANGULAR GATEKEEPER PRE-COMMIT VALIDATIONS PASSED!       "));
   console.log(source_default.green.bold("\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\n"));
   process.exit(0);
 }

@@ -5396,11 +5396,11 @@ ${source_default.cyan.bold("  \u2588\u2588\u2551  \u2588\u2588\u2588\u2557\u2588
 ${source_default.cyan.bold("  \u2588\u2588\u2551   \u2588\u2588\u2551\u2588\u2588\u2554\u2550\u2550\u2588\u2588\u2551   \u2588\u2588\u2551   \u2588\u2588\u2554\u2550\u2550\u255D  \u2588\u2588\u2554\u2550\u2588\u2588\u2557 \u2588\u2588\u2554\u2550\u2550\u255D  \u2588\u2588\u2554\u2550\u2550\u255D  \u2588\u2588\u2554\u2550\u2550\u2550\u255D \u2588\u2588\u2554\u2550\u2550\u255D  \u2588\u2588\u2554\u2550\u2550\u2588\u2588\u2557")}
 ${source_default.cyan.bold("  \u255A\u2588\u2588\u2588\u2588\u2588\u2588\u2554\u255D\u2588\u2588\u2551  \u2588\u2588\u2551   \u2588\u2588\u2551   \u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2557\u2588\u2588\u2551 \u255A\u2588\u2588\u2557\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2557\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2557\u2588\u2588\u2551     \u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2557\u2588\u2588\u2551  \u2588\u2588\u2551")}
 ${source_default.red("  \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550")}
-${source_default.yellow.bold("          [ Angular DevSecOps Automated Git Push Quality & AI Gatekeeper ]              ")}
+${source_default.yellow.bold("          [ Angular DevSecOps Automated Git Pre-Commit Quality & AI Gatekeeper ]         ")}
 ${source_default.red("  \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550")}
 `;
 var MINI_BANNER = `
-${source_default.red.bold(">>> [ANGULAR GATEKEEPER] Pre-Push Quality & AI Validation Engine <<<")}
+${source_default.red.bold(">>> [ANGULAR GATEKEEPER] Pre-Commit AI Validation Engine <<<")}
 `;
 
 // src/installer.js
@@ -5491,9 +5491,17 @@ GEMINI_API_KEY=${apiKey}
     console.log(source_default.yellow(`\u26A0 Note: engine.exe not found in installer package directory.`));
     console.log(source_default.gray(`  Place engine.exe in ${targetDir} or build it using npm run build:exe.`));
   }
+  const preCommitScriptPath = import_path.default.join(hooksDir, "pre-commit");
   const prePushScriptPath = import_path.default.join(hooksDir, "pre-push");
-  const prePushScriptContent = `#!/usr/bin/env sh
-# Frontend Git Quality & AI Gatekeeper Pre-Push Hook
+  if (import_fs.default.existsSync(prePushScriptPath)) {
+    try {
+      import_fs.default.unlinkSync(prePushScriptPath);
+      console.log(source_default.gray("\u2714 Cleaned up legacy pre-push hook (verifications now strictly on commit)."));
+    } catch (e) {
+    }
+  }
+  const preCommitScriptContent = `#!/usr/bin/env sh
+# Frontend Git Quality & AI Gatekeeper Pre-Commit Hook
 # Compatible with Git CLI, Git Bash, GitHub Desktop, and IDEs
 
 if [ -n "$APPDATA" ]; then
@@ -5512,10 +5520,10 @@ else
 fi
 `;
   try {
-    import_fs.default.writeFileSync(prePushScriptPath, prePushScriptContent, { encoding: "utf8", mode: 511 });
-    console.log(source_default.green("\u2714 Global pre-push hook script generated."));
+    import_fs.default.writeFileSync(preCommitScriptPath, preCommitScriptContent, { encoding: "utf8", mode: 511 });
+    console.log(source_default.green("\u2714 Global pre-commit hook script generated."));
   } catch (err) {
-    console.log(source_default.red(`\u2716 Failed to write pre-push hook script: ${err.message}`));
+    console.log(source_default.red(`\u2716 Failed to write pre-commit hook script: ${err.message}`));
     await waitPrompt();
     process.exit(1);
   }
@@ -5532,15 +5540,16 @@ fi
   console.log(source_default.green.bold("\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550"));
   console.log(source_default.white("\n  Summary of installed components:"));
   console.log(source_default.cyan(`  \u2022 Engine Binary:     ${targetEnginePath}`));
-  console.log(source_default.cyan(`  \u2022 Global Git Hook:   ${prePushScriptPath}`));
+  console.log(source_default.cyan(`  \u2022 Hook Trigger:      ${preCommitScriptPath} (COMMIT ONLY)`));
   console.log(source_default.cyan(`  \u2022 Config & AI Key:   ${envFilePath}`));
   console.log(source_default.cyan(`  \u2022 Git Hook Path:     ${hooksDir.replace(/\\/g, "/")}`));
   console.log(source_default.magenta("\n  Compatibility:"));
   console.log(source_default.white("  \u2714 GitHub Desktop"));
   console.log(source_default.white("  \u2714 Git Bash / Windows Terminal / CMD / PowerShell"));
   console.log(source_default.white("  \u2714 VS Code / Cursor / IntelliJ / WebStorm Git integrations"));
-  console.log(source_default.white("\n  Every `git push` in your repositories will now be validated"));
-  console.log(source_default.white("  by the DevSecOps Quality & Gemini 2.5 Flash AI Gatekeeper!"));
+  console.log(source_default.white("\n  Every `git commit` in your Angular repositories will now be validated"));
+  console.log(source_default.white("  and build versioning updated automatically inside the commit!"));
+  console.log(source_default.green("  (Push verification is disabled; push remains fast and direct)."));
   await waitPrompt("Press [Enter] to exit installer...");
   process.exit(0);
 }
