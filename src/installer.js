@@ -15,10 +15,15 @@ const targetDir = path.join(appDataRoot, 'FrontendGatekeeper');
 const hooksDir = path.join(targetDir, 'hooks');
 const normalizedHooksPath = hooksDir.replace(/\\/g, '/');
 
-// Check CLI arguments (--enable, --disable, --status)
+// Check CLI arguments (--enable, --disable, --status, --uninstall)
 const args = process.argv.slice(2);
 
-if (args.includes('--disable')) {
+if (args.includes('--uninstall') || args.includes('uninstall')) {
+  runUninstaller().then(() => process.exit(0)).catch(err => {
+    console.error(err);
+    process.exit(1);
+  });
+} else if (args.includes('--disable')) {
   try {
     execSync('git config --global --unset core.hooksPath', { stdio: 'pipe' });
     console.log(chalk.green('✔ Gatekeeper DISABLED globally! Git will now commit normally without validation.'));
@@ -26,9 +31,7 @@ if (args.includes('--disable')) {
     console.log(chalk.yellow('Gatekeeper is already disabled (core.hooksPath is not set).'));
   }
   process.exit(0);
-}
-
-if (args.includes('--enable')) {
+} else if (args.includes('--enable')) {
   try {
     execSync(`git config --global core.hooksPath "${normalizedHooksPath}"`, { stdio: 'pipe' });
     console.log(chalk.green(`✔ Gatekeeper ENABLED globally! (core.hooksPath = ${normalizedHooksPath})`));
@@ -36,9 +39,7 @@ if (args.includes('--enable')) {
     console.log(chalk.red(`✖ Failed to enable Gatekeeper: ${e.message}`));
   }
   process.exit(0);
-}
-
-if (args.includes('--status')) {
+} else if (args.includes('--status')) {
   try {
     const current = execSync('git config --global core.hooksPath', { encoding: 'utf8', stdio: 'pipe' }).trim();
     if (current && current.toLowerCase().includes('frontendgatekeeper')) {
@@ -50,6 +51,94 @@ if (args.includes('--status')) {
     console.log(chalk.yellow('⚠ Gatekeeper is currently DISABLED (core.hooksPath is not set).'));
   }
   process.exit(0);
+} else {
+  runInstaller().catch(err => {
+    console.error('Fatal installer error:', err);
+    process.exit(1);
+  });
+}
+
+async function runUninstaller() {
+  console.clear();
+  console.log(BANNER);
+  console.log(chalk.red.bold('  Angular Gatekeeper Uninstallation Wizard\n'));
+  console.log(chalk.white('  This will remove Angular Gatekeeper, global CLI shortcuts, and Git hooks from your computer.\n'));
+
+  const response = await prompts({
+    type: 'confirm',
+    name: 'confirm',
+    message: 'Are you sure you want to completely uninstall Angular Gatekeeper?',
+    initial: true
+  });
+
+  if (!response.confirm) {
+    console.log(chalk.yellow('\n⚠ Uninstallation cancelled.'));
+    await waitPrompt();
+    return;
+  }
+
+  console.log('\n' + chalk.blue('Starting uninstallation process...'));
+
+  // 1. Terminate running background engine processes
+  try {
+    execSync('powershell -Command "Stop-Process -Name engine -Force -ErrorAction SilentlyContinue"', { stdio: 'ignore' });
+    console.log(chalk.green('✔ Stopped active background monitoring processes.'));
+  } catch (e) {}
+
+  // 2. Unset global Git core.hooksPath if pointing to FrontendGatekeeper
+  try {
+    const currentHooks = execSync('git config --global core.hooksPath', { encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] }).trim();
+    if (currentHooks && currentHooks.toLowerCase().includes('frontendgatekeeper')) {
+      execSync('git config --global --unset core.hooksPath', { stdio: 'pipe' });
+      console.log(chalk.green('✔ Restored global Git hooks configuration.'));
+    }
+  } catch (e) {}
+
+  // 3. Remove from User PATH
+  try {
+    const currentPath = execSync('powershell -Command "[Environment]::GetEnvironmentVariable(\'Path\', \'User\')"', {
+      encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe']
+    }).trim();
+    const targetDirNormalized = targetDir.replace(/\//g, '\\');
+    if (currentPath.toLowerCase().includes(targetDirNormalized.toLowerCase())) {
+      const parts = currentPath.split(';').filter(p => p.trim() && p.toLowerCase() !== targetDirNormalized.toLowerCase());
+      const newPath = parts.join(';');
+      execSync(`powershell -Command "[Environment]::SetEnvironmentVariable('Path', '${newPath.replace(/'/g, "''")}', 'User')"`, { stdio: 'pipe' });
+      console.log(chalk.green('✔ Removed FrontendGatekeeper from User PATH.'));
+    }
+  } catch (e) {}
+
+  // 4. Remove Windows Registry Protocol (gatekeeper-details)
+  try {
+    execSync('powershell -Command "Remove-Item -Path \'HKCU:\\Software\\Classes\\gatekeeper-details\' -Recurse -Force -ErrorAction SilentlyContinue"', { stdio: 'ignore' });
+    console.log(chalk.green('✔ Removed Windows Notification Protocol registration.'));
+  } catch (e) {}
+
+  // 5. Remove global npm shims if present
+  const npmGlobalBin = path.join(appDataRoot, 'npm');
+  try {
+    const npmCmd = path.join(npmGlobalBin, 'a-gatekeeper.cmd');
+    const npmBash = path.join(npmGlobalBin, 'a-gatekeeper');
+    if (fs.existsSync(npmCmd)) fs.unlinkSync(npmCmd);
+    if (fs.existsSync(npmBash)) fs.unlinkSync(npmBash);
+  } catch (e) {}
+
+  // 6. Remove target installation directory (%APPDATA%\FrontendGatekeeper)
+  try {
+    if (fs.existsSync(targetDir)) {
+      fs.rmSync(targetDir, { recursive: true, force: true });
+      console.log(chalk.green(`✔ Removed installation directory: ${targetDir}`));
+    }
+  } catch (err) {
+    console.log(chalk.yellow(`⚠ Note: Some files in ${targetDir} could not be deleted immediately (${err.message}).`));
+  }
+
+  console.log('\n' + chalk.green.bold('═══════════════════════════════════════════════════════════════'));
+  console.log(chalk.green.bold('       ANGULAR GATEKEEPER UNINSTALLED SUCCESSFULLY!            '));
+  console.log(chalk.green.bold('═══════════════════════════════════════════════════════════════'));
+  console.log(chalk.white('\n  All hooks, CLI commands, and configurations have been removed from your PC.\n'));
+
+  await waitPrompt('Press [Enter] to exit...');
 }
 
 async function waitPrompt(message = 'Press [Enter] to exit...') {
@@ -454,11 +543,4 @@ esac
   await waitPrompt('Press [Enter] to exit installer...');
   process.exit(0);
 }
-
-runInstaller().catch(async (err) => {
-  console.error(chalk.red.bold(`\nSetup Wizard Error: ${err.message}`));
-  console.error(err);
-  await waitPrompt();
-  process.exit(1);
-});
 

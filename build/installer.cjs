@@ -5409,7 +5409,12 @@ var targetDir = import_path.default.join(appDataRoot, "FrontendGatekeeper");
 var hooksDir = import_path.default.join(targetDir, "hooks");
 var normalizedHooksPath = hooksDir.replace(/\\/g, "/");
 var args = process.argv.slice(2);
-if (args.includes("--disable")) {
+if (args.includes("--uninstall") || args.includes("uninstall")) {
+  runUninstaller().then(() => process.exit(0)).catch((err) => {
+    console.error(err);
+    process.exit(1);
+  });
+} else if (args.includes("--disable")) {
   try {
     (0, import_child_process.execSync)("git config --global --unset core.hooksPath", { stdio: "pipe" });
     console.log(source_default.green("\u2714 Gatekeeper DISABLED globally! Git will now commit normally without validation."));
@@ -5417,8 +5422,7 @@ if (args.includes("--disable")) {
     console.log(source_default.yellow("Gatekeeper is already disabled (core.hooksPath is not set)."));
   }
   process.exit(0);
-}
-if (args.includes("--enable")) {
+} else if (args.includes("--enable")) {
   try {
     (0, import_child_process.execSync)(`git config --global core.hooksPath "${normalizedHooksPath}"`, { stdio: "pipe" });
     console.log(source_default.green(`\u2714 Gatekeeper ENABLED globally! (core.hooksPath = ${normalizedHooksPath})`));
@@ -5426,8 +5430,7 @@ if (args.includes("--enable")) {
     console.log(source_default.red(`\u2716 Failed to enable Gatekeeper: ${e.message}`));
   }
   process.exit(0);
-}
-if (args.includes("--status")) {
+} else if (args.includes("--status")) {
   try {
     const current = (0, import_child_process.execSync)("git config --global core.hooksPath", { encoding: "utf8", stdio: "pipe" }).trim();
     if (current && current.toLowerCase().includes("frontendgatekeeper")) {
@@ -5439,6 +5442,82 @@ if (args.includes("--status")) {
     console.log(source_default.yellow("\u26A0 Gatekeeper is currently DISABLED (core.hooksPath is not set)."));
   }
   process.exit(0);
+} else {
+  runInstaller().catch((err) => {
+    console.error("Fatal installer error:", err);
+    process.exit(1);
+  });
+}
+async function runUninstaller() {
+  console.clear();
+  console.log(BANNER);
+  console.log(source_default.red.bold("  Angular Gatekeeper Uninstallation Wizard\n"));
+  console.log(source_default.white("  This will remove Angular Gatekeeper, global CLI shortcuts, and Git hooks from your computer.\n"));
+  const response = await (0, import_prompts.default)({
+    type: "confirm",
+    name: "confirm",
+    message: "Are you sure you want to completely uninstall Angular Gatekeeper?",
+    initial: true
+  });
+  if (!response.confirm) {
+    console.log(source_default.yellow("\n\u26A0 Uninstallation cancelled."));
+    await waitPrompt();
+    return;
+  }
+  console.log("\n" + source_default.blue("Starting uninstallation process..."));
+  try {
+    (0, import_child_process.execSync)('powershell -Command "Stop-Process -Name engine -Force -ErrorAction SilentlyContinue"', { stdio: "ignore" });
+    console.log(source_default.green("\u2714 Stopped active background monitoring processes."));
+  } catch (e) {
+  }
+  try {
+    const currentHooks = (0, import_child_process.execSync)("git config --global core.hooksPath", { encoding: "utf8", stdio: ["pipe", "pipe", "pipe"] }).trim();
+    if (currentHooks && currentHooks.toLowerCase().includes("frontendgatekeeper")) {
+      (0, import_child_process.execSync)("git config --global --unset core.hooksPath", { stdio: "pipe" });
+      console.log(source_default.green("\u2714 Restored global Git hooks configuration."));
+    }
+  } catch (e) {
+  }
+  try {
+    const currentPath = (0, import_child_process.execSync)(`powershell -Command "[Environment]::GetEnvironmentVariable('Path', 'User')"`, {
+      encoding: "utf8",
+      stdio: ["pipe", "pipe", "pipe"]
+    }).trim();
+    const targetDirNormalized = targetDir.replace(/\//g, "\\");
+    if (currentPath.toLowerCase().includes(targetDirNormalized.toLowerCase())) {
+      const parts = currentPath.split(";").filter((p) => p.trim() && p.toLowerCase() !== targetDirNormalized.toLowerCase());
+      const newPath = parts.join(";");
+      (0, import_child_process.execSync)(`powershell -Command "[Environment]::SetEnvironmentVariable('Path', '${newPath.replace(/'/g, "''")}', 'User')"`, { stdio: "pipe" });
+      console.log(source_default.green("\u2714 Removed FrontendGatekeeper from User PATH."));
+    }
+  } catch (e) {
+  }
+  try {
+    (0, import_child_process.execSync)(`powershell -Command "Remove-Item -Path 'HKCU:\\Software\\Classes\\gatekeeper-details' -Recurse -Force -ErrorAction SilentlyContinue"`, { stdio: "ignore" });
+    console.log(source_default.green("\u2714 Removed Windows Notification Protocol registration."));
+  } catch (e) {
+  }
+  const npmGlobalBin = import_path.default.join(appDataRoot, "npm");
+  try {
+    const npmCmd = import_path.default.join(npmGlobalBin, "a-gatekeeper.cmd");
+    const npmBash = import_path.default.join(npmGlobalBin, "a-gatekeeper");
+    if (import_fs.default.existsSync(npmCmd)) import_fs.default.unlinkSync(npmCmd);
+    if (import_fs.default.existsSync(npmBash)) import_fs.default.unlinkSync(npmBash);
+  } catch (e) {
+  }
+  try {
+    if (import_fs.default.existsSync(targetDir)) {
+      import_fs.default.rmSync(targetDir, { recursive: true, force: true });
+      console.log(source_default.green(`\u2714 Removed installation directory: ${targetDir}`));
+    }
+  } catch (err) {
+    console.log(source_default.yellow(`\u26A0 Note: Some files in ${targetDir} could not be deleted immediately (${err.message}).`));
+  }
+  console.log("\n" + source_default.green.bold("\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550"));
+  console.log(source_default.green.bold("       ANGULAR GATEKEEPER UNINSTALLED SUCCESSFULLY!            "));
+  console.log(source_default.green.bold("\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550"));
+  console.log(source_default.white("\n  All hooks, CLI commands, and configurations have been removed from your PC.\n"));
+  await waitPrompt("Press [Enter] to exit...");
 }
 async function waitPrompt(message = "Press [Enter] to exit...") {
   const rl = import_readline.default.createInterface({
@@ -5802,10 +5881,3 @@ esac
   await waitPrompt("Press [Enter] to exit installer...");
   process.exit(0);
 }
-runInstaller().catch(async (err) => {
-  console.error(source_default.red.bold(`
-Setup Wizard Error: ${err.message}`));
-  console.error(err);
-  await waitPrompt();
-  process.exit(1);
-});

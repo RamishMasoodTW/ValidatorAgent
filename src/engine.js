@@ -392,7 +392,7 @@ async function runGatekeeper() {
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
       logWarning('resolved_issues.md detected, but GEMINI_API_KEY is not set in environment or config.');
-      console.log(chalk.gray('  To enable AI audits, run FrontendGatekeeperSetup.exe or set GEMINI_API_KEY.'));
+      console.log(chalk.gray('  To enable AI audits, run AngularGatekeeperSetup.exe or set GEMINI_API_KEY.'));
     } else {
       const knowledgeBase = fs.readFileSync(resolvedIssuesPath, 'utf8');
       console.log(chalk.blue('  Reading git diff for current Angular changes...'));
