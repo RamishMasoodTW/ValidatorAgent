@@ -25,13 +25,21 @@ and merge conflicts with automatic background monitoring and desktop alerts.
 3. The installer will automatically:
    - Register the global 'a-gatekeeper' CLI in your system PATH.
    - Configure Git hooks and Windows Notification protocol.
-4. Restart your terminal (CMD, PowerShell, Git Bash, or VS Code).
+4. Restart your terminal (CMD, PowerShell, Git Bash, or VS Code) (Optional).
 
 --------------------------------------------------------------------------------
 🌿 STEP 2: HOW TO USE IN ANY REPOSITORY
 --------------------------------------------------------------------------------
+A. PRE-COMMIT CODE QUALITY VALIDATOR:
+   To protect your repository against broken TypeScript, Angular anti-patterns,
+   and secret leaks on every 'git commit':
 
-A. LIVE BACKGROUND BRANCH CONFLICT WATCHER (Zero Commit Needed):
+   $ a-gatekeeper enable    (Installs pre-commit gatekeeper in current repo)
+   $ a-gatekeeper disable   (Removes pre-commit hook)
+   $ a-gatekeeper status    (Checks hook status)
+   Works with GitHub Desktop, Git CLI, Git Bash, VS Code, WebStorm, and Cursor.
+
+B. LIVE BACKGROUND BRANCH CONFLICT WATCHER (Zero Commit Needed):
    Open any repository folder in your terminal and run:
    
    $ a-gatekeeper branch check --enable
@@ -45,14 +53,6 @@ A. LIVE BACKGROUND BRANCH CONFLICT WATCHER (Zero Commit Needed):
    Other branch watcher commands:
    $ a-gatekeeper branch check --status   (View live status & conflicting files)
    $ a-gatekeeper branch check --disable  (Stop background watcher)
-
-B. PRE-COMMIT CODE QUALITY VALIDATOR:
-   To protect your repository against broken TypeScript, Angular anti-patterns,
-   and secret leaks on every 'git commit':
-
-   $ a-gatekeeper enable    (Installs pre-commit gatekeeper in current repo)
-   $ a-gatekeeper disable   (Removes pre-commit hook)
-   $ a-gatekeeper status    (Checks hook status)
 
 --------------------------------------------------------------------------------
 🗑️ STEP 3: HOW TO UNINSTALL
