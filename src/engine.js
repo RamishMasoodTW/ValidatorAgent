@@ -486,44 +486,43 @@ Ensure your response clearly includes either "VERDICT: PASSED" or "VERDICT: FAIL
 // =========================================================================
 // CLI COMMAND ROUTER
 // =========================================================================
-const args = process.argv.slice(2);
-const firstArg = (args[0] || '').toLowerCase();
-const secondArg = (args[1] || '').toLowerCase();
-const thirdArg = (args[2] || '').toLowerCase();
+const argv = process.argv;
 
 async function main() {
-  // 1. Background Daemon loop (internal execution)
-  if (firstArg === 'branch-watch-daemon') {
-    const repoPath = args[1] || process.cwd();
-    const targetBranch = args[2] || 'main';
-    await runDaemonLoop(repoPath, targetBranch);
+  // 1. Background Daemon loop (internal execution via env vars or flag)
+  if (
+    process.env.GATEKEEPER_DAEMON_MODE === '1' ||
+    argv.includes('--branch-watch-daemon') ||
+    argv.includes('branch-watch-daemon')
+  ) {
+    const repoPath = process.env.GATEKEEPER_REPO_PATH || argv[3] || process.cwd();
+    const targetBranch = process.env.GATEKEEPER_TARGET_BRANCH || argv[4] || 'main';
+    const intervalMinutes = parseInt(process.env.GATEKEEPER_INTERVAL_MINUTES || argv[5], 10) || 15;
+    await runDaemonLoop(repoPath, targetBranch, intervalMinutes);
     return;
   }
 
-  // 2. Branch conflict watcher commands:
-  // a-gatekeeper branch check --enable / a-gatekeeper branch --enable
-  if (
-    firstArg === 'branch-check' ||
-    firstArg === 'branch' ||
-    (firstArg === 'branch' && secondArg === 'check')
-  ) {
-    const action = (firstArg === 'branch' && secondArg === 'check') ? thirdArg : secondArg;
+  // 2. Branch conflict watcher commands
+  const isBranchCmd = argv.some(a =>
+    a === 'branch' ||
+    a === 'branch-check' ||
+    a === '--branch-check' ||
+    a === '--branch'
+  );
 
-    if (action === '--enable' || action === 'enable' || action === '-e') {
+  if (isBranchCmd) {
+    const isEnable = argv.some(a => a === '--enable' || a === 'enable' || a === '-e');
+    const isDisable = argv.some(a => a === '--disable' || a === 'disable' || a === '-d');
+    const isStatus = argv.some(a => a === '--status' || a === 'status' || a === '-s');
+
+    if (isEnable) {
       await enableBranchWatcher(process.cwd());
       return;
-    } else if (action === '--disable' || action === 'disable' || action === '-d') {
+    } else if (isDisable) {
       await disableBranchWatcher(process.cwd());
       return;
-    } else if (action === '--status' || action === 'status' || action === '-s' || !action) {
+    } else if (isStatus || (!isEnable && !isDisable)) {
       await statusBranchWatcher(process.cwd());
-      return;
-    } else {
-      console.log(chalk.yellow(`\nUnknown branch command option: "${action}"`));
-      console.log(chalk.white('Usage:'));
-      console.log(chalk.cyan('  a-gatekeeper branch check --enable     ') + chalk.gray('→ Select branch & start 15-min conflict monitor'));
-      console.log(chalk.cyan('  a-gatekeeper branch check --disable    ') + chalk.gray('→ Stop conflict monitor'));
-      console.log(chalk.cyan('  a-gatekeeper branch check --status     ') + chalk.gray('→ View monitor status & conflicts\n'));
       return;
     }
   }

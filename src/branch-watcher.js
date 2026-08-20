@@ -6,7 +6,12 @@ import prompts from 'prompts';
 
 function runGit(command, cwd = process.cwd(), allowFail = false) {
   try {
-    return execSync(command, { cwd, encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] }).trim();
+    return execSync(command, {
+      cwd,
+      encoding: 'utf8',
+      stdio: ['pipe', 'pipe', 'pipe'],
+      windowsHide: true
+    }).trim();
   } catch (err) {
     if (!allowFail) {
       throw err;
@@ -28,33 +33,92 @@ function getAlertLogPath(cwd = process.cwd()) {
 }
 
 /**
- * Trigger Windows Toast Notification via PowerShell
+ * Trigger Windows Toast Notification (click opens terminal with conflict status)
+ * Uses registered HKCU protocol to launch Command Prompt upon click
  */
-export function sendWindowsNotification(title, message) {
+export function sendWindowsNotification(title, message, cwd = process.cwd()) {
   if (process.platform !== 'win32') return;
 
-  const safeTitle = title.replace(/'/g, "''").replace(/"/g, '`"');
-  const safeMessage = message.replace(/'/g, "''").replace(/"/g, '`"');
+  const safeTitle = title.replace(/'/g, "''").replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const safeMessage = message.replace(/'/g, "''").replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const safeCwd = cwd.replace(/\\/g, '\\\\');
+
+  // Write dedicated launcher script in .git
+  const gitDir = path.join(cwd, '.git');
+  const launcherPath = path.join(gitDir, 'gatekeeper-show-details.cmd');
+  try {
+    fs.writeFileSync(
+      launcherPath,
+      `@echo off\ntitle Angular Gatekeeper - Conflict Details\ncolor 0E\ncd /d "${cwd}"\na-gatekeeper branch check --status\necho.\necho Press any key to close this window...\npause >nul\n`,
+      'utf8'
+    );
+  } catch (e) {}
+
+  const safeLauncher = launcherPath.replace(/\\/g, '\\\\');
 
   const psScript = `
-[Windows.UI.Notifications.ToastNotificationManager, Windows.UI.Notifications, ContentType = WindowsRuntime] > $null
-$template = [Windows.UI.Notifications.ToastNotificationManager]::GetTemplateContent([Windows.UI.Notifications.ToastTemplateType]::ToastText02)
-$textNodes = $template.GetElementsByTagName("text")
-$textNodes.Item(0).AppendChild($template.CreateTextNode("${safeTitle}")) > $null
-$textNodes.Item(1).AppendChild($template.CreateTextNode("${safeMessage}")) > $null
-$toast = [Windows.UI.Notifications.ToastNotification]::new($template)
-[Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier("Angular Gatekeeper").Show($toast)
+# Register HKCU protocol for direct activation
+try {
+    $regPath = "HKCU:\\Software\\Classes\\gatekeeper-details"
+    New-Item -Path "$regPath\\shell\\open\\command" -Force | Out-Null
+    Set-ItemProperty -Path $regPath -Name "(Default)" -Value "URL:Gatekeeper Protocol"
+    Set-ItemProperty -Path $regPath -Name "URL Protocol" -Value ""
+    Set-ItemProperty -Path "$regPath\\shell\\open\\command" -Name "(Default)" -Value '\"C:\\Windows\\System32\\cmd.exe\" /c start \"\" \"${safeLauncher}\"'
+} catch {}
+
+$appId = '{1AC14E77-02E7-4E5D-B744-2EB1AE5198B7}\\WindowsPowerShell\\v1.0\\powershell.exe'
+try {
+    [Windows.UI.Notifications.ToastNotificationManager, Windows.UI.Notifications, ContentType = WindowsRuntime] | Out-Null
+    [Windows.Data.Xml.Dom.XmlDocument, Windows.Data.Xml.Dom.XmlDocument, ContentType = WindowsRuntime] | Out-Null
+
+    $template = @"
+<toast duration="long" launch="gatekeeper-details:">
+    <visual>
+        <binding template="ToastGeneric">
+            <text hint-maxLines="1">${safeTitle}</text>
+            <text>${safeMessage}</text>
+            <text>👉 Click notification or button to open terminal</text>
+        </binding>
+    </visual>
+    <actions>
+        <action content="🔍 View Details in Terminal" arguments="gatekeeper-details:" activationType="protocol"/>
+    </actions>
+    <audio src="ms-winsoundevent:Notification.Looping.Alarm2" loop="false"/>
+</toast>
+"@
+    $xml = New-Object Windows.Data.Xml.Dom.XmlDocument
+    $xml.LoadXml($template)
+    $toast = [Windows.UI.Notifications.ToastNotification]::new($xml)
+    [Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier($appId).Show($toast)
+} catch {
+    # Fallback: System Balloon Tip
+    try {
+        Add-Type -AssemblyName System.Windows.Forms
+        Add-Type -AssemblyName System.Drawing
+        $notify = New-Object System.Windows.Forms.NotifyIcon
+        $notify.Icon = [System.Drawing.SystemIcons]::Warning
+        $notify.BalloonTipTitle = '${safeTitle}'
+        $notify.BalloonTipText = '${safeMessage}'
+        $notify.BalloonTipIcon = [System.Windows.Forms.ToolTipIcon]::Warning
+        $notify.Visible = $True
+        $notify.ShowBalloonTip(8000)
+        Start-Sleep -Milliseconds 500
+        $notify.Dispose()
+    } catch {}
+}
 `;
 
+  const b64 = Buffer.from(psScript, 'utf16le').toString('base64');
+
   try {
-    execSync(`powershell -NoProfile -Command "${psScript.replace(/\n/g, ' ')}"`, {
-      stdio: 'pipe',
-      timeout: 5000
+    execSync(`powershell.exe -NoProfile -ExecutionPolicy Bypass -EncodedCommand ${b64}`, {
+      stdio: 'ignore',
+      timeout: 8000,
+      windowsHide: true
     });
   } catch (err) {
-    // Fallback: PowerShell sound / console alert
     try {
-      execSync(`powershell -Command "[console]::beep(800, 300)"`, { stdio: 'ignore' });
+      execSync(`powershell.exe -Command "[console]::beep(800, 300)"`, { stdio: 'ignore', windowsHide: true });
     } catch (e) {}
   }
 }
@@ -86,6 +150,7 @@ export function getRemoteBranches(cwd = process.cwd()) {
 
 /**
  * Perform in-memory merge conflict detection against targetBranch
+ * (Supports LIVE UNCOMMITTED WORKING-TREE EDITS without requiring a commit!)
  */
 export function checkBranchConflicts(cwd = process.cwd(), targetBranch = 'main') {
   const currentBranch = runGit('git rev-parse --abbrev-ref HEAD', cwd, true) || 'HEAD';
@@ -103,17 +168,30 @@ export function checkBranchConflicts(cwd = process.cwd(), targetBranch = 'main')
   const behindCount = parseInt(behindCountStr, 10) || 0;
   const aheadCount = parseInt(aheadCountStr, 10) || 0;
 
-  // 3. Dry-run Merge Conflict Detection using git merge-tree
+  // 3. CAPTURE ACTIVE LIVE UNCOMMITTED CHANGES IN-MEMORY
+  // 'git stash create' returns a commit hash representing current working directory + staged changes
+  // without modifying any local files or stash list!
+  const uncommittedStateRef = runGit('git stash create', cwd, true) || 'HEAD';
+  const hasUncommittedChanges = uncommittedStateRef !== 'HEAD';
+
+  // List locally modified files (working tree + staged)
+  const statusOutput = runGit('git status --porcelain', cwd, true);
+  const localEditedFiles = statusOutput
+    ? statusOutput.split('\n').map(l => l.substring(3).trim()).filter(Boolean)
+    : [];
+
+  // 4. Dry-run Merge Conflict Detection using git merge-tree against live uncommitted state
   let hasConflict = false;
   let conflictingFiles = [];
   let mergeTreeOutput = '';
 
   // Try modern Git merge-tree (--write-tree)
   try {
-    const res = execSync(`git merge-tree --write-tree HEAD origin/${targetBranch}`, {
+    const res = execSync(`git merge-tree --write-tree ${uncommittedStateRef} origin/${targetBranch}`, {
       cwd,
       encoding: 'utf8',
-      stdio: ['pipe', 'pipe', 'pipe']
+      stdio: ['pipe', 'pipe', 'pipe'],
+      windowsHide: true
     });
     mergeTreeOutput = res;
     hasConflict = false;
@@ -136,9 +214,9 @@ export function checkBranchConflicts(cwd = process.cwd(), targetBranch = 'main')
 
   // Fallback for classic git merge-tree if no files parsed
   if (hasConflict && conflictingFiles.length === 0) {
-    const mergeBase = runGit(`git merge-base HEAD origin/${targetBranch}`, cwd, true);
+    const mergeBase = runGit(`git merge-base ${uncommittedStateRef} origin/${targetBranch}`, cwd, true);
     if (mergeBase) {
-      const classicOutput = runGit(`git merge-tree ${mergeBase} HEAD origin/${targetBranch}`, cwd, true);
+      const classicOutput = runGit(`git merge-tree ${mergeBase} ${uncommittedStateRef} origin/${targetBranch}`, cwd, true);
       const blocks = classicOutput.split('changed in both');
       if (blocks.length > 1) {
         for (let i = 1; i < blocks.length; i++) {
@@ -159,6 +237,8 @@ export function checkBranchConflicts(cwd = process.cwd(), targetBranch = 'main')
   return {
     hasConflict,
     conflictingFiles,
+    hasUncommittedChanges,
+    localEditedFiles,
     behindCount,
     aheadCount,
     currentBranch,
@@ -212,6 +292,22 @@ export async function enableBranchWatcher(cwd = process.cwd()) {
     process.exit(0);
   }
 
+  // Prompt for custom interval in minutes
+  let intervalMinutes = 15;
+  const intervalResponse = await prompts({
+    type: 'number',
+    name: 'interval',
+    message: 'Enter background check interval in minutes (Default: 15):',
+    initial: 15,
+    min: 1,
+    max: 1440,
+    validate: value => value >= 1 ? true : 'Interval must be at least 1 minute.'
+  });
+
+  if (intervalResponse.interval && intervalResponse.interval >= 1) {
+    intervalMinutes = intervalResponse.interval;
+  }
+
   console.log('\n' + chalk.blue(`>>> [Initial Immediate Check] Checking sync with origin/${targetBranch}...`));
 
   // 1. Immediate Initial Check
@@ -240,16 +336,39 @@ export async function enableBranchWatcher(cwd = process.cwd()) {
   await disableBranchWatcher(cwd, true);
 
   // 3. Launch Detached Background Daemon
-  console.log(chalk.blue('\n>>> Launching background 15-minute sync monitor daemon...'));
+  console.log(chalk.blue(`\n>>> Launching background ${intervalMinutes}-minute sync monitor daemon...`));
 
-  const engineExec = process.execPath;
-  const daemonArgs = ['branch-watch-daemon', cwd, targetBranch];
+  let execBinary = process.env.APPDATA
+    ? path.join(process.env.APPDATA, 'FrontendGatekeeper', 'engine.exe')
+    : process.execPath;
+  if (!fs.existsSync(execBinary)) {
+    execBinary = process.execPath;
+  }
 
-  // Spawn detached process
-  const child = spawn(engineExec, daemonArgs, {
+  let execArgs = [];
+
+  if (path.basename(execBinary).toLowerCase().startsWith('node')) {
+    const scriptPath = process.argv[1];
+    execArgs = [scriptPath];
+  }
+
+  const daemonLogPath = path.join(gitDir, 'gatekeeper-daemon.log');
+  const outLog = fs.openSync(daemonLogPath, 'a');
+  const errLog = fs.openSync(daemonLogPath, 'a');
+
+  // Spawn detached process with output redirected to daemon log
+  const child = spawn(execBinary, execArgs, {
     detached: true,
-    stdio: 'ignore',
-    cwd
+    stdio: ['ignore', outLog, errLog],
+    cwd,
+    windowsHide: true,
+    env: {
+      ...process.env,
+      GATEKEEPER_DAEMON_MODE: '1',
+      GATEKEEPER_REPO_PATH: cwd,
+      GATEKEEPER_TARGET_BRANCH: targetBranch,
+      GATEKEEPER_INTERVAL_MINUTES: String(intervalMinutes)
+    }
   });
 
   child.unref();
@@ -261,7 +380,7 @@ export async function enableBranchWatcher(cwd = process.cwd()) {
     repoPath: cwd,
     currentBranch,
     targetBranch,
-    intervalMinutes: 15,
+    intervalMinutes,
     startedAt: new Date().toISOString(),
     lastCheckedAt: checkResult.checkedAt,
     hasConflict: checkResult.hasConflict,
@@ -274,16 +393,30 @@ export async function enableBranchWatcher(cwd = process.cwd()) {
   }
 
   console.log(chalk.green.bold('\n═══════════════════════════════════════════════════════════════'));
-  console.log(chalk.green.bold('   ✔ 15-MINUTE BACKGROUND BRANCH CONFLICT WATCHER ACTIVATED!   '));
+  console.log(chalk.green.bold(`   ✔ ${intervalMinutes}-MINUTE BACKGROUND BRANCH CONFLICT WATCHER ACTIVATED!   `));
   console.log(chalk.green.bold('═══════════════════════════════════════════════════════════════'));
   console.log(chalk.white(`  • Monitored Branch:  ${chalk.cyan.bold('origin/' + targetBranch)}`));
   console.log(chalk.white(`  • Active Branch:     ${chalk.cyan.bold(currentBranch)}`));
-  console.log(chalk.white(`  • Check Interval:    ${chalk.cyan('Every 15 Minutes')}`));
+  console.log(chalk.white(`  • Check Interval:    ${chalk.cyan(`Every ${intervalMinutes} Minute(s)`)}`));
   console.log(chalk.white(`  • Background PID:    ${chalk.cyan(child.pid)}`));
   console.log(chalk.magenta('\n  You will receive automatic Windows Desktop Toast alerts'));
   console.log(chalk.magenta(`  whenever new commits on "${targetBranch}" cause conflicts with your work.`));
   console.log(chalk.gray('\n  To stop watcher:     a-gatekeeper branch check --disable'));
   console.log(chalk.gray('  To check status:     a-gatekeeper branch check --status\n'));
+}
+
+function isPidAlive(pid) {
+  if (!pid) return false;
+  try {
+    const out = execSync(`powershell -NoProfile -Command "Get-Process -Id ${pid} -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Id"`, {
+      encoding: 'utf8',
+      stdio: ['pipe', 'pipe', 'pipe'],
+      windowsHide: true
+    }).trim();
+    return out === String(pid);
+  } catch (e) {
+    return false;
+  }
 }
 
 /**
@@ -341,24 +474,16 @@ export async function statusBranchWatcher(cwd = process.cwd()) {
     return;
   }
 
-  let isRunning = false;
-  if (config.pid) {
-    try {
-      process.kill(config.pid, 0); // test if process is alive
-      isRunning = true;
-    } catch (e) {
-      isRunning = false;
-    }
-  }
+  let isRunning = isPidAlive(config.pid);
 
   console.log('\n' + chalk.cyan.bold('┌─────────────────────────────────────────────────────────────┐'));
   console.log(chalk.cyan.bold('│ ') + chalk.bold.white('🌿 BRANCH CONFLICT WATCHER STATUS                          ') + chalk.cyan.bold('│'));
   console.log(chalk.cyan.bold('└─────────────────────────────────────────────────────────────┘\n'));
 
-  console.log(chalk.white(`  • Status:           ${isRunning ? chalk.green.bold('RUNNING (Active)') : chalk.red.bold('STOPPED')}`));
+  console.log(chalk.white(`  • Status:           ${isRunning ? chalk.green.bold('RUNNING (Active in background)') : chalk.red.bold('STOPPED')}`));
   console.log(chalk.white(`  • Background PID:   ${config.pid || 'N/A'}`));
   console.log(chalk.white(`  • Monitored Target: ${chalk.cyan.bold('origin/' + config.targetBranch)}`));
-  console.log(chalk.white(`  • Check Interval:   Every ${config.intervalMinutes || 15} minutes`));
+  console.log(chalk.white(`  • Check Interval:   Every ${config.intervalMinutes || 15} minute(s)`));
   console.log(chalk.white(`  • Started At:       ${config.startedAt ? new Date(config.startedAt).toLocaleString() : 'N/A'}`));
   console.log(chalk.white(`  • Last Checked:     ${config.lastCheckedAt ? new Date(config.lastCheckedAt).toLocaleString() : 'N/A'}`));
 
@@ -377,13 +502,24 @@ export async function statusBranchWatcher(cwd = process.cwd()) {
 }
 
 /**
- * Background daemon loop: runs every 15 minutes
+ * Background daemon loop: runs every custom interval (in minutes)
  */
-export async function runDaemonLoop(cwd, targetBranch) {
-  const INTERVAL_MS = 15 * 60 * 1000; // 15 minutes
+export async function runDaemonLoop(cwd, targetBranch, intervalMinutes = 15) {
+  const safeMinutes = parseInt(intervalMinutes, 10) || 15;
+  const INTERVAL_MS = safeMinutes * 60 * 1000;
+  const daemonLogPath = path.join(cwd, '.git', 'gatekeeper-daemon.log');
+
+  function appendDaemonLog(msg) {
+    try {
+      fs.appendFileSync(daemonLogPath, `[${new Date().toLocaleString()}] ${msg}\n`, 'utf8');
+    } catch (e) {}
+  }
+
+  appendDaemonLog(`Background daemon started for origin/${targetBranch} (Interval: ${safeMinutes} min, PID: ${process.pid}).`);
 
   async function checkCycle() {
     try {
+      appendDaemonLog(`Executing conflict check cycle against origin/${targetBranch}...`);
       const result = checkBranchConflicts(cwd, targetBranch);
       const configPath = getWatcherConfigPath(cwd);
 
@@ -394,6 +530,7 @@ export async function runDaemonLoop(cwd, targetBranch) {
           config.hasConflict = result.hasConflict;
           config.conflictingFiles = result.conflictingFiles;
           config.behindCount = result.behindCount;
+          config.intervalMinutes = safeMinutes;
           fs.writeFileSync(configPath, JSON.stringify(config, null, 2), 'utf8');
         } catch (e) {}
       }
@@ -401,28 +538,35 @@ export async function runDaemonLoop(cwd, targetBranch) {
       // If conflicts detected, trigger Windows Toast Notification
       if (result.hasConflict && result.conflictingFiles.length > 0) {
         const fileList = result.conflictingFiles.slice(0, 3).join(', ') + (result.conflictingFiles.length > 3 ? '...' : '');
-        sendWindowsNotification(
-          '⚠️ Angular Gatekeeper: Merge Conflict Detected!',
-          `Branch "${result.currentBranch}" conflicts with origin/${targetBranch} in: ${fileList}`
-        );
+        const toastTitle = result.hasUncommittedChanges
+          ? '⚠️ Live Conflict in Active Work!'
+          : '⚠️ Angular Gatekeeper: Merge Conflict Detected!';
+        const toastMessage = `Branch "${result.currentBranch}" conflicts with origin/${targetBranch} in: ${fileList}`;
+        
+        appendDaemonLog(`CONFLICT DETECTED in: ${result.conflictingFiles.join(', ')}. Sending Windows toast alert.`);
+        sendWindowsNotification(toastTitle, toastMessage, cwd);
 
         const alertLogPath = getAlertLogPath(cwd);
         if (alertLogPath) {
-          const logContent = `[${new Date().toLocaleString()}] CONFLICT ALERT\n` +
+          const logContent = `[${new Date().toLocaleString()}] LIVE CONFLICT ALERT\n` +
             `Current Branch: ${result.currentBranch}\n` +
             `Target Branch: origin/${targetBranch}\n` +
+            `Uncommitted Changes: ${result.hasUncommittedChanges ? 'YES (Live edits detected)' : 'NO'}\n` +
             `Conflicting Files:\n` +
             result.conflictingFiles.map(f => `  - ${f}`).join('\n') +
             `\n\nPlease pull or rebase origin/${targetBranch} to resolve.\n\n`;
           fs.appendFileSync(alertLogPath, logContent, 'utf8');
         }
+      } else {
+        appendDaemonLog(`Check cycle clean: No conflicts with origin/${targetBranch}.`);
       }
     } catch (cycleErr) {
-      // ignore cycle error in background
+      appendDaemonLog(`Error in check cycle: ${cycleErr.message || cycleErr}`);
     }
   }
 
-  // Run immediately, then every 15 minutes
-  await checkCycle();
+  // Schedule recurring interval and keep process alive
   setInterval(checkCycle, INTERVAL_MS);
 }
+
+

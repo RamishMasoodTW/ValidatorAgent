@@ -559,9 +559,9 @@ var require_retry = __commonJS({
         var original = obj[method];
         obj[method] = function retryWrapper(original2) {
           var op = exports2.operation(options);
-          var args2 = Array.prototype.slice.call(arguments, 1);
-          var callback = args2.pop();
-          args2.push(function(err) {
+          var args = Array.prototype.slice.call(arguments, 1);
+          var callback = args.pop();
+          args.push(function(err) {
             if (op.retry(err)) {
               return;
             }
@@ -571,7 +571,7 @@ var require_retry = __commonJS({
             callback.apply(this, arguments);
           });
           op.attempt(function() {
-            original2.apply(obj, args2);
+            original2.apply(obj, args);
           });
         }.bind(obj, original);
         obj[method].options = options;
@@ -1384,7 +1384,7 @@ var require_common2 = __commonJS({
         let enableOverride = null;
         let namespacesCache;
         let enabledCache;
-        function debug(...args2) {
+        function debug(...args) {
           if (!debug.enabled) {
             return;
           }
@@ -1395,28 +1395,28 @@ var require_common2 = __commonJS({
           self2.prev = prevTime;
           self2.curr = curr;
           prevTime = curr;
-          args2[0] = createDebug.coerce(args2[0]);
-          if (typeof args2[0] !== "string") {
-            args2.unshift("%O");
+          args[0] = createDebug.coerce(args[0]);
+          if (typeof args[0] !== "string") {
+            args.unshift("%O");
           }
           let index = 0;
-          args2[0] = args2[0].replace(/%([a-zA-Z%])/g, (match2, format) => {
+          args[0] = args[0].replace(/%([a-zA-Z%])/g, (match2, format) => {
             if (match2 === "%%") {
               return "%";
             }
             index++;
             const formatter = createDebug.formatters[format];
             if (typeof formatter === "function") {
-              const val = args2[index];
+              const val = args[index];
               match2 = formatter.call(self2, val);
-              args2.splice(index, 1);
+              args.splice(index, 1);
               index--;
             }
             return match2;
           });
-          createDebug.formatArgs.call(self2, args2);
+          createDebug.formatArgs.call(self2, args);
           const logFn = self2.log || createDebug.log;
-          logFn.apply(self2, args2);
+          logFn.apply(self2, args);
         }
         debug.namespace = namespace;
         debug.useColors = createDebug.useColors();
@@ -1638,16 +1638,16 @@ var require_browser = __commonJS({
       typeof navigator !== "undefined" && navigator.userAgent && (m2 = navigator.userAgent.toLowerCase().match(/firefox\/(\d+)/)) && parseInt(m2[1], 10) >= 31 || // Double check webkit in userAgent just in case we are in a worker
       typeof navigator !== "undefined" && navigator.userAgent && navigator.userAgent.toLowerCase().match(/applewebkit\/(\d+)/);
     }
-    function formatArgs(args2) {
-      args2[0] = (this.useColors ? "%c" : "") + this.namespace + (this.useColors ? " %c" : " ") + args2[0] + (this.useColors ? "%c " : " ") + "+" + module2.exports.humanize(this.diff);
+    function formatArgs(args) {
+      args[0] = (this.useColors ? "%c" : "") + this.namespace + (this.useColors ? " %c" : " ") + args[0] + (this.useColors ? "%c " : " ") + "+" + module2.exports.humanize(this.diff);
       if (!this.useColors) {
         return;
       }
       const c = "color: " + this.color;
-      args2.splice(1, 0, c, "color: inherit");
+      args.splice(1, 0, c, "color: inherit");
       let index = 0;
       let lastC = 0;
-      args2[0].replace(/%[a-zA-Z%]/g, (match2) => {
+      args[0].replace(/%[a-zA-Z%]/g, (match2) => {
         if (match2 === "%%") {
           return;
         }
@@ -1656,7 +1656,7 @@ var require_browser = __commonJS({
           lastC = index;
         }
       });
-      args2.splice(lastC, 0, c);
+      args.splice(lastC, 0, c);
     }
     exports2.log = console.debug || console.log || (() => {
     });
@@ -1822,16 +1822,16 @@ var require_node = __commonJS({
     function useColors() {
       return "colors" in exports2.inspectOpts ? Boolean(exports2.inspectOpts.colors) : tty2.isatty(process.stderr.fd);
     }
-    function formatArgs(args2) {
+    function formatArgs(args) {
       const { namespace: name, useColors: useColors2 } = this;
       if (useColors2) {
         const c = this.color;
         const colorCode = "\x1B[3" + (c < 8 ? c : "8;5;" + c);
         const prefix = `  ${colorCode};1m${name} \x1B[0m`;
-        args2[0] = prefix + args2[0].split("\n").join("\n" + prefix);
-        args2.push(colorCode + "m+" + module2.exports.humanize(this.diff) + "\x1B[0m");
+        args[0] = prefix + args[0].split("\n").join("\n" + prefix);
+        args.push(colorCode + "m+" + module2.exports.humanize(this.diff) + "\x1B[0m");
       } else {
-        args2[0] = getDate() + name + " " + args2[0];
+        args[0] = getDate() + name + " " + args[0];
       }
     }
     function getDate() {
@@ -1840,8 +1840,8 @@ var require_node = __commonJS({
       }
       return (/* @__PURE__ */ new Date()).toISOString() + " ";
     }
-    function log(...args2) {
-      return process.stderr.write(util.formatWithOptions(exports2.inspectOpts, ...args2) + "\n");
+    function log(...args) {
+      return process.stderr.write(util.formatWithOptions(exports2.inspectOpts, ...args) + "\n");
     }
     function save(namespaces) {
       if (namespaces) {
@@ -2462,15 +2462,15 @@ var require_ponyfill_es2018 = __commonJS({
         }
         return _queueMicrotask(callback);
       };
-      function reflectCall(F2, V, args2) {
+      function reflectCall(F2, V, args) {
         if (typeof F2 !== "function") {
           throw new TypeError("Argument is not a function");
         }
-        return Function.prototype.apply.call(F2, V, args2);
+        return Function.prototype.apply.call(F2, V, args);
       }
-      function promiseCall(F2, V, args2) {
+      function promiseCall(F2, V, args) {
         try {
-          return promiseResolvedWith(reflectCall(F2, V, args2));
+          return promiseResolvedWith(reflectCall(F2, V, args));
         } catch (value) {
           return promiseRejectedWith(value);
         }
@@ -8900,9 +8900,9 @@ var require_gaxios = __commonJS({
        * @param args `fetch` API or `Gaxios#request` parameters
        * @returns the {@link Response} with Gaxios-added properties
        */
-      fetch(...args2) {
-        const input = args2[0];
-        const init = args2[1];
+      fetch(...args) {
+        const input = args[0];
+        const init = args[1];
         let url = void 0;
         const headers = new Headers();
         if (typeof input === "string") {
@@ -9699,8 +9699,8 @@ var require_bignumber = __commonJS({
           };
         })();
         BigNumber2.sum = function() {
-          var i2 = 1, args2 = arguments, sum = new BigNumber2(args2[0]);
-          for (; i2 < args2.length; ) sum = sum.plus(args2[i2++]);
+          var i2 = 1, args = arguments, sum = new BigNumber2(args[0]);
+          for (; i2 < args.length; ) sum = sum.plus(args[i2++]);
           return sum;
         };
         convertBase = /* @__PURE__ */ (function() {
@@ -9953,10 +9953,10 @@ var require_bignumber = __commonJS({
           }
           return n.s < 0 && c0 ? "-" + str : str;
         }
-        function maxOrMin(args2, n) {
-          var k, y, i2 = 1, x2 = new BigNumber2(args2[0]);
-          for (; i2 < args2.length; i2++) {
-            y = new BigNumber2(args2[i2]);
+        function maxOrMin(args, n) {
+          var k, y, i2 = 1, x2 = new BigNumber2(args[0]);
+          for (; i2 < args.length; i2++) {
+            y = new BigNumber2(args[i2]);
             if (!y.s || (k = compare(x2, y)) === n || k === 0 && x2.s === n) {
               x2 = y;
             }
@@ -11307,26 +11307,26 @@ var require_logging_utils = __commonJS({
           // And pull over the EventEmitter functionality.
           on: (event, listener) => this.on(event, listener)
         });
-        this.func.debug = (...args2) => this.invokeSeverity(LogSeverity.DEBUG, ...args2);
-        this.func.info = (...args2) => this.invokeSeverity(LogSeverity.INFO, ...args2);
-        this.func.warn = (...args2) => this.invokeSeverity(LogSeverity.WARNING, ...args2);
-        this.func.error = (...args2) => this.invokeSeverity(LogSeverity.ERROR, ...args2);
+        this.func.debug = (...args) => this.invokeSeverity(LogSeverity.DEBUG, ...args);
+        this.func.info = (...args) => this.invokeSeverity(LogSeverity.INFO, ...args);
+        this.func.warn = (...args) => this.invokeSeverity(LogSeverity.WARNING, ...args);
+        this.func.error = (...args) => this.invokeSeverity(LogSeverity.ERROR, ...args);
         this.func.sublog = (namespace2) => log(namespace2, this.func);
       }
-      invoke(fields, ...args2) {
+      invoke(fields, ...args) {
         if (this.upstream) {
           try {
-            this.upstream(fields, ...args2);
+            this.upstream(fields, ...args);
           } catch (e2) {
           }
         }
         try {
-          this.emit("log", fields, args2);
+          this.emit("log", fields, args);
         } catch (e2) {
         }
       }
-      invokeSeverity(severity, ...args2) {
-        this.invoke({ severity }, ...args2);
+      invokeSeverity(severity, ...args) {
+        this.invoke({ severity }, ...args);
       }
     };
     exports2.AdhocDebugLogger = AdhocDebugLogger;
@@ -11344,7 +11344,7 @@ var require_logging_utils = __commonJS({
         }
         this.filters = nodeFlag.split(",");
       }
-      log(namespace, fields, ...args2) {
+      log(namespace, fields, ...args) {
         try {
           if (!this.filtersSet) {
             this.setFilters();
@@ -11355,7 +11355,7 @@ var require_logging_utils = __commonJS({
             logger = this.makeLogger(namespace);
             this.cached.set(namespace, logger);
           }
-          logger(fields, ...args2);
+          logger(fields, ...args);
         } catch (e2) {
           console.error(e2);
         }
@@ -11375,7 +11375,7 @@ var require_logging_utils = __commonJS({
           return () => {
           };
         }
-        return (fields, ...args2) => {
+        return (fields, ...args) => {
           var _a2;
           const nscolour = `${colours_1.Colours.green}${namespace}${colours_1.Colours.reset}`;
           const pid = `${colours_1.Colours.yellow}${process3.pid}${colours_1.Colours.reset}`;
@@ -11394,7 +11394,7 @@ var require_logging_utils = __commonJS({
               level = (_a2 = fields.severity) !== null && _a2 !== void 0 ? _a2 : LogSeverity.DEFAULT;
               break;
           }
-          const msg = util.formatWithOptions({ colors: colours_1.Colours.enabled }, ...args2);
+          const msg = util.formatWithOptions({ colors: colours_1.Colours.enabled }, ...args);
           const filteredFields = Object.assign({}, fields);
           delete filteredFields.severity;
           const fieldsJson = Object.getOwnPropertyNames(filteredFields).length ? JSON.stringify(filteredFields) : "";
@@ -11420,8 +11420,8 @@ var require_logging_utils = __commonJS({
       }
       makeLogger(namespace) {
         const debugLogger = this.debugPkg(namespace);
-        return (fields, ...args2) => {
-          debugLogger(args2[0], ...args2.slice(1));
+        return (fields, ...args) => {
+          debugLogger(args[0], ...args.slice(1));
         };
       }
       setFilters() {
@@ -11442,12 +11442,12 @@ var require_logging_utils = __commonJS({
       makeLogger(namespace) {
         var _a2;
         const debugLogger = (_a2 = this.upstream) === null || _a2 === void 0 ? void 0 : _a2.makeLogger(namespace);
-        return (fields, ...args2) => {
+        return (fields, ...args) => {
           var _a3;
           const severity = (_a3 = fields.severity) !== null && _a3 !== void 0 ? _a3 : LogSeverity.INFO;
           const json2 = Object.assign({
             severity,
-            message: util.format(...args2)
+            message: util.format(...args)
           }, fields);
           const jsonString = JSON.stringify(json2);
           if (debugLogger) {
@@ -11502,7 +11502,7 @@ var require_logging_utils = __commonJS({
       }
       const logger = (() => {
         let previousBackend = void 0;
-        const newLogger = new AdhocDebugLogger(namespace, (fields, ...args2) => {
+        const newLogger = new AdhocDebugLogger(namespace, (fields, ...args) => {
           if (previousBackend !== cachedBackend) {
             if (cachedBackend === null) {
               return;
@@ -11511,7 +11511,7 @@ var require_logging_utils = __commonJS({
             }
             previousBackend = cachedBackend;
           }
-          cachedBackend === null || cachedBackend === void 0 ? void 0 : cachedBackend.log(namespace, fields, ...args2);
+          cachedBackend === null || cachedBackend === void 0 ? void 0 : cachedBackend.log(namespace, fields, ...args);
         });
         return newLogger;
       })();
@@ -12643,9 +12643,9 @@ var require_authclient = __commonJS({
        * @param args `fetch` API or {@link Gaxios.fetch `Gaxios#fetch`} parameters
        * @returns the {@link GaxiosResponse} with Gaxios-added properties
        */
-      fetch(...args2) {
-        const input = args2[0];
-        const init = args2[1];
+      fetch(...args) {
+        const input = args[0];
+        const init = args[1];
         let url = void 0;
         const headers = new Headers();
         if (typeof input === "string") {
@@ -13919,8 +13919,8 @@ var require_jwa = __commonJS({
       return base64url.replace(/\-/g, "+").replace(/_/g, "/");
     }
     function typeError(template) {
-      var args2 = [].slice.call(arguments, 1);
-      var errMsg = util.format.bind(util, template).apply(null, args2);
+      var args = [].slice.call(arguments, 1);
+      var errMsg = util.format.bind(util, template).apply(null, args);
       return new TypeError(errMsg);
     }
     function bufferOrString(obj) {
@@ -18562,9 +18562,9 @@ var require_googleauth = __commonJS({
        * @param args `fetch` API or {@link Gaxios.fetch `Gaxios#fetch`} parameters
        * @returns the {@link GaxiosResponse} with Gaxios-added properties
        */
-      async fetch(...args2) {
+      async fetch(...args) {
         const client = await this.getClient();
-        return client.fetch(...args2);
+        return client.fetch(...args);
       }
       /**
        * Automatically obtain application default credentials, and make an
@@ -23215,9 +23215,9 @@ var require_text = __commonJS({
     }
     function _asyncToGenerator(fn) {
       return function() {
-        var self2 = this, args2 = arguments;
+        var self2 = this, args = arguments;
         return new Promise(function(resolve, reject) {
-          var gen = fn.apply(self2, args2);
+          var gen = fn.apply(self2, args);
           function _next(value) {
             asyncGeneratorStep(gen, resolve, reject, _next, _throw, "next", value);
           }
@@ -23954,9 +23954,9 @@ var require_date = __commonJS({
     }
     function _asyncToGenerator(fn) {
       return function() {
-        var self2 = this, args2 = arguments;
+        var self2 = this, args = arguments;
         return new Promise(function(resolve, reject) {
-          var gen = fn.apply(self2, args2);
+          var gen = fn.apply(self2, args);
           function _next(value) {
             asyncGeneratorStep(gen, resolve, reject, _next, _throw, "next", value);
           }
@@ -24180,9 +24180,9 @@ var require_number = __commonJS({
     }
     function _asyncToGenerator(fn) {
       return function() {
-        var self2 = this, args2 = arguments;
+        var self2 = this, args = arguments;
         return new Promise(function(resolve, reject) {
-          var gen = fn.apply(self2, args2);
+          var gen = fn.apply(self2, args);
           function _next(value) {
             asyncGeneratorStep(gen, resolve, reject, _next, _throw, "next", value);
           }
@@ -24626,9 +24626,9 @@ var require_autocomplete = __commonJS({
     }
     function _asyncToGenerator(fn) {
       return function() {
-        var self2 = this, args2 = arguments;
+        var self2 = this, args = arguments;
         return new Promise(function(resolve, reject) {
-          var gen = fn.apply(self2, args2);
+          var gen = fn.apply(self2, args);
           function _next(value) {
             asyncGeneratorStep(gen, resolve, reject, _next, _throw, "next", value);
           }
@@ -25117,59 +25117,59 @@ var require_prompts = __commonJS({
     var $ = exports2;
     var el = require_elements();
     var noop2 = (v) => v;
-    function toPrompt(type, args2, opts = {}) {
+    function toPrompt(type, args, opts = {}) {
       return new Promise((res, rej) => {
-        const p = new el[type](args2);
+        const p = new el[type](args);
         const onAbort = opts.onAbort || noop2;
         const onSubmit = opts.onSubmit || noop2;
         const onExit = opts.onExit || noop2;
-        p.on("state", args2.onState || noop2);
+        p.on("state", args.onState || noop2);
         p.on("submit", (x2) => res(onSubmit(x2)));
         p.on("exit", (x2) => res(onExit(x2)));
         p.on("abort", (x2) => rej(onAbort(x2)));
       });
     }
-    $.text = (args2) => toPrompt("TextPrompt", args2);
-    $.password = (args2) => {
-      args2.style = "password";
-      return $.text(args2);
+    $.text = (args) => toPrompt("TextPrompt", args);
+    $.password = (args) => {
+      args.style = "password";
+      return $.text(args);
     };
-    $.invisible = (args2) => {
-      args2.style = "invisible";
-      return $.text(args2);
+    $.invisible = (args) => {
+      args.style = "invisible";
+      return $.text(args);
     };
-    $.number = (args2) => toPrompt("NumberPrompt", args2);
-    $.date = (args2) => toPrompt("DatePrompt", args2);
-    $.confirm = (args2) => toPrompt("ConfirmPrompt", args2);
-    $.list = (args2) => {
-      const sep = args2.separator || ",";
-      return toPrompt("TextPrompt", args2, {
+    $.number = (args) => toPrompt("NumberPrompt", args);
+    $.date = (args) => toPrompt("DatePrompt", args);
+    $.confirm = (args) => toPrompt("ConfirmPrompt", args);
+    $.list = (args) => {
+      const sep = args.separator || ",";
+      return toPrompt("TextPrompt", args, {
         onSubmit: (str) => str.split(sep).map((s2) => s2.trim())
       });
     };
-    $.toggle = (args2) => toPrompt("TogglePrompt", args2);
-    $.select = (args2) => toPrompt("SelectPrompt", args2);
-    $.multiselect = (args2) => {
-      args2.choices = [].concat(args2.choices || []);
+    $.toggle = (args) => toPrompt("TogglePrompt", args);
+    $.select = (args) => toPrompt("SelectPrompt", args);
+    $.multiselect = (args) => {
+      args.choices = [].concat(args.choices || []);
       const toSelected = (items) => items.filter((item) => item.selected).map((item) => item.value);
-      return toPrompt("MultiselectPrompt", args2, {
+      return toPrompt("MultiselectPrompt", args, {
         onAbort: toSelected,
         onSubmit: toSelected
       });
     };
-    $.autocompleteMultiselect = (args2) => {
-      args2.choices = [].concat(args2.choices || []);
+    $.autocompleteMultiselect = (args) => {
+      args.choices = [].concat(args.choices || []);
       const toSelected = (items) => items.filter((item) => item.selected).map((item) => item.value);
-      return toPrompt("AutocompleteMultiselectPrompt", args2, {
+      return toPrompt("AutocompleteMultiselectPrompt", args, {
         onAbort: toSelected,
         onSubmit: toSelected
       });
     };
     var byTitle = (input, choices) => Promise.resolve(choices.filter((item) => item.title.slice(0, input.length).toLowerCase() === input.toLowerCase()));
-    $.autocomplete = (args2) => {
-      args2.suggest = args2.suggest || byTitle;
-      args2.choices = [].concat(args2.choices || []);
-      return toPrompt("AutocompletePrompt", args2);
+    $.autocomplete = (args) => {
+      args.suggest = args.suggest || byTitle;
+      args.choices = [].concat(args.choices || []);
+      return toPrompt("AutocompletePrompt", args);
     };
   }
 });
@@ -25280,9 +25280,9 @@ var require_dist3 = __commonJS({
     }
     function _asyncToGenerator(fn) {
       return function() {
-        var self2 = this, args2 = arguments;
+        var self2 = this, args = arguments;
         return new Promise(function(resolve, reject) {
-          var gen = fn.apply(self2, args2);
+          var gen = fn.apply(self2, args);
           function _next(value) {
             asyncGeneratorStep(gen, resolve, reject, _next, _throw, "next", value);
           }
@@ -27407,50 +27407,50 @@ var require_prompts2 = __commonJS({
     var $ = exports2;
     var el = require_elements2();
     var noop2 = (v) => v;
-    function toPrompt(type, args2, opts = {}) {
+    function toPrompt(type, args, opts = {}) {
       return new Promise((res, rej) => {
-        const p = new el[type](args2);
+        const p = new el[type](args);
         const onAbort = opts.onAbort || noop2;
         const onSubmit = opts.onSubmit || noop2;
         const onExit = opts.onExit || noop2;
-        p.on("state", args2.onState || noop2);
+        p.on("state", args.onState || noop2);
         p.on("submit", (x2) => res(onSubmit(x2)));
         p.on("exit", (x2) => res(onExit(x2)));
         p.on("abort", (x2) => rej(onAbort(x2)));
       });
     }
-    $.text = (args2) => toPrompt("TextPrompt", args2);
-    $.password = (args2) => {
-      args2.style = "password";
-      return $.text(args2);
+    $.text = (args) => toPrompt("TextPrompt", args);
+    $.password = (args) => {
+      args.style = "password";
+      return $.text(args);
     };
-    $.invisible = (args2) => {
-      args2.style = "invisible";
-      return $.text(args2);
+    $.invisible = (args) => {
+      args.style = "invisible";
+      return $.text(args);
     };
-    $.number = (args2) => toPrompt("NumberPrompt", args2);
-    $.date = (args2) => toPrompt("DatePrompt", args2);
-    $.confirm = (args2) => toPrompt("ConfirmPrompt", args2);
-    $.list = (args2) => {
-      const sep = args2.separator || ",";
-      return toPrompt("TextPrompt", args2, {
+    $.number = (args) => toPrompt("NumberPrompt", args);
+    $.date = (args) => toPrompt("DatePrompt", args);
+    $.confirm = (args) => toPrompt("ConfirmPrompt", args);
+    $.list = (args) => {
+      const sep = args.separator || ",";
+      return toPrompt("TextPrompt", args, {
         onSubmit: (str) => str.split(sep).map((s2) => s2.trim())
       });
     };
-    $.toggle = (args2) => toPrompt("TogglePrompt", args2);
-    $.select = (args2) => toPrompt("SelectPrompt", args2);
-    $.multiselect = (args2) => {
-      args2.choices = [].concat(args2.choices || []);
+    $.toggle = (args) => toPrompt("TogglePrompt", args);
+    $.select = (args) => toPrompt("SelectPrompt", args);
+    $.multiselect = (args) => {
+      args.choices = [].concat(args.choices || []);
       const toSelected = (items) => items.filter((item) => item.selected).map((item) => item.value);
-      return toPrompt("MultiselectPrompt", args2, {
+      return toPrompt("MultiselectPrompt", args, {
         onAbort: toSelected,
         onSubmit: toSelected
       });
     };
-    $.autocompleteMultiselect = (args2) => {
-      args2.choices = [].concat(args2.choices || []);
+    $.autocompleteMultiselect = (args) => {
+      args.choices = [].concat(args.choices || []);
       const toSelected = (items) => items.filter((item) => item.selected).map((item) => item.value);
-      return toPrompt("AutocompleteMultiselectPrompt", args2, {
+      return toPrompt("AutocompleteMultiselectPrompt", args, {
         onAbort: toSelected,
         onSubmit: toSelected
       });
@@ -27458,10 +27458,10 @@ var require_prompts2 = __commonJS({
     var byTitle = (input, choices) => Promise.resolve(
       choices.filter((item) => item.title.slice(0, input.length).toLowerCase() === input.toLowerCase())
     );
-    $.autocomplete = (args2) => {
-      args2.suggest = args2.suggest || byTitle;
-      args2.choices = [].concat(args2.choices || []);
-      return toPrompt("AutocompletePrompt", args2);
+    $.autocomplete = (args) => {
+      args.suggest = args.suggest || byTitle;
+      args.choices = [].concat(args.choices || []);
+      return toPrompt("AutocompletePrompt", args);
     };
   }
 });
@@ -27752,10 +27752,10 @@ var ansi_styles_default = ansiStyles;
 var import_node_process = __toESM(require("node:process"), 1);
 var import_node_os = __toESM(require("node:os"), 1);
 var import_node_tty = __toESM(require("node:tty"), 1);
-function hasFlag(flag, argv = globalThis.Deno ? globalThis.Deno.args : import_node_process.default.argv) {
+function hasFlag(flag, argv2 = globalThis.Deno ? globalThis.Deno.args : import_node_process.default.argv) {
   const prefix = flag.startsWith("-") ? "" : flag.length === 1 ? "-" : "--";
-  const position = argv.indexOf(prefix + flag);
-  const terminatorPosition = argv.indexOf("--");
+  const position = argv2.indexOf(prefix + flag);
+  const terminatorPosition = argv2.indexOf("--");
   return position !== -1 && (terminatorPosition === -1 || position < terminatorPosition);
 }
 var { env } = import_node_process.default;
@@ -44193,8 +44193,8 @@ function mapDefinedEntries(inp, mapper) {
   }
   return acc.length ? acc : null;
 }
-function queryJoin(...args2) {
-  return args2.filter(Boolean).join("&");
+function queryJoin(...args) {
+  return args.filter(Boolean).join("&");
 }
 function queryEncoder(f3) {
   const bulkEncode = function(values, options) {
@@ -44250,30 +44250,30 @@ var HTTPClient = class _HTTPClient {
       throw err;
     }
   }
-  addHook(...args2) {
-    if (args2[0] === "beforeRequest") {
-      this.requestHooks.push(args2[1]);
-    } else if (args2[0] === "requestError") {
-      this.requestErrorHooks.push(args2[1]);
-    } else if (args2[0] === "response") {
-      this.responseHooks.push(args2[1]);
+  addHook(...args) {
+    if (args[0] === "beforeRequest") {
+      this.requestHooks.push(args[1]);
+    } else if (args[0] === "requestError") {
+      this.requestErrorHooks.push(args[1]);
+    } else if (args[0] === "response") {
+      this.responseHooks.push(args[1]);
     } else {
-      throw new Error(`Invalid hook type: ${args2[0]}`);
+      throw new Error(`Invalid hook type: ${args[0]}`);
     }
     return this;
   }
-  removeHook(...args2) {
+  removeHook(...args) {
     let target;
-    if (args2[0] === "beforeRequest") {
+    if (args[0] === "beforeRequest") {
       target = this.requestHooks;
-    } else if (args2[0] === "requestError") {
+    } else if (args[0] === "requestError") {
       target = this.requestErrorHooks;
-    } else if (args2[0] === "response") {
+    } else if (args[0] === "response") {
       target = this.responseHooks;
     } else {
-      throw new Error(`Invalid hook type: ${args2[0]}`);
+      throw new Error(`Invalid hook type: ${args[0]}`);
     }
-    const index = target.findIndex((v) => v === args2[1]);
+    const index = target.findIndex((v) => v === args[1]);
     if (index >= 0) {
       target.splice(index, 1);
     }
@@ -47874,9 +47874,9 @@ function wrapStreamErrors(stream) {
       return function wrappedAsyncIterator() {
         const iterator = asyncIterable[Symbol.asyncIterator]();
         return {
-          async next(...args2) {
+          async next(...args) {
             try {
-              return await iterator.next(...args2);
+              return await iterator.next(...args);
             } catch (error) {
               throw wrapSDKError(error);
             }
@@ -50431,7 +50431,12 @@ var import_child_process = require("child_process");
 var import_prompts = __toESM(require_prompts3(), 1);
 function runGit(command, cwd = process.cwd(), allowFail = false) {
   try {
-    return (0, import_child_process.execSync)(command, { cwd, encoding: "utf8", stdio: ["pipe", "pipe", "pipe"] }).trim();
+    return (0, import_child_process.execSync)(command, {
+      cwd,
+      encoding: "utf8",
+      stdio: ["pipe", "pipe", "pipe"],
+      windowsHide: true
+    }).trim();
   } catch (err) {
     if (!allowFail) {
       throw err;
@@ -50449,27 +50454,91 @@ function getAlertLogPath(cwd = process.cwd()) {
   if (!import_fs2.default.existsSync(gitDir)) return null;
   return import_path.default.join(gitDir, "gatekeeper-conflict-alert.log");
 }
-function sendWindowsNotification(title, message) {
+function sendWindowsNotification(title, message, cwd = process.cwd()) {
   if (process.platform !== "win32") return;
-  const safeTitle = title.replace(/'/g, "''").replace(/"/g, '`"');
-  const safeMessage = message.replace(/'/g, "''").replace(/"/g, '`"');
-  const psScript = `
-[Windows.UI.Notifications.ToastNotificationManager, Windows.UI.Notifications, ContentType = WindowsRuntime] > $null
-$template = [Windows.UI.Notifications.ToastNotificationManager]::GetTemplateContent([Windows.UI.Notifications.ToastTemplateType]::ToastText02)
-$textNodes = $template.GetElementsByTagName("text")
-$textNodes.Item(0).AppendChild($template.CreateTextNode("${safeTitle}")) > $null
-$textNodes.Item(1).AppendChild($template.CreateTextNode("${safeMessage}")) > $null
-$toast = [Windows.UI.Notifications.ToastNotification]::new($template)
-[Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier("Angular Gatekeeper").Show($toast)
-`;
+  const safeTitle = title.replace(/'/g, "''").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  const safeMessage = message.replace(/'/g, "''").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  const safeCwd = cwd.replace(/\\/g, "\\\\");
+  const gitDir = import_path.default.join(cwd, ".git");
+  const launcherPath = import_path.default.join(gitDir, "gatekeeper-show-details.cmd");
   try {
-    (0, import_child_process.execSync)(`powershell -NoProfile -Command "${psScript.replace(/\n/g, " ")}"`, {
-      stdio: "pipe",
-      timeout: 5e3
+    import_fs2.default.writeFileSync(
+      launcherPath,
+      `@echo off
+title Angular Gatekeeper - Conflict Details
+color 0E
+cd /d "${cwd}"
+a-gatekeeper branch check --status
+echo.
+echo Press any key to close this window...
+pause >nul
+`,
+      "utf8"
+    );
+  } catch (e2) {
+  }
+  const safeLauncher = launcherPath.replace(/\\/g, "\\\\");
+  const psScript = `
+# Register HKCU protocol for direct activation
+try {
+    $regPath = "HKCU:\\Software\\Classes\\gatekeeper-details"
+    New-Item -Path "$regPath\\shell\\open\\command" -Force | Out-Null
+    Set-ItemProperty -Path $regPath -Name "(Default)" -Value "URL:Gatekeeper Protocol"
+    Set-ItemProperty -Path $regPath -Name "URL Protocol" -Value ""
+    Set-ItemProperty -Path "$regPath\\shell\\open\\command" -Name "(Default)" -Value '"C:\\Windows\\System32\\cmd.exe" /c start "" "${safeLauncher}"'
+} catch {}
+
+$appId = '{1AC14E77-02E7-4E5D-B744-2EB1AE5198B7}\\WindowsPowerShell\\v1.0\\powershell.exe'
+try {
+    [Windows.UI.Notifications.ToastNotificationManager, Windows.UI.Notifications, ContentType = WindowsRuntime] | Out-Null
+    [Windows.Data.Xml.Dom.XmlDocument, Windows.Data.Xml.Dom.XmlDocument, ContentType = WindowsRuntime] | Out-Null
+
+    $template = @"
+<toast duration="long" launch="gatekeeper-details:">
+    <visual>
+        <binding template="ToastGeneric">
+            <text hint-maxLines="1">${safeTitle}</text>
+            <text>${safeMessage}</text>
+            <text>\u{1F449} Click notification or button to open terminal</text>
+        </binding>
+    </visual>
+    <actions>
+        <action content="\u{1F50D} View Details in Terminal" arguments="gatekeeper-details:" activationType="protocol"/>
+    </actions>
+    <audio src="ms-winsoundevent:Notification.Looping.Alarm2" loop="false"/>
+</toast>
+"@
+    $xml = New-Object Windows.Data.Xml.Dom.XmlDocument
+    $xml.LoadXml($template)
+    $toast = [Windows.UI.Notifications.ToastNotification]::new($xml)
+    [Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier($appId).Show($toast)
+} catch {
+    # Fallback: System Balloon Tip
+    try {
+        Add-Type -AssemblyName System.Windows.Forms
+        Add-Type -AssemblyName System.Drawing
+        $notify = New-Object System.Windows.Forms.NotifyIcon
+        $notify.Icon = [System.Drawing.SystemIcons]::Warning
+        $notify.BalloonTipTitle = '${safeTitle}'
+        $notify.BalloonTipText = '${safeMessage}'
+        $notify.BalloonTipIcon = [System.Windows.Forms.ToolTipIcon]::Warning
+        $notify.Visible = $True
+        $notify.ShowBalloonTip(8000)
+        Start-Sleep -Milliseconds 500
+        $notify.Dispose()
+    } catch {}
+}
+`;
+  const b64 = Buffer.from(psScript, "utf16le").toString("base64");
+  try {
+    (0, import_child_process.execSync)(`powershell.exe -NoProfile -ExecutionPolicy Bypass -EncodedCommand ${b64}`, {
+      stdio: "ignore",
+      timeout: 8e3,
+      windowsHide: true
     });
   } catch (err) {
     try {
-      (0, import_child_process.execSync)(`powershell -Command "[console]::beep(800, 300)"`, { stdio: "ignore" });
+      (0, import_child_process.execSync)(`powershell.exe -Command "[console]::beep(800, 300)"`, { stdio: "ignore", windowsHide: true });
     } catch (e2) {
     }
   }
@@ -50495,14 +50564,19 @@ function checkBranchConflicts(cwd = process.cwd(), targetBranch = "main") {
   const aheadCountStr = runGit(`git rev-list --count origin/${targetBranch}..HEAD`, cwd, true);
   const behindCount = parseInt(behindCountStr, 10) || 0;
   const aheadCount = parseInt(aheadCountStr, 10) || 0;
+  const uncommittedStateRef = runGit("git stash create", cwd, true) || "HEAD";
+  const hasUncommittedChanges = uncommittedStateRef !== "HEAD";
+  const statusOutput = runGit("git status --porcelain", cwd, true);
+  const localEditedFiles = statusOutput ? statusOutput.split("\n").map((l) => l.substring(3).trim()).filter(Boolean) : [];
   let hasConflict = false;
   let conflictingFiles = [];
   let mergeTreeOutput = "";
   try {
-    const res = (0, import_child_process.execSync)(`git merge-tree --write-tree HEAD origin/${targetBranch}`, {
+    const res = (0, import_child_process.execSync)(`git merge-tree --write-tree ${uncommittedStateRef} origin/${targetBranch}`, {
       cwd,
       encoding: "utf8",
-      stdio: ["pipe", "pipe", "pipe"]
+      stdio: ["pipe", "pipe", "pipe"],
+      windowsHide: true
     });
     mergeTreeOutput = res;
     hasConflict = false;
@@ -50520,9 +50594,9 @@ function checkBranchConflicts(cwd = process.cwd(), targetBranch = "main") {
     }
   }
   if (hasConflict && conflictingFiles.length === 0) {
-    const mergeBase = runGit(`git merge-base HEAD origin/${targetBranch}`, cwd, true);
+    const mergeBase = runGit(`git merge-base ${uncommittedStateRef} origin/${targetBranch}`, cwd, true);
     if (mergeBase) {
-      const classicOutput = runGit(`git merge-tree ${mergeBase} HEAD origin/${targetBranch}`, cwd, true);
+      const classicOutput = runGit(`git merge-tree ${mergeBase} ${uncommittedStateRef} origin/${targetBranch}`, cwd, true);
       const blocks = classicOutput.split("changed in both");
       if (blocks.length > 1) {
         for (let i2 = 1; i2 < blocks.length; i2++) {
@@ -50541,6 +50615,8 @@ function checkBranchConflicts(cwd = process.cwd(), targetBranch = "main") {
   return {
     hasConflict,
     conflictingFiles,
+    hasUncommittedChanges,
+    localEditedFiles,
     behindCount,
     aheadCount,
     currentBranch,
@@ -50581,6 +50657,19 @@ async function enableBranchWatcher(cwd = process.cwd()) {
     console.log(source_default.yellow("\n\u26A0 Setup cancelled. No branch selected."));
     process.exit(0);
   }
+  let intervalMinutes = 15;
+  const intervalResponse = await (0, import_prompts.default)({
+    type: "number",
+    name: "interval",
+    message: "Enter background check interval in minutes (Default: 15):",
+    initial: 15,
+    min: 1,
+    max: 1440,
+    validate: (value) => value >= 1 ? true : "Interval must be at least 1 minute."
+  });
+  if (intervalResponse.interval && intervalResponse.interval >= 1) {
+    intervalMinutes = intervalResponse.interval;
+  }
   console.log("\n" + source_default.blue(`>>> [Initial Immediate Check] Checking sync with origin/${targetBranch}...`));
   const checkResult = checkBranchConflicts(cwd, targetBranch);
   console.log(source_default.gray("\u2500".repeat(60)));
@@ -50606,13 +50695,32 @@ async function enableBranchWatcher(cwd = process.cwd()) {
   }
   console.log(source_default.gray("\u2500".repeat(60)));
   await disableBranchWatcher(cwd, true);
-  console.log(source_default.blue("\n>>> Launching background 15-minute sync monitor daemon..."));
-  const engineExec = process.execPath;
-  const daemonArgs = ["branch-watch-daemon", cwd, targetBranch];
-  const child = (0, import_child_process.spawn)(engineExec, daemonArgs, {
+  console.log(source_default.blue(`
+>>> Launching background ${intervalMinutes}-minute sync monitor daemon...`));
+  let execBinary = process.env.APPDATA ? import_path.default.join(process.env.APPDATA, "FrontendGatekeeper", "engine.exe") : process.execPath;
+  if (!import_fs2.default.existsSync(execBinary)) {
+    execBinary = process.execPath;
+  }
+  let execArgs = [];
+  if (import_path.default.basename(execBinary).toLowerCase().startsWith("node")) {
+    const scriptPath = process.argv[1];
+    execArgs = [scriptPath];
+  }
+  const daemonLogPath = import_path.default.join(gitDir, "gatekeeper-daemon.log");
+  const outLog = import_fs2.default.openSync(daemonLogPath, "a");
+  const errLog = import_fs2.default.openSync(daemonLogPath, "a");
+  const child = (0, import_child_process.spawn)(execBinary, execArgs, {
     detached: true,
-    stdio: "ignore",
-    cwd
+    stdio: ["ignore", outLog, errLog],
+    cwd,
+    windowsHide: true,
+    env: {
+      ...process.env,
+      GATEKEEPER_DAEMON_MODE: "1",
+      GATEKEEPER_REPO_PATH: cwd,
+      GATEKEEPER_TARGET_BRANCH: targetBranch,
+      GATEKEEPER_INTERVAL_MINUTES: String(intervalMinutes)
+    }
   });
   child.unref();
   const configPath = getWatcherConfigPath(cwd);
@@ -50622,7 +50730,7 @@ async function enableBranchWatcher(cwd = process.cwd()) {
     repoPath: cwd,
     currentBranch,
     targetBranch,
-    intervalMinutes: 15,
+    intervalMinutes,
     startedAt: (/* @__PURE__ */ new Date()).toISOString(),
     lastCheckedAt: checkResult.checkedAt,
     hasConflict: checkResult.hasConflict,
@@ -50633,16 +50741,29 @@ async function enableBranchWatcher(cwd = process.cwd()) {
     import_fs2.default.writeFileSync(configPath, JSON.stringify(configData, null, 2), "utf8");
   }
   console.log(source_default.green.bold("\n\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550"));
-  console.log(source_default.green.bold("   \u2714 15-MINUTE BACKGROUND BRANCH CONFLICT WATCHER ACTIVATED!   "));
+  console.log(source_default.green.bold(`   \u2714 ${intervalMinutes}-MINUTE BACKGROUND BRANCH CONFLICT WATCHER ACTIVATED!   `));
   console.log(source_default.green.bold("\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550"));
   console.log(source_default.white(`  \u2022 Monitored Branch:  ${source_default.cyan.bold("origin/" + targetBranch)}`));
   console.log(source_default.white(`  \u2022 Active Branch:     ${source_default.cyan.bold(currentBranch)}`));
-  console.log(source_default.white(`  \u2022 Check Interval:    ${source_default.cyan("Every 15 Minutes")}`));
+  console.log(source_default.white(`  \u2022 Check Interval:    ${source_default.cyan(`Every ${intervalMinutes} Minute(s)`)}`));
   console.log(source_default.white(`  \u2022 Background PID:    ${source_default.cyan(child.pid)}`));
   console.log(source_default.magenta("\n  You will receive automatic Windows Desktop Toast alerts"));
   console.log(source_default.magenta(`  whenever new commits on "${targetBranch}" cause conflicts with your work.`));
   console.log(source_default.gray("\n  To stop watcher:     a-gatekeeper branch check --disable"));
   console.log(source_default.gray("  To check status:     a-gatekeeper branch check --status\n"));
+}
+function isPidAlive(pid) {
+  if (!pid) return false;
+  try {
+    const out = (0, import_child_process.execSync)(`powershell -NoProfile -Command "Get-Process -Id ${pid} -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Id"`, {
+      encoding: "utf8",
+      stdio: ["pipe", "pipe", "pipe"],
+      windowsHide: true
+    }).trim();
+    return out === String(pid);
+  } catch (e2) {
+    return false;
+  }
 }
 async function disableBranchWatcher(cwd = process.cwd(), silent = false) {
   const configPath = getWatcherConfigPath(cwd);
@@ -50688,22 +50809,14 @@ async function statusBranchWatcher(cwd = process.cwd()) {
     console.log(source_default.yellow("\u26A0 Invalid watcher configuration."));
     return;
   }
-  let isRunning = false;
-  if (config.pid) {
-    try {
-      process.kill(config.pid, 0);
-      isRunning = true;
-    } catch (e2) {
-      isRunning = false;
-    }
-  }
+  let isRunning = isPidAlive(config.pid);
   console.log("\n" + source_default.cyan.bold("\u250C\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510"));
   console.log(source_default.cyan.bold("\u2502 ") + source_default.bold.white("\u{1F33F} BRANCH CONFLICT WATCHER STATUS                          ") + source_default.cyan.bold("\u2502"));
   console.log(source_default.cyan.bold("\u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518\n"));
-  console.log(source_default.white(`  \u2022 Status:           ${isRunning ? source_default.green.bold("RUNNING (Active)") : source_default.red.bold("STOPPED")}`));
+  console.log(source_default.white(`  \u2022 Status:           ${isRunning ? source_default.green.bold("RUNNING (Active in background)") : source_default.red.bold("STOPPED")}`));
   console.log(source_default.white(`  \u2022 Background PID:   ${config.pid || "N/A"}`));
   console.log(source_default.white(`  \u2022 Monitored Target: ${source_default.cyan.bold("origin/" + config.targetBranch)}`));
-  console.log(source_default.white(`  \u2022 Check Interval:   Every ${config.intervalMinutes || 15} minutes`));
+  console.log(source_default.white(`  \u2022 Check Interval:   Every ${config.intervalMinutes || 15} minute(s)`));
   console.log(source_default.white(`  \u2022 Started At:       ${config.startedAt ? new Date(config.startedAt).toLocaleString() : "N/A"}`));
   console.log(source_default.white(`  \u2022 Last Checked:     ${config.lastCheckedAt ? new Date(config.lastCheckedAt).toLocaleString() : "N/A"}`));
   if (config.behindCount > 0) {
@@ -50719,10 +50832,21 @@ async function statusBranchWatcher(cwd = process.cwd()) {
   }
   console.log("");
 }
-async function runDaemonLoop(cwd, targetBranch) {
-  const INTERVAL_MS = 15 * 60 * 1e3;
+async function runDaemonLoop(cwd, targetBranch, intervalMinutes = 15) {
+  const safeMinutes = parseInt(intervalMinutes, 10) || 15;
+  const INTERVAL_MS = safeMinutes * 60 * 1e3;
+  const daemonLogPath = import_path.default.join(cwd, ".git", "gatekeeper-daemon.log");
+  function appendDaemonLog(msg) {
+    try {
+      import_fs2.default.appendFileSync(daemonLogPath, `[${(/* @__PURE__ */ new Date()).toLocaleString()}] ${msg}
+`, "utf8");
+    } catch (e2) {
+    }
+  }
+  appendDaemonLog(`Background daemon started for origin/${targetBranch} (Interval: ${safeMinutes} min, PID: ${process.pid}).`);
   async function checkCycle() {
     try {
+      appendDaemonLog(`Executing conflict check cycle against origin/${targetBranch}...`);
       const result = checkBranchConflicts(cwd, targetBranch);
       const configPath = getWatcherConfigPath(cwd);
       if (configPath && import_fs2.default.existsSync(configPath)) {
@@ -50732,21 +50856,23 @@ async function runDaemonLoop(cwd, targetBranch) {
           config.hasConflict = result.hasConflict;
           config.conflictingFiles = result.conflictingFiles;
           config.behindCount = result.behindCount;
+          config.intervalMinutes = safeMinutes;
           import_fs2.default.writeFileSync(configPath, JSON.stringify(config, null, 2), "utf8");
         } catch (e2) {
         }
       }
       if (result.hasConflict && result.conflictingFiles.length > 0) {
         const fileList = result.conflictingFiles.slice(0, 3).join(", ") + (result.conflictingFiles.length > 3 ? "..." : "");
-        sendWindowsNotification(
-          "\u26A0\uFE0F Angular Gatekeeper: Merge Conflict Detected!",
-          `Branch "${result.currentBranch}" conflicts with origin/${targetBranch} in: ${fileList}`
-        );
+        const toastTitle = result.hasUncommittedChanges ? "\u26A0\uFE0F Live Conflict in Active Work!" : "\u26A0\uFE0F Angular Gatekeeper: Merge Conflict Detected!";
+        const toastMessage = `Branch "${result.currentBranch}" conflicts with origin/${targetBranch} in: ${fileList}`;
+        appendDaemonLog(`CONFLICT DETECTED in: ${result.conflictingFiles.join(", ")}. Sending Windows toast alert.`);
+        sendWindowsNotification(toastTitle, toastMessage, cwd);
         const alertLogPath = getAlertLogPath(cwd);
         if (alertLogPath) {
-          const logContent = `[${(/* @__PURE__ */ new Date()).toLocaleString()}] CONFLICT ALERT
+          const logContent = `[${(/* @__PURE__ */ new Date()).toLocaleString()}] LIVE CONFLICT ALERT
 Current Branch: ${result.currentBranch}
 Target Branch: origin/${targetBranch}
+Uncommitted Changes: ${result.hasUncommittedChanges ? "YES (Live edits detected)" : "NO"}
 Conflicting Files:
 ` + result.conflictingFiles.map((f3) => `  - ${f3}`).join("\n") + `
 
@@ -50755,11 +50881,13 @@ Please pull or rebase origin/${targetBranch} to resolve.
 `;
           import_fs2.default.appendFileSync(alertLogPath, logContent, "utf8");
         }
+      } else {
+        appendDaemonLog(`Check cycle clean: No conflicts with origin/${targetBranch}.`);
       }
     } catch (cycleErr) {
+      appendDaemonLog(`Error in check cycle: ${cycleErr.message || cycleErr}`);
     }
   }
-  await checkCycle();
   setInterval(checkCycle, INTERVAL_MS);
 }
 
@@ -51124,35 +51252,30 @@ Ensure your response clearly includes either "VERDICT: PASSED" or "VERDICT: FAIL
   console.log(source_default.green.bold("\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\n"));
   process.exit(0);
 }
-var args = process.argv.slice(2);
-var firstArg = (args[0] || "").toLowerCase();
-var secondArg = (args[1] || "").toLowerCase();
-var thirdArg = (args[2] || "").toLowerCase();
+var argv = process.argv;
 async function main() {
-  if (firstArg === "branch-watch-daemon") {
-    const repoPath = args[1] || process.cwd();
-    const targetBranch = args[2] || "main";
-    await runDaemonLoop(repoPath, targetBranch);
+  if (process.env.GATEKEEPER_DAEMON_MODE === "1" || argv.includes("--branch-watch-daemon") || argv.includes("branch-watch-daemon")) {
+    const repoPath = process.env.GATEKEEPER_REPO_PATH || argv[3] || process.cwd();
+    const targetBranch = process.env.GATEKEEPER_TARGET_BRANCH || argv[4] || "main";
+    const intervalMinutes = parseInt(process.env.GATEKEEPER_INTERVAL_MINUTES || argv[5], 10) || 15;
+    await runDaemonLoop(repoPath, targetBranch, intervalMinutes);
     return;
   }
-  if (firstArg === "branch-check" || firstArg === "branch" || firstArg === "branch" && secondArg === "check") {
-    const action = firstArg === "branch" && secondArg === "check" ? thirdArg : secondArg;
-    if (action === "--enable" || action === "enable" || action === "-e") {
+  const isBranchCmd = argv.some(
+    (a) => a === "branch" || a === "branch-check" || a === "--branch-check" || a === "--branch"
+  );
+  if (isBranchCmd) {
+    const isEnable = argv.some((a) => a === "--enable" || a === "enable" || a === "-e");
+    const isDisable = argv.some((a) => a === "--disable" || a === "disable" || a === "-d");
+    const isStatus = argv.some((a) => a === "--status" || a === "status" || a === "-s");
+    if (isEnable) {
       await enableBranchWatcher(process.cwd());
       return;
-    } else if (action === "--disable" || action === "disable" || action === "-d") {
+    } else if (isDisable) {
       await disableBranchWatcher(process.cwd());
       return;
-    } else if (action === "--status" || action === "status" || action === "-s" || !action) {
+    } else if (isStatus || !isEnable && !isDisable) {
       await statusBranchWatcher(process.cwd());
-      return;
-    } else {
-      console.log(source_default.yellow(`
-Unknown branch command option: "${action}"`));
-      console.log(source_default.white("Usage:"));
-      console.log(source_default.cyan("  a-gatekeeper branch check --enable     ") + source_default.gray("\u2192 Select branch & start 15-min conflict monitor"));
-      console.log(source_default.cyan("  a-gatekeeper branch check --disable    ") + source_default.gray("\u2192 Stop conflict monitor"));
-      console.log(source_default.cyan("  a-gatekeeper branch check --status     ") + source_default.gray("\u2192 View monitor status & conflicts\n"));
       return;
     }
   }

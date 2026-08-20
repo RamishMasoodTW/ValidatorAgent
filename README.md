@@ -7,9 +7,9 @@ A DevSecOps background Git pre-commit validator, automated AI knowledge gatekeep
 ## 🚀 Key Features
 
 1. **Strictly Pre-Commit Triggered**: Runs automatically whenever you execute `git commit` in any repository. Push is left clean, fast, and direct.
-2. **🌿 15-Minute Background Branch Conflict Watcher**:
+2. **🌿 Customizable Background Branch Conflict Watcher**:
    - Compares your current working branch against a selected remote branch (e.g. `origin/main`, `origin/dev`, `origin/staging`).
-   - Runs in-memory dry-run conflict checks (`git merge-tree`) every 15 minutes in the background without modifying any files.
+   - Runs in-memory dry-run conflict checks (`git merge-tree`) automatically on your custom interval (e.g. 5, 10, 15, 30 minutes) in the background without modifying any files.
    - Automatically displays **Windows Desktop Toast Notifications** with sound when conflicts or incoming changes are detected.
 3. **Angular Target Detection**: Verifies `angular.json` and `@angular/core`. Non-Angular repositories (Node backend, React, Python, etc.) are safely and silently bypassed with code `0`.
 4. **Angular Architecture & Critical Assets Check**: Ensures essential Angular directory structures and configs (`angular.json`, `package.json`, `tsconfig.json`, `src/`, `src/app/`, `src/index.html`, `src/main.ts`) are intact.
