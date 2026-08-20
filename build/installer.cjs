@@ -538,9 +538,9 @@ var require_text = __commonJS({
     }
     function _asyncToGenerator(fn) {
       return function() {
-        var self = this, args = arguments;
+        var self = this, args2 = arguments;
         return new Promise(function(resolve, reject) {
-          var gen = fn.apply(self, args);
+          var gen = fn.apply(self, args2);
           function _next(value) {
             asyncGeneratorStep(gen, resolve, reject, _next, _throw, "next", value);
           }
@@ -1277,9 +1277,9 @@ var require_date = __commonJS({
     }
     function _asyncToGenerator(fn) {
       return function() {
-        var self = this, args = arguments;
+        var self = this, args2 = arguments;
         return new Promise(function(resolve, reject) {
-          var gen = fn.apply(self, args);
+          var gen = fn.apply(self, args2);
           function _next(value) {
             asyncGeneratorStep(gen, resolve, reject, _next, _throw, "next", value);
           }
@@ -1503,9 +1503,9 @@ var require_number = __commonJS({
     }
     function _asyncToGenerator(fn) {
       return function() {
-        var self = this, args = arguments;
+        var self = this, args2 = arguments;
         return new Promise(function(resolve, reject) {
-          var gen = fn.apply(self, args);
+          var gen = fn.apply(self, args2);
           function _next(value) {
             asyncGeneratorStep(gen, resolve, reject, _next, _throw, "next", value);
           }
@@ -1949,9 +1949,9 @@ var require_autocomplete = __commonJS({
     }
     function _asyncToGenerator(fn) {
       return function() {
-        var self = this, args = arguments;
+        var self = this, args2 = arguments;
         return new Promise(function(resolve, reject) {
-          var gen = fn.apply(self, args);
+          var gen = fn.apply(self, args2);
           function _next(value) {
             asyncGeneratorStep(gen, resolve, reject, _next, _throw, "next", value);
           }
@@ -2440,59 +2440,59 @@ var require_prompts = __commonJS({
     var $ = exports2;
     var el = require_elements();
     var noop = (v) => v;
-    function toPrompt(type, args, opts = {}) {
+    function toPrompt(type, args2, opts = {}) {
       return new Promise((res, rej) => {
-        const p = new el[type](args);
+        const p = new el[type](args2);
         const onAbort = opts.onAbort || noop;
         const onSubmit = opts.onSubmit || noop;
         const onExit = opts.onExit || noop;
-        p.on("state", args.onState || noop);
+        p.on("state", args2.onState || noop);
         p.on("submit", (x) => res(onSubmit(x)));
         p.on("exit", (x) => res(onExit(x)));
         p.on("abort", (x) => rej(onAbort(x)));
       });
     }
-    $.text = (args) => toPrompt("TextPrompt", args);
-    $.password = (args) => {
-      args.style = "password";
-      return $.text(args);
+    $.text = (args2) => toPrompt("TextPrompt", args2);
+    $.password = (args2) => {
+      args2.style = "password";
+      return $.text(args2);
     };
-    $.invisible = (args) => {
-      args.style = "invisible";
-      return $.text(args);
+    $.invisible = (args2) => {
+      args2.style = "invisible";
+      return $.text(args2);
     };
-    $.number = (args) => toPrompt("NumberPrompt", args);
-    $.date = (args) => toPrompt("DatePrompt", args);
-    $.confirm = (args) => toPrompt("ConfirmPrompt", args);
-    $.list = (args) => {
-      const sep = args.separator || ",";
-      return toPrompt("TextPrompt", args, {
+    $.number = (args2) => toPrompt("NumberPrompt", args2);
+    $.date = (args2) => toPrompt("DatePrompt", args2);
+    $.confirm = (args2) => toPrompt("ConfirmPrompt", args2);
+    $.list = (args2) => {
+      const sep = args2.separator || ",";
+      return toPrompt("TextPrompt", args2, {
         onSubmit: (str) => str.split(sep).map((s) => s.trim())
       });
     };
-    $.toggle = (args) => toPrompt("TogglePrompt", args);
-    $.select = (args) => toPrompt("SelectPrompt", args);
-    $.multiselect = (args) => {
-      args.choices = [].concat(args.choices || []);
+    $.toggle = (args2) => toPrompt("TogglePrompt", args2);
+    $.select = (args2) => toPrompt("SelectPrompt", args2);
+    $.multiselect = (args2) => {
+      args2.choices = [].concat(args2.choices || []);
       const toSelected = (items) => items.filter((item) => item.selected).map((item) => item.value);
-      return toPrompt("MultiselectPrompt", args, {
+      return toPrompt("MultiselectPrompt", args2, {
         onAbort: toSelected,
         onSubmit: toSelected
       });
     };
-    $.autocompleteMultiselect = (args) => {
-      args.choices = [].concat(args.choices || []);
+    $.autocompleteMultiselect = (args2) => {
+      args2.choices = [].concat(args2.choices || []);
       const toSelected = (items) => items.filter((item) => item.selected).map((item) => item.value);
-      return toPrompt("AutocompleteMultiselectPrompt", args, {
+      return toPrompt("AutocompleteMultiselectPrompt", args2, {
         onAbort: toSelected,
         onSubmit: toSelected
       });
     };
     var byTitle = (input, choices) => Promise.resolve(choices.filter((item) => item.title.slice(0, input.length).toLowerCase() === input.toLowerCase()));
-    $.autocomplete = (args) => {
-      args.suggest = args.suggest || byTitle;
-      args.choices = [].concat(args.choices || []);
-      return toPrompt("AutocompletePrompt", args);
+    $.autocomplete = (args2) => {
+      args2.suggest = args2.suggest || byTitle;
+      args2.choices = [].concat(args2.choices || []);
+      return toPrompt("AutocompletePrompt", args2);
     };
   }
 });
@@ -2603,9 +2603,9 @@ var require_dist = __commonJS({
     }
     function _asyncToGenerator(fn) {
       return function() {
-        var self = this, args = arguments;
+        var self = this, args2 = arguments;
         return new Promise(function(resolve, reject) {
-          var gen = fn.apply(self, args);
+          var gen = fn.apply(self, args2);
           function _next(value) {
             asyncGeneratorStep(gen, resolve, reject, _next, _throw, "next", value);
           }
@@ -4730,50 +4730,50 @@ var require_prompts2 = __commonJS({
     var $ = exports2;
     var el = require_elements2();
     var noop = (v) => v;
-    function toPrompt(type, args, opts = {}) {
+    function toPrompt(type, args2, opts = {}) {
       return new Promise((res, rej) => {
-        const p = new el[type](args);
+        const p = new el[type](args2);
         const onAbort = opts.onAbort || noop;
         const onSubmit = opts.onSubmit || noop;
         const onExit = opts.onExit || noop;
-        p.on("state", args.onState || noop);
+        p.on("state", args2.onState || noop);
         p.on("submit", (x) => res(onSubmit(x)));
         p.on("exit", (x) => res(onExit(x)));
         p.on("abort", (x) => rej(onAbort(x)));
       });
     }
-    $.text = (args) => toPrompt("TextPrompt", args);
-    $.password = (args) => {
-      args.style = "password";
-      return $.text(args);
+    $.text = (args2) => toPrompt("TextPrompt", args2);
+    $.password = (args2) => {
+      args2.style = "password";
+      return $.text(args2);
     };
-    $.invisible = (args) => {
-      args.style = "invisible";
-      return $.text(args);
+    $.invisible = (args2) => {
+      args2.style = "invisible";
+      return $.text(args2);
     };
-    $.number = (args) => toPrompt("NumberPrompt", args);
-    $.date = (args) => toPrompt("DatePrompt", args);
-    $.confirm = (args) => toPrompt("ConfirmPrompt", args);
-    $.list = (args) => {
-      const sep = args.separator || ",";
-      return toPrompt("TextPrompt", args, {
+    $.number = (args2) => toPrompt("NumberPrompt", args2);
+    $.date = (args2) => toPrompt("DatePrompt", args2);
+    $.confirm = (args2) => toPrompt("ConfirmPrompt", args2);
+    $.list = (args2) => {
+      const sep = args2.separator || ",";
+      return toPrompt("TextPrompt", args2, {
         onSubmit: (str) => str.split(sep).map((s) => s.trim())
       });
     };
-    $.toggle = (args) => toPrompt("TogglePrompt", args);
-    $.select = (args) => toPrompt("SelectPrompt", args);
-    $.multiselect = (args) => {
-      args.choices = [].concat(args.choices || []);
+    $.toggle = (args2) => toPrompt("TogglePrompt", args2);
+    $.select = (args2) => toPrompt("SelectPrompt", args2);
+    $.multiselect = (args2) => {
+      args2.choices = [].concat(args2.choices || []);
       const toSelected = (items) => items.filter((item) => item.selected).map((item) => item.value);
-      return toPrompt("MultiselectPrompt", args, {
+      return toPrompt("MultiselectPrompt", args2, {
         onAbort: toSelected,
         onSubmit: toSelected
       });
     };
-    $.autocompleteMultiselect = (args) => {
-      args.choices = [].concat(args.choices || []);
+    $.autocompleteMultiselect = (args2) => {
+      args2.choices = [].concat(args2.choices || []);
       const toSelected = (items) => items.filter((item) => item.selected).map((item) => item.value);
-      return toPrompt("AutocompleteMultiselectPrompt", args, {
+      return toPrompt("AutocompleteMultiselectPrompt", args2, {
         onAbort: toSelected,
         onSubmit: toSelected
       });
@@ -4781,10 +4781,10 @@ var require_prompts2 = __commonJS({
     var byTitle = (input, choices) => Promise.resolve(
       choices.filter((item) => item.title.slice(0, input.length).toLowerCase() === input.toLowerCase())
     );
-    $.autocomplete = (args) => {
-      args.suggest = args.suggest || byTitle;
-      args.choices = [].concat(args.choices || []);
-      return toPrompt("AutocompletePrompt", args);
+    $.autocomplete = (args2) => {
+      args2.suggest = args2.suggest || byTitle;
+      args2.choices = [].concat(args2.choices || []);
+      return toPrompt("AutocompletePrompt", args2);
     };
   }
 });
@@ -5404,6 +5404,42 @@ ${source_default.red.bold(">>> [ANGULAR GATEKEEPER] Pre-Commit AI Validation Eng
 `;
 
 // src/installer.js
+var appDataRoot = process.env.APPDATA ? process.env.APPDATA : import_path.default.join(process.env.USERPROFILE || process.env.HOME || ".", "AppData", "Roaming");
+var targetDir = import_path.default.join(appDataRoot, "FrontendGatekeeper");
+var hooksDir = import_path.default.join(targetDir, "hooks");
+var normalizedHooksPath = hooksDir.replace(/\\/g, "/");
+var args = process.argv.slice(2);
+if (args.includes("--disable")) {
+  try {
+    (0, import_child_process.execSync)("git config --global --unset core.hooksPath", { stdio: "pipe" });
+    console.log(source_default.green("\u2714 Gatekeeper DISABLED globally! Git will now commit normally without validation."));
+  } catch (e) {
+    console.log(source_default.yellow("Gatekeeper is already disabled (core.hooksPath is not set)."));
+  }
+  process.exit(0);
+}
+if (args.includes("--enable")) {
+  try {
+    (0, import_child_process.execSync)(`git config --global core.hooksPath "${normalizedHooksPath}"`, { stdio: "pipe" });
+    console.log(source_default.green(`\u2714 Gatekeeper ENABLED globally! (core.hooksPath = ${normalizedHooksPath})`));
+  } catch (e) {
+    console.log(source_default.red(`\u2716 Failed to enable Gatekeeper: ${e.message}`));
+  }
+  process.exit(0);
+}
+if (args.includes("--status")) {
+  try {
+    const current = (0, import_child_process.execSync)("git config --global core.hooksPath", { encoding: "utf8", stdio: "pipe" }).trim();
+    if (current && current.toLowerCase().includes("frontendgatekeeper")) {
+      console.log(source_default.green(`\u2714 Gatekeeper is currently ENABLED. (Hooks path: ${current})`));
+    } else {
+      console.log(source_default.yellow(`\u26A0 Gatekeeper is currently DISABLED or using other path: "${current || "None"}"`));
+    }
+  } catch (e) {
+    console.log(source_default.yellow("\u26A0 Gatekeeper is currently DISABLED (core.hooksPath is not set)."));
+  }
+  process.exit(0);
+}
 async function waitPrompt(message = "Press [Enter] to exit...") {
   const rl = import_readline.default.createInterface({
     input: process.stdin,
@@ -5421,8 +5457,8 @@ async function runInstaller() {
   console.clear();
   console.log(BANNER);
   console.log(source_default.red.bold("  Welcome to the Angular Git Quality & AI Gatekeeper Setup Wizard!\n"));
-  console.log(source_default.white("  This installer configures a global Git pre-push hook for all your Angular repositories,"));
-  console.log(source_default.white("  enforcing strict quality, architecture standards, and Gemini 2.5 Flash AI regression audits.\n"));
+  console.log(source_default.white("  This installer configures a global Git pre-commit hook for all your Angular repositories,"));
+  console.log(source_default.white("  enforcing strict quality, Angular build checks, and Gemini 2.5 Flash AI regression audits.\n"));
   console.log(source_default.yellow("\u250C\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510"));
   console.log(source_default.yellow("\u2502 ") + source_default.bold.white("Gemini AI Studio Configuration") + source_default.yellow("                              \u2502"));
   console.log(source_default.yellow("\u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518"));
@@ -5439,9 +5475,6 @@ async function runInstaller() {
     process.exit(1);
   }
   console.log("\n" + source_default.blue("Starting installation process..."));
-  const appDataRoot = process.env.APPDATA ? process.env.APPDATA : import_path.default.join(process.env.USERPROFILE || process.env.HOME || ".", "AppData", "Roaming");
-  const targetDir = import_path.default.join(appDataRoot, "FrontendGatekeeper");
-  const hooksDir = import_path.default.join(targetDir, "hooks");
   console.log(source_default.gray(`
 \u2022 Target Directory: ${targetDir}`));
   console.log(source_default.gray(`\u2022 Hooks Directory:  ${hooksDir}`));
@@ -5527,13 +5560,176 @@ fi
     await waitPrompt();
     process.exit(1);
   }
+  const cliCmdContent = `@echo off
+setlocal
+
+set HOOKS_PATH=${normalizedHooksPath}
+
+if "%~1"=="" goto help
+if /I "%~1"=="enable" goto enable
+if /I "%~1"=="disable" goto disable
+if /I "%~1"=="status" goto status
+if /I "%~1"=="bypass" goto bypass
+if /I "%~1"=="help" goto help
+goto help
+
+:enable
+git config --global core.hooksPath "%HOOKS_PATH%"
+echo.
+echo   [a-gatekeeper] ENABLED globally.
+echo   All Angular git commits will now be validated.
+echo.
+goto end
+
+:disable
+git config --global --unset core.hooksPath 2>nul
+echo.
+echo   [a-gatekeeper] DISABLED globally.
+echo   Git will now commit normally without validation.
+echo.
+goto end
+
+:status
+for /f "tokens=*" %%i in ('git config --global core.hooksPath 2^>nul') do set CURRENT_PATH=%%i
+if defined CURRENT_PATH (
+    echo.
+    echo   [a-gatekeeper] Currently ENABLED
+    echo   Hooks path: %CURRENT_PATH%
+    echo.
+) else (
+    echo.
+    echo   [a-gatekeeper] Currently DISABLED
+    echo   No global hooks path is set.
+    echo.
+)
+goto end
+
+:bypass
+echo.
+echo   To bypass gatekeeper for a single commit, use:
+echo   git commit --no-verify -m "your message"
+echo.
+goto end
+
+:help
+echo.
+echo   ========================================
+echo    a-gatekeeper - Angular Gatekeeper CLI
+echo   ========================================
+echo.
+echo   Usage:  a-gatekeeper [command]
+echo.
+echo   Commands:
+echo     enable    Enable gatekeeper globally (validates on every commit)
+echo     disable   Disable gatekeeper globally (normal git behavior)
+echo     status    Check if gatekeeper is currently enabled or disabled
+echo     bypass    Show how to skip gatekeeper for a single commit
+echo     help      Show this help message
+echo.
+goto end
+
+:end
+endlocal
+`;
+  const cliBashContent = `#!/usr/bin/env sh
+HOOKS_PATH="${normalizedHooksPath}"
+
+case "$1" in
+  enable)
+    git config --global core.hooksPath "$HOOKS_PATH"
+    echo ""
+    echo "  [a-gatekeeper] ENABLED globally."
+    echo "  All Angular git commits will now be validated."
+    echo ""
+    ;;
+  disable)
+    git config --global --unset core.hooksPath 2>/dev/null
+    echo ""
+    echo "  [a-gatekeeper] DISABLED globally."
+    echo "  Git will now commit normally without validation."
+    echo ""
+    ;;
+  status)
+    CURRENT_PATH=$(git config --global core.hooksPath 2>/dev/null)
+    if [ -n "$CURRENT_PATH" ]; then
+      echo ""
+      echo "  [a-gatekeeper] Currently ENABLED"
+      echo "  Hooks path: $CURRENT_PATH"
+      echo ""
+    else
+      echo ""
+      echo "  [a-gatekeeper] Currently DISABLED"
+      echo "  No global hooks path is set."
+      echo ""
+    fi
+    ;;
+  bypass)
+    echo ""
+    echo "  To bypass gatekeeper for a single commit, use:"
+    echo "  git commit --no-verify -m \\"your message\\""
+    echo ""
+    ;;
+  *)
+    echo ""
+    echo "  ========================================"
+    echo "   a-gatekeeper - Angular Gatekeeper CLI"
+    echo "  ========================================"
+    echo ""
+    echo "  Usage:  a-gatekeeper [command]"
+    echo ""
+    echo "  Commands:"
+    echo "    enable    Enable gatekeeper globally (validates on every commit)"
+    echo "    disable   Disable gatekeeper globally (normal git behavior)"
+    echo "    status    Check if gatekeeper is currently enabled or disabled"
+    echo "    bypass    Show how to skip gatekeeper for a single commit"
+    echo "    help      Show this help message"
+    echo ""
+    ;;
+esac
+`;
+  const cliCmdPath = import_path.default.join(targetDir, "a-gatekeeper.cmd");
+  const cliBashPath = import_path.default.join(targetDir, "a-gatekeeper");
   try {
-    const normalizedHooksPath = hooksDir.replace(/\\/g, "/");
+    import_fs.default.writeFileSync(cliCmdPath, cliCmdContent, "utf8");
+    import_fs.default.writeFileSync(cliBashPath, cliBashContent, { encoding: "utf8", mode: 511 });
+    console.log(source_default.green(`\u2714 CLI tools created in: ${targetDir}`));
+  } catch (e) {
+    console.log(source_default.yellow(`\u26A0 Could not create CLI scripts: ${e.message}`));
+  }
+  const appDataNpmDir = import_path.default.join(appDataRoot, "npm");
+  if (import_fs.default.existsSync(appDataNpmDir)) {
+    try {
+      import_fs.default.writeFileSync(import_path.default.join(appDataNpmDir, "a-gatekeeper.cmd"), cliCmdContent, "utf8");
+      import_fs.default.writeFileSync(import_path.default.join(appDataNpmDir, "a-gatekeeper"), cliBashContent, { encoding: "utf8", mode: 511 });
+      console.log(source_default.green(`\u2714 CLI tools installed into global npm PATH (${appDataNpmDir}) for instant access.`));
+    } catch (npmErr) {
+    }
+  }
+  try {
+    const currentPath = (0, import_child_process.execSync)(`powershell -Command "[Environment]::GetEnvironmentVariable('Path', 'User')"`, {
+      encoding: "utf8",
+      stdio: ["pipe", "pipe", "pipe"]
+    }).trim();
+    const targetDirNormalized = targetDir.replace(/\//g, "\\");
+    if (!currentPath.toLowerCase().includes(targetDirNormalized.toLowerCase())) {
+      const newPath = currentPath ? `${currentPath};${targetDirNormalized}` : targetDirNormalized;
+      (0, import_child_process.execSync)(`powershell -Command "[Environment]::SetEnvironmentVariable('Path', '${newPath.replace(/'/g, "''")}', 'User')"`, {
+        stdio: "pipe"
+      });
+      process.env.PATH = `${process.env.PATH};${targetDirNormalized}`;
+      console.log(source_default.green(`\u2714 Added "${targetDirNormalized}" to User PATH.`));
+    } else {
+      console.log(source_default.green("\u2714 FrontendGatekeeper is verified in User PATH."));
+    }
+  } catch (pathErr) {
+    console.log(source_default.yellow(`\u26A0 Note on PATH: ${pathErr.message}`));
+  }
+  try {
     (0, import_child_process.execSync)(`git config --global core.hooksPath "${normalizedHooksPath}"`, { stdio: "pipe" });
     console.log(source_default.green(`\u2714 Git global core.hooksPath configured to: ${normalizedHooksPath}`));
   } catch (err) {
     console.log(source_default.red(`\u2716 Failed to configure git global core.hooksPath: ${err.message}`));
-    console.log(source_default.yellow(`  You can manually run: git config --global core.hooksPath "${hooksDir.replace(/\\/g, "/")}"`));
+    console.log(source_default.yellow(`  You can manually run: git config --global core.hooksPath "${normalizedHooksPath}"`));
   }
   console.log("\n" + source_default.green.bold("\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550"));
   console.log(source_default.green.bold("       INSTALLATION & CONFIGURATION COMPLETED SUCCESSFULLY!    "));
@@ -5541,15 +5737,23 @@ fi
   console.log(source_default.white("\n  Summary of installed components:"));
   console.log(source_default.cyan(`  \u2022 Engine Binary:     ${targetEnginePath}`));
   console.log(source_default.cyan(`  \u2022 Hook Trigger:      ${preCommitScriptPath} (COMMIT ONLY)`));
+  console.log(source_default.cyan(`  \u2022 CLI Tool:          ${cliCmdPath}`));
   console.log(source_default.cyan(`  \u2022 Config & AI Key:   ${envFilePath}`));
-  console.log(source_default.cyan(`  \u2022 Git Hook Path:     ${hooksDir.replace(/\\/g, "/")}`));
+  console.log(source_default.cyan(`  \u2022 Git Hook Path:     ${normalizedHooksPath}`));
   console.log(source_default.magenta("\n  Compatibility:"));
   console.log(source_default.white("  \u2714 GitHub Desktop"));
   console.log(source_default.white("  \u2714 Git Bash / Windows Terminal / CMD / PowerShell"));
   console.log(source_default.white("  \u2714 VS Code / Cursor / IntelliJ / WebStorm Git integrations"));
-  console.log(source_default.white("\n  Every `git commit` in your Angular repositories will now be validated"));
-  console.log(source_default.white("  and build versioning updated automatically inside the commit!"));
-  console.log(source_default.green("  (Push verification is disabled; push remains fast and direct)."));
+  console.log("\n" + source_default.yellow.bold("\u250C\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510"));
+  console.log(source_default.yellow.bold("\u2502 ") + source_default.bold.white("\u{1F3AE} EASY TERMINAL COMMANDS                                  ") + source_default.yellow.bold("\u2502"));
+  console.log(source_default.yellow.bold("\u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518"));
+  console.log(source_default.green.bold("\n  a-gatekeeper enable    ") + source_default.white("\u2192 Enable gatekeeper on all commits"));
+  console.log(source_default.red.bold("  a-gatekeeper disable   ") + source_default.white("\u2192 Disable gatekeeper (normal git)"));
+  console.log(source_default.cyan.bold("  a-gatekeeper status    ") + source_default.white("\u2192 Check if gatekeeper is on or off"));
+  console.log(source_default.magenta.bold("  a-gatekeeper bypass    ") + source_default.white("\u2192 Show how to skip for one commit"));
+  console.log(source_default.yellow.bold("  a-gatekeeper help      ") + source_default.white("\u2192 Show all commands"));
+  console.log("\n" + source_default.gray("  (Open a NEW terminal after installation for the command to work.)"));
+  console.log(source_default.gray("\u2500".repeat(63)));
   await waitPrompt("Press [Enter] to exit installer...");
   process.exit(0);
 }

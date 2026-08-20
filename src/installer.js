@@ -7,6 +7,51 @@ import prompts from 'prompts';
 import readline from 'readline';
 import { BANNER } from './ascii-art.js';
 
+const appDataRoot = process.env.APPDATA 
+  ? process.env.APPDATA 
+  : path.join(process.env.USERPROFILE || process.env.HOME || '.', 'AppData', 'Roaming');
+
+const targetDir = path.join(appDataRoot, 'FrontendGatekeeper');
+const hooksDir = path.join(targetDir, 'hooks');
+const normalizedHooksPath = hooksDir.replace(/\\/g, '/');
+
+// Check CLI arguments (--enable, --disable, --status)
+const args = process.argv.slice(2);
+
+if (args.includes('--disable')) {
+  try {
+    execSync('git config --global --unset core.hooksPath', { stdio: 'pipe' });
+    console.log(chalk.green('✔ Gatekeeper DISABLED globally! Git will now commit normally without validation.'));
+  } catch (e) {
+    console.log(chalk.yellow('Gatekeeper is already disabled (core.hooksPath is not set).'));
+  }
+  process.exit(0);
+}
+
+if (args.includes('--enable')) {
+  try {
+    execSync(`git config --global core.hooksPath "${normalizedHooksPath}"`, { stdio: 'pipe' });
+    console.log(chalk.green(`✔ Gatekeeper ENABLED globally! (core.hooksPath = ${normalizedHooksPath})`));
+  } catch (e) {
+    console.log(chalk.red(`✖ Failed to enable Gatekeeper: ${e.message}`));
+  }
+  process.exit(0);
+}
+
+if (args.includes('--status')) {
+  try {
+    const current = execSync('git config --global core.hooksPath', { encoding: 'utf8', stdio: 'pipe' }).trim();
+    if (current && current.toLowerCase().includes('frontendgatekeeper')) {
+      console.log(chalk.green(`✔ Gatekeeper is currently ENABLED. (Hooks path: ${current})`));
+    } else {
+      console.log(chalk.yellow(`⚠ Gatekeeper is currently DISABLED or using other path: "${current || 'None'}"`));
+    }
+  } catch (e) {
+    console.log(chalk.yellow('⚠ Gatekeeper is currently DISABLED (core.hooksPath is not set).'));
+  }
+  process.exit(0);
+}
+
 async function waitPrompt(message = 'Press [Enter] to exit...') {
   const rl = readline.createInterface({
     input: process.stdin,
@@ -24,8 +69,8 @@ async function runInstaller() {
   console.clear();
   console.log(BANNER);
   console.log(chalk.red.bold('  Welcome to the Angular Git Quality & AI Gatekeeper Setup Wizard!\n'));
-  console.log(chalk.white('  This installer configures a global Git pre-push hook for all your Angular repositories,'));
-  console.log(chalk.white('  enforcing strict quality, architecture standards, and Gemini 2.5 Flash AI regression audits.\n'));
+  console.log(chalk.white('  This installer configures a global Git pre-commit hook for all your Angular repositories,'));
+  console.log(chalk.white('  enforcing strict quality, Angular build checks, and Gemini 2.5 Flash AI regression audits.\n'));
 
   // 1. Prompt for Gemini API Key
   console.log(chalk.yellow('┌─────────────────────────────────────────────────────────────┐'));
@@ -49,13 +94,6 @@ async function runInstaller() {
   console.log('\n' + chalk.blue('Starting installation process...'));
 
   // 2. Define Installation Directories
-  const appDataRoot = process.env.APPDATA 
-    ? process.env.APPDATA 
-    : path.join(process.env.USERPROFILE || process.env.HOME || '.', 'AppData', 'Roaming');
-  
-  const targetDir = path.join(appDataRoot, 'FrontendGatekeeper');
-  const hooksDir = path.join(targetDir, 'hooks');
-
   console.log(chalk.gray(`\n• Target Directory: ${targetDir}`));
   console.log(chalk.gray(`• Hooks Directory:  ${hooksDir}`));
 
@@ -83,7 +121,6 @@ async function runInstaller() {
   // 4. Locate and Copy engine.exe
   const targetEnginePath = path.join(targetDir, 'engine.exe');
   
-  // Possible source paths for engine.exe
   const candidateEnginePaths = [
     path.join(path.dirname(process.execPath), 'engine.exe'),
     path.join(process.cwd(), 'dist', 'engine.exe'),
@@ -155,33 +192,218 @@ fi
     process.exit(1);
   }
 
-  // 6. Configure Git Globally
+  // 6. Generate `a-gatekeeper.cmd` (CMD/PowerShell) and `a-gatekeeper` (Git Bash) CLI tools
+  const cliCmdContent = `@echo off
+setlocal
+
+set HOOKS_PATH=${normalizedHooksPath}
+
+if "%~1"=="" goto help
+if /I "%~1"=="enable" goto enable
+if /I "%~1"=="disable" goto disable
+if /I "%~1"=="status" goto status
+if /I "%~1"=="bypass" goto bypass
+if /I "%~1"=="help" goto help
+goto help
+
+:enable
+git config --global core.hooksPath "%HOOKS_PATH%"
+echo.
+echo   [a-gatekeeper] ENABLED globally.
+echo   All Angular git commits will now be validated.
+echo.
+goto end
+
+:disable
+git config --global --unset core.hooksPath 2>nul
+echo.
+echo   [a-gatekeeper] DISABLED globally.
+echo   Git will now commit normally without validation.
+echo.
+goto end
+
+:status
+for /f "tokens=*" %%i in ('git config --global core.hooksPath 2^>nul') do set CURRENT_PATH=%%i
+if defined CURRENT_PATH (
+    echo.
+    echo   [a-gatekeeper] Currently ENABLED
+    echo   Hooks path: %CURRENT_PATH%
+    echo.
+) else (
+    echo.
+    echo   [a-gatekeeper] Currently DISABLED
+    echo   No global hooks path is set.
+    echo.
+)
+goto end
+
+:bypass
+echo.
+echo   To bypass gatekeeper for a single commit, use:
+echo   git commit --no-verify -m "your message"
+echo.
+goto end
+
+:help
+echo.
+echo   ========================================
+echo    a-gatekeeper - Angular Gatekeeper CLI
+echo   ========================================
+echo.
+echo   Usage:  a-gatekeeper [command]
+echo.
+echo   Commands:
+echo     enable    Enable gatekeeper globally (validates on every commit)
+echo     disable   Disable gatekeeper globally (normal git behavior)
+echo     status    Check if gatekeeper is currently enabled or disabled
+echo     bypass    Show how to skip gatekeeper for a single commit
+echo     help      Show this help message
+echo.
+goto end
+
+:end
+endlocal
+`;
+
+  const cliBashContent = `#!/usr/bin/env sh
+HOOKS_PATH="${normalizedHooksPath}"
+
+case "$1" in
+  enable)
+    git config --global core.hooksPath "$HOOKS_PATH"
+    echo ""
+    echo "  [a-gatekeeper] ENABLED globally."
+    echo "  All Angular git commits will now be validated."
+    echo ""
+    ;;
+  disable)
+    git config --global --unset core.hooksPath 2>/dev/null
+    echo ""
+    echo "  [a-gatekeeper] DISABLED globally."
+    echo "  Git will now commit normally without validation."
+    echo ""
+    ;;
+  status)
+    CURRENT_PATH=$(git config --global core.hooksPath 2>/dev/null)
+    if [ -n "$CURRENT_PATH" ]; then
+      echo ""
+      echo "  [a-gatekeeper] Currently ENABLED"
+      echo "  Hooks path: $CURRENT_PATH"
+      echo ""
+    else
+      echo ""
+      echo "  [a-gatekeeper] Currently DISABLED"
+      echo "  No global hooks path is set."
+      echo ""
+    fi
+    ;;
+  bypass)
+    echo ""
+    echo "  To bypass gatekeeper for a single commit, use:"
+    echo "  git commit --no-verify -m \\"your message\\""
+    echo ""
+    ;;
+  *)
+    echo ""
+    echo "  ========================================"
+    echo "   a-gatekeeper - Angular Gatekeeper CLI"
+    echo "  ========================================"
+    echo ""
+    echo "  Usage:  a-gatekeeper [command]"
+    echo ""
+    echo "  Commands:"
+    echo "    enable    Enable gatekeeper globally (validates on every commit)"
+    echo "    disable   Disable gatekeeper globally (normal git behavior)"
+    echo "    status    Check if gatekeeper is currently enabled or disabled"
+    echo "    bypass    Show how to skip gatekeeper for a single commit"
+    echo "    help      Show this help message"
+    echo ""
+    ;;
+esac
+`;
+
+  // Write CLI tools into targetDir
+  const cliCmdPath = path.join(targetDir, 'a-gatekeeper.cmd');
+  const cliBashPath = path.join(targetDir, 'a-gatekeeper');
+
   try {
-    // Standardize hooks path with forward slashes for Git config
-    const normalizedHooksPath = hooksDir.replace(/\\/g, '/');
+    fs.writeFileSync(cliCmdPath, cliCmdContent, 'utf8');
+    fs.writeFileSync(cliBashPath, cliBashContent, { encoding: 'utf8', mode: 0o777 });
+    console.log(chalk.green(`✔ CLI tools created in: ${targetDir}`));
+  } catch (e) {
+    console.log(chalk.yellow(`⚠ Could not create CLI scripts: ${e.message}`));
+  }
+
+  // Also write into %APPDATA%/npm if present (already in active system PATH)
+  const appDataNpmDir = path.join(appDataRoot, 'npm');
+  if (fs.existsSync(appDataNpmDir)) {
+    try {
+      fs.writeFileSync(path.join(appDataNpmDir, 'a-gatekeeper.cmd'), cliCmdContent, 'utf8');
+      fs.writeFileSync(path.join(appDataNpmDir, 'a-gatekeeper'), cliBashContent, { encoding: 'utf8', mode: 0o777 });
+      console.log(chalk.green(`✔ CLI tools installed into global npm PATH (${appDataNpmDir}) for instant access.`));
+    } catch (npmErr) {
+      // ignore
+    }
+  }
+
+  // 7. Add FrontendGatekeeper directory to User PATH (so a-gatekeeper works globally everywhere)
+  try {
+    const currentPath = execSync('powershell -Command "[Environment]::GetEnvironmentVariable(\'Path\', \'User\')"', {
+      encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe']
+    }).trim();
+
+    const targetDirNormalized = targetDir.replace(/\//g, '\\');
+    if (!currentPath.toLowerCase().includes(targetDirNormalized.toLowerCase())) {
+      const newPath = currentPath ? `${currentPath};${targetDirNormalized}` : targetDirNormalized;
+      execSync(`powershell -Command "[Environment]::SetEnvironmentVariable('Path', '${newPath.replace(/'/g, "''")}', 'User')"`, {
+        stdio: 'pipe'
+      });
+      // Also update current session PATH
+      process.env.PATH = `${process.env.PATH};${targetDirNormalized}`;
+      console.log(chalk.green(`✔ Added "${targetDirNormalized}" to User PATH.`));
+    } else {
+      console.log(chalk.green('✔ FrontendGatekeeper is verified in User PATH.'));
+    }
+  } catch (pathErr) {
+    console.log(chalk.yellow(`⚠ Note on PATH: ${pathErr.message}`));
+  }
+
+  // 8. Configure Git Globally
+  try {
     execSync(`git config --global core.hooksPath "${normalizedHooksPath}"`, { stdio: 'pipe' });
     console.log(chalk.green(`✔ Git global core.hooksPath configured to: ${normalizedHooksPath}`));
   } catch (err) {
     console.log(chalk.red(`✖ Failed to configure git global core.hooksPath: ${err.message}`));
-    console.log(chalk.yellow(`  You can manually run: git config --global core.hooksPath "${hooksDir.replace(/\\/g, '/')}"`));
+    console.log(chalk.yellow(`  You can manually run: git config --global core.hooksPath "${normalizedHooksPath}"`));
   }
 
-  // 7. Show Success Summary
+  // 9. Show Success Summary & Easy CLI Commands
   console.log('\n' + chalk.green.bold('═══════════════════════════════════════════════════════════════'));
   console.log(chalk.green.bold('       INSTALLATION & CONFIGURATION COMPLETED SUCCESSFULLY!    '));
   console.log(chalk.green.bold('═══════════════════════════════════════════════════════════════'));
   console.log(chalk.white('\n  Summary of installed components:'));
   console.log(chalk.cyan(`  • Engine Binary:     ${targetEnginePath}`));
   console.log(chalk.cyan(`  • Hook Trigger:      ${preCommitScriptPath} (COMMIT ONLY)`));
+  console.log(chalk.cyan(`  • CLI Tool:          ${cliCmdPath}`));
   console.log(chalk.cyan(`  • Config & AI Key:   ${envFilePath}`));
-  console.log(chalk.cyan(`  • Git Hook Path:     ${hooksDir.replace(/\\/g, '/')}`));
+  console.log(chalk.cyan(`  • Git Hook Path:     ${normalizedHooksPath}`));
   console.log(chalk.magenta('\n  Compatibility:'));
   console.log(chalk.white('  ✔ GitHub Desktop'));
   console.log(chalk.white('  ✔ Git Bash / Windows Terminal / CMD / PowerShell'));
   console.log(chalk.white('  ✔ VS Code / Cursor / IntelliJ / WebStorm Git integrations'));
-  console.log(chalk.white('\n  Every `git commit` in your Angular repositories will now be validated'));
-  console.log(chalk.white('  and build versioning updated automatically inside the commit!'));
-  console.log(chalk.green('  (Push verification is disabled; push remains fast and direct).'));
+
+  console.log('\n' + chalk.yellow.bold('┌─────────────────────────────────────────────────────────────┐'));
+  console.log(chalk.yellow.bold('│ ') + chalk.bold.white('🎮 EASY TERMINAL COMMANDS                                  ') + chalk.yellow.bold('│'));
+  console.log(chalk.yellow.bold('└─────────────────────────────────────────────────────────────┘'));
+
+  console.log(chalk.green.bold('\n  a-gatekeeper enable    ') + chalk.white('→ Enable gatekeeper on all commits'));
+  console.log(chalk.red.bold('  a-gatekeeper disable   ') + chalk.white('→ Disable gatekeeper (normal git)'));
+  console.log(chalk.cyan.bold('  a-gatekeeper status    ') + chalk.white('→ Check if gatekeeper is on or off'));
+  console.log(chalk.magenta.bold('  a-gatekeeper bypass    ') + chalk.white('→ Show how to skip for one commit'));
+  console.log(chalk.yellow.bold('  a-gatekeeper help      ') + chalk.white('→ Show all commands'));
+
+  console.log('\n' + chalk.gray('  (Open a NEW terminal after installation for the command to work.)'));
+  console.log(chalk.gray('─'.repeat(63)));
 
   await waitPrompt('Press [Enter] to exit installer...');
   process.exit(0);
@@ -193,3 +415,4 @@ runInstaller().catch(async (err) => {
   await waitPrompt();
   process.exit(1);
 });
+

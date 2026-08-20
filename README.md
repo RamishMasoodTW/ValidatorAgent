@@ -29,6 +29,22 @@ A DevSecOps background Git pre-commit validator and automated AI knowledge gatek
 
 ---
 
+## 🎮 Easy Terminal Commands
+
+After installation, open any terminal (CMD, PowerShell, Git Bash, VS Code terminal) and use:
+
+```
+a-gatekeeper enable     →  Enable gatekeeper on all commits
+a-gatekeeper disable    →  Disable gatekeeper (normal git behavior)
+a-gatekeeper status     →  Check if gatekeeper is currently on or off
+a-gatekeeper bypass     →  Show how to skip for a single commit
+a-gatekeeper help       →  Show all available commands
+```
+
+> **Note:** Open a new terminal window after installation for the `a-gatekeeper` command to be recognized.
+
+---
+
 ## 📦 Project Structure
 
 ```
@@ -68,5 +84,5 @@ npm run build:exe
 Run `dist/AngularGatekeeperSetup.exe` (or `dist/FrontendGatekeeperSetup.exe`).
 The installer prompts for your Google AI Studio Gemini API Key and configures:
 - Target directory: `%APPDATA%/FrontendGatekeeper`
-- Global Git hook: `git config --global core.hooksPath "%APPDATA%/FrontendGatekeeper/hooks"`
-- Hook script: `%APPDATA%/FrontendGatekeeper/hooks/pre-commit` (Triggered ONLY on commit)
+- Global Git hook: `%APPDATA%/FrontendGatekeeper/hooks/pre-commit` (COMMIT ONLY)
+- CLI Tool: `a-gatekeeper` added to system PATH
