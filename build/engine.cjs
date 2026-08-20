@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 var __create = Object.create;
 var __defProp = Object.defineProperty;
 var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
@@ -44,8 +43,8 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
 // node_modules/dotenv/lib/main.js
 var require_main = __commonJS({
   "node_modules/dotenv/lib/main.js"(exports2, module2) {
-    var fs4 = require("fs");
-    var path3 = require("path");
+    var fs5 = require("fs");
+    var path4 = require("path");
     var os2 = require("os");
     var crypto2 = require("crypto");
     var TIPS = [
@@ -176,7 +175,7 @@ var require_main = __commonJS({
       if (options && options.path && options.path.length > 0) {
         if (Array.isArray(options.path)) {
           for (const filepath of options.path) {
-            if (fs4.existsSync(filepath)) {
+            if (fs5.existsSync(filepath)) {
               possibleVaultPath = filepath.endsWith(".vault") ? filepath : `${filepath}.vault`;
             }
           }
@@ -184,15 +183,15 @@ var require_main = __commonJS({
           possibleVaultPath = options.path.endsWith(".vault") ? options.path : `${options.path}.vault`;
         }
       } else {
-        possibleVaultPath = path3.resolve(process.cwd(), ".env.vault");
+        possibleVaultPath = path4.resolve(process.cwd(), ".env.vault");
       }
-      if (fs4.existsSync(possibleVaultPath)) {
+      if (fs5.existsSync(possibleVaultPath)) {
         return possibleVaultPath;
       }
       return null;
     }
     function _resolveHome(envPath2) {
-      return envPath2[0] === "~" ? path3.join(os2.homedir(), envPath2.slice(1)) : envPath2;
+      return envPath2[0] === "~" ? path4.join(os2.homedir(), envPath2.slice(1)) : envPath2;
     }
     function _configVault(options) {
       const debug = parseBoolean(process.env.DOTENV_CONFIG_DEBUG || options && options.debug);
@@ -209,7 +208,7 @@ var require_main = __commonJS({
       return { parsed };
     }
     function configDotenv(options) {
-      const dotenvPath = path3.resolve(process.cwd(), ".env");
+      const dotenvPath = path4.resolve(process.cwd(), ".env");
       let encoding = "utf8";
       let processEnv = process.env;
       if (options && options.processEnv != null) {
@@ -237,13 +236,13 @@ var require_main = __commonJS({
       }
       let lastError;
       const parsedAll = {};
-      for (const path4 of optionPaths) {
+      for (const path5 of optionPaths) {
         try {
-          const parsed = DotenvModule.parse(fs4.readFileSync(path4, { encoding }));
+          const parsed = DotenvModule.parse(fs5.readFileSync(path5, { encoding }));
           DotenvModule.populate(parsedAll, parsed, options);
         } catch (e2) {
           if (debug) {
-            _debug(`failed to load ${path4} ${e2.message}`);
+            _debug(`failed to load ${path5} ${e2.message}`);
           }
           lastError = e2;
         }
@@ -256,7 +255,7 @@ var require_main = __commonJS({
         const shortPaths = [];
         for (const filePath of optionPaths) {
           try {
-            const relative = path3.relative(process.cwd(), filePath);
+            const relative = path4.relative(process.cwd(), filePath);
             shortPaths.push(relative);
           } catch (e2) {
             if (debug) {
@@ -560,9 +559,9 @@ var require_retry = __commonJS({
         var original = obj[method];
         obj[method] = function retryWrapper(original2) {
           var op = exports2.operation(options);
-          var args = Array.prototype.slice.call(arguments, 1);
-          var callback = args.pop();
-          args.push(function(err) {
+          var args2 = Array.prototype.slice.call(arguments, 1);
+          var callback = args2.pop();
+          args2.push(function(err) {
             if (op.retry(err)) {
               return;
             }
@@ -572,7 +571,7 @@ var require_retry = __commonJS({
             callback.apply(this, arguments);
           });
           op.attempt(function() {
-            original2.apply(obj, args);
+            original2.apply(obj, args2);
           });
         }.bind(obj, original);
         obj[method].options = options;
@@ -1385,7 +1384,7 @@ var require_common2 = __commonJS({
         let enableOverride = null;
         let namespacesCache;
         let enabledCache;
-        function debug(...args) {
+        function debug(...args2) {
           if (!debug.enabled) {
             return;
           }
@@ -1396,28 +1395,28 @@ var require_common2 = __commonJS({
           self2.prev = prevTime;
           self2.curr = curr;
           prevTime = curr;
-          args[0] = createDebug.coerce(args[0]);
-          if (typeof args[0] !== "string") {
-            args.unshift("%O");
+          args2[0] = createDebug.coerce(args2[0]);
+          if (typeof args2[0] !== "string") {
+            args2.unshift("%O");
           }
           let index = 0;
-          args[0] = args[0].replace(/%([a-zA-Z%])/g, (match2, format) => {
+          args2[0] = args2[0].replace(/%([a-zA-Z%])/g, (match2, format) => {
             if (match2 === "%%") {
               return "%";
             }
             index++;
             const formatter = createDebug.formatters[format];
             if (typeof formatter === "function") {
-              const val = args[index];
+              const val = args2[index];
               match2 = formatter.call(self2, val);
-              args.splice(index, 1);
+              args2.splice(index, 1);
               index--;
             }
             return match2;
           });
-          createDebug.formatArgs.call(self2, args);
+          createDebug.formatArgs.call(self2, args2);
           const logFn = self2.log || createDebug.log;
-          logFn.apply(self2, args);
+          logFn.apply(self2, args2);
         }
         debug.namespace = namespace;
         debug.useColors = createDebug.useColors();
@@ -1639,16 +1638,16 @@ var require_browser = __commonJS({
       typeof navigator !== "undefined" && navigator.userAgent && (m2 = navigator.userAgent.toLowerCase().match(/firefox\/(\d+)/)) && parseInt(m2[1], 10) >= 31 || // Double check webkit in userAgent just in case we are in a worker
       typeof navigator !== "undefined" && navigator.userAgent && navigator.userAgent.toLowerCase().match(/applewebkit\/(\d+)/);
     }
-    function formatArgs(args) {
-      args[0] = (this.useColors ? "%c" : "") + this.namespace + (this.useColors ? " %c" : " ") + args[0] + (this.useColors ? "%c " : " ") + "+" + module2.exports.humanize(this.diff);
+    function formatArgs(args2) {
+      args2[0] = (this.useColors ? "%c" : "") + this.namespace + (this.useColors ? " %c" : " ") + args2[0] + (this.useColors ? "%c " : " ") + "+" + module2.exports.humanize(this.diff);
       if (!this.useColors) {
         return;
       }
       const c = "color: " + this.color;
-      args.splice(1, 0, c, "color: inherit");
+      args2.splice(1, 0, c, "color: inherit");
       let index = 0;
       let lastC = 0;
-      args[0].replace(/%[a-zA-Z%]/g, (match2) => {
+      args2[0].replace(/%[a-zA-Z%]/g, (match2) => {
         if (match2 === "%%") {
           return;
         }
@@ -1657,7 +1656,7 @@ var require_browser = __commonJS({
           lastC = index;
         }
       });
-      args.splice(lastC, 0, c);
+      args2.splice(lastC, 0, c);
     }
     exports2.log = console.debug || console.log || (() => {
     });
@@ -1823,16 +1822,16 @@ var require_node = __commonJS({
     function useColors() {
       return "colors" in exports2.inspectOpts ? Boolean(exports2.inspectOpts.colors) : tty2.isatty(process.stderr.fd);
     }
-    function formatArgs(args) {
+    function formatArgs(args2) {
       const { namespace: name, useColors: useColors2 } = this;
       if (useColors2) {
         const c = this.color;
         const colorCode = "\x1B[3" + (c < 8 ? c : "8;5;" + c);
         const prefix = `  ${colorCode};1m${name} \x1B[0m`;
-        args[0] = prefix + args[0].split("\n").join("\n" + prefix);
-        args.push(colorCode + "m+" + module2.exports.humanize(this.diff) + "\x1B[0m");
+        args2[0] = prefix + args2[0].split("\n").join("\n" + prefix);
+        args2.push(colorCode + "m+" + module2.exports.humanize(this.diff) + "\x1B[0m");
       } else {
-        args[0] = getDate() + name + " " + args[0];
+        args2[0] = getDate() + name + " " + args2[0];
       }
     }
     function getDate() {
@@ -1841,8 +1840,8 @@ var require_node = __commonJS({
       }
       return (/* @__PURE__ */ new Date()).toISOString() + " ";
     }
-    function log(...args) {
-      return process.stderr.write(util.formatWithOptions(exports2.inspectOpts, ...args) + "\n");
+    function log(...args2) {
+      return process.stderr.write(util.formatWithOptions(exports2.inspectOpts, ...args2) + "\n");
     }
     function save(namespaces) {
       if (namespaces) {
@@ -2463,15 +2462,15 @@ var require_ponyfill_es2018 = __commonJS({
         }
         return _queueMicrotask(callback);
       };
-      function reflectCall(F2, V, args) {
+      function reflectCall(F2, V, args2) {
         if (typeof F2 !== "function") {
           throw new TypeError("Argument is not a function");
         }
-        return Function.prototype.apply.call(F2, V, args);
+        return Function.prototype.apply.call(F2, V, args2);
       }
-      function promiseCall(F2, V, args) {
+      function promiseCall(F2, V, args2) {
         try {
-          return promiseResolvedWith(reflectCall(F2, V, args));
+          return promiseResolvedWith(reflectCall(F2, V, args2));
         } catch (value) {
           return promiseRejectedWith(value);
         }
@@ -7161,22 +7160,22 @@ var init_from = __esm({
     init_file();
     init_fetch_blob();
     ({ stat } = import_node_fs.promises);
-    blobFromSync = (path3, type) => fromBlob((0, import_node_fs.statSync)(path3), path3, type);
-    blobFrom = (path3, type) => stat(path3).then((stat3) => fromBlob(stat3, path3, type));
-    fileFrom = (path3, type) => stat(path3).then((stat3) => fromFile(stat3, path3, type));
-    fileFromSync = (path3, type) => fromFile((0, import_node_fs.statSync)(path3), path3, type);
-    fromBlob = (stat3, path3, type = "") => new fetch_blob_default([new BlobDataItem({
-      path: path3,
+    blobFromSync = (path4, type) => fromBlob((0, import_node_fs.statSync)(path4), path4, type);
+    blobFrom = (path4, type) => stat(path4).then((stat3) => fromBlob(stat3, path4, type));
+    fileFrom = (path4, type) => stat(path4).then((stat3) => fromFile(stat3, path4, type));
+    fileFromSync = (path4, type) => fromFile((0, import_node_fs.statSync)(path4), path4, type);
+    fromBlob = (stat3, path4, type = "") => new fetch_blob_default([new BlobDataItem({
+      path: path4,
       size: stat3.size,
       lastModified: stat3.mtimeMs,
       start: 0
     })], { type });
-    fromFile = (stat3, path3, type = "") => new file_default([new BlobDataItem({
-      path: path3,
+    fromFile = (stat3, path4, type = "") => new file_default([new BlobDataItem({
+      path: path4,
       size: stat3.size,
       lastModified: stat3.mtimeMs,
       start: 0
-    })], (0, import_node_path.basename)(path3), { type, lastModified: stat3.mtimeMs });
+    })], (0, import_node_path.basename)(path4), { type, lastModified: stat3.mtimeMs });
     BlobDataItem = class _BlobDataItem {
       #path;
       #start;
@@ -8901,9 +8900,9 @@ var require_gaxios = __commonJS({
        * @param args `fetch` API or `Gaxios#request` parameters
        * @returns the {@link Response} with Gaxios-added properties
        */
-      fetch(...args) {
-        const input = args[0];
-        const init = args[1];
+      fetch(...args2) {
+        const input = args2[0];
+        const init = args2[1];
         let url = void 0;
         const headers = new Headers();
         if (typeof input === "string") {
@@ -9700,8 +9699,8 @@ var require_bignumber = __commonJS({
           };
         })();
         BigNumber2.sum = function() {
-          var i2 = 1, args = arguments, sum = new BigNumber2(args[0]);
-          for (; i2 < args.length; ) sum = sum.plus(args[i2++]);
+          var i2 = 1, args2 = arguments, sum = new BigNumber2(args2[0]);
+          for (; i2 < args2.length; ) sum = sum.plus(args2[i2++]);
           return sum;
         };
         convertBase = /* @__PURE__ */ (function() {
@@ -9954,10 +9953,10 @@ var require_bignumber = __commonJS({
           }
           return n.s < 0 && c0 ? "-" + str : str;
         }
-        function maxOrMin(args, n) {
-          var k, y, i2 = 1, x2 = new BigNumber2(args[0]);
-          for (; i2 < args.length; i2++) {
-            y = new BigNumber2(args[i2]);
+        function maxOrMin(args2, n) {
+          var k, y, i2 = 1, x2 = new BigNumber2(args2[0]);
+          for (; i2 < args2.length; i2++) {
+            y = new BigNumber2(args2[i2]);
             if (!y.s || (k = compare(x2, y)) === n || k === 0 && x2.s === n) {
               x2 = y;
             }
@@ -11308,26 +11307,26 @@ var require_logging_utils = __commonJS({
           // And pull over the EventEmitter functionality.
           on: (event, listener) => this.on(event, listener)
         });
-        this.func.debug = (...args) => this.invokeSeverity(LogSeverity.DEBUG, ...args);
-        this.func.info = (...args) => this.invokeSeverity(LogSeverity.INFO, ...args);
-        this.func.warn = (...args) => this.invokeSeverity(LogSeverity.WARNING, ...args);
-        this.func.error = (...args) => this.invokeSeverity(LogSeverity.ERROR, ...args);
+        this.func.debug = (...args2) => this.invokeSeverity(LogSeverity.DEBUG, ...args2);
+        this.func.info = (...args2) => this.invokeSeverity(LogSeverity.INFO, ...args2);
+        this.func.warn = (...args2) => this.invokeSeverity(LogSeverity.WARNING, ...args2);
+        this.func.error = (...args2) => this.invokeSeverity(LogSeverity.ERROR, ...args2);
         this.func.sublog = (namespace2) => log(namespace2, this.func);
       }
-      invoke(fields, ...args) {
+      invoke(fields, ...args2) {
         if (this.upstream) {
           try {
-            this.upstream(fields, ...args);
+            this.upstream(fields, ...args2);
           } catch (e2) {
           }
         }
         try {
-          this.emit("log", fields, args);
+          this.emit("log", fields, args2);
         } catch (e2) {
         }
       }
-      invokeSeverity(severity, ...args) {
-        this.invoke({ severity }, ...args);
+      invokeSeverity(severity, ...args2) {
+        this.invoke({ severity }, ...args2);
       }
     };
     exports2.AdhocDebugLogger = AdhocDebugLogger;
@@ -11345,7 +11344,7 @@ var require_logging_utils = __commonJS({
         }
         this.filters = nodeFlag.split(",");
       }
-      log(namespace, fields, ...args) {
+      log(namespace, fields, ...args2) {
         try {
           if (!this.filtersSet) {
             this.setFilters();
@@ -11356,7 +11355,7 @@ var require_logging_utils = __commonJS({
             logger = this.makeLogger(namespace);
             this.cached.set(namespace, logger);
           }
-          logger(fields, ...args);
+          logger(fields, ...args2);
         } catch (e2) {
           console.error(e2);
         }
@@ -11376,7 +11375,7 @@ var require_logging_utils = __commonJS({
           return () => {
           };
         }
-        return (fields, ...args) => {
+        return (fields, ...args2) => {
           var _a2;
           const nscolour = `${colours_1.Colours.green}${namespace}${colours_1.Colours.reset}`;
           const pid = `${colours_1.Colours.yellow}${process3.pid}${colours_1.Colours.reset}`;
@@ -11395,7 +11394,7 @@ var require_logging_utils = __commonJS({
               level = (_a2 = fields.severity) !== null && _a2 !== void 0 ? _a2 : LogSeverity.DEFAULT;
               break;
           }
-          const msg = util.formatWithOptions({ colors: colours_1.Colours.enabled }, ...args);
+          const msg = util.formatWithOptions({ colors: colours_1.Colours.enabled }, ...args2);
           const filteredFields = Object.assign({}, fields);
           delete filteredFields.severity;
           const fieldsJson = Object.getOwnPropertyNames(filteredFields).length ? JSON.stringify(filteredFields) : "";
@@ -11421,8 +11420,8 @@ var require_logging_utils = __commonJS({
       }
       makeLogger(namespace) {
         const debugLogger = this.debugPkg(namespace);
-        return (fields, ...args) => {
-          debugLogger(args[0], ...args.slice(1));
+        return (fields, ...args2) => {
+          debugLogger(args2[0], ...args2.slice(1));
         };
       }
       setFilters() {
@@ -11443,12 +11442,12 @@ var require_logging_utils = __commonJS({
       makeLogger(namespace) {
         var _a2;
         const debugLogger = (_a2 = this.upstream) === null || _a2 === void 0 ? void 0 : _a2.makeLogger(namespace);
-        return (fields, ...args) => {
+        return (fields, ...args2) => {
           var _a3;
           const severity = (_a3 = fields.severity) !== null && _a3 !== void 0 ? _a3 : LogSeverity.INFO;
           const json2 = Object.assign({
             severity,
-            message: util.format(...args)
+            message: util.format(...args2)
           }, fields);
           const jsonString = JSON.stringify(json2);
           if (debugLogger) {
@@ -11503,7 +11502,7 @@ var require_logging_utils = __commonJS({
       }
       const logger = (() => {
         let previousBackend = void 0;
-        const newLogger = new AdhocDebugLogger(namespace, (fields, ...args) => {
+        const newLogger = new AdhocDebugLogger(namespace, (fields, ...args2) => {
           if (previousBackend !== cachedBackend) {
             if (cachedBackend === null) {
               return;
@@ -11512,7 +11511,7 @@ var require_logging_utils = __commonJS({
             }
             previousBackend = cachedBackend;
           }
-          cachedBackend === null || cachedBackend === void 0 ? void 0 : cachedBackend.log(namespace, fields, ...args);
+          cachedBackend === null || cachedBackend === void 0 ? void 0 : cachedBackend.log(namespace, fields, ...args2);
         });
         return newLogger;
       })();
@@ -12355,9 +12354,9 @@ var require_util2 = __commonJS({
     exports2.removeUndefinedValuesInObject = removeUndefinedValuesInObject;
     exports2.isValidFile = isValidFile;
     exports2.getWellKnownCertificateConfigFileLocation = getWellKnownCertificateConfigFileLocation;
-    var fs4 = require("fs");
+    var fs5 = require("fs");
     var os2 = require("os");
-    var path3 = require("path");
+    var path4 = require("path");
     var WELL_KNOWN_CERTIFICATE_CONFIG_FILE = "certificate_config.json";
     var CLOUDSDK_CONFIG_DIRECTORY = "gcloud";
     function snakeToCamel(str) {
@@ -12443,15 +12442,15 @@ var require_util2 = __commonJS({
     }
     async function isValidFile(filePath) {
       try {
-        const stats = await fs4.promises.lstat(filePath);
+        const stats = await fs5.promises.lstat(filePath);
         return stats.isFile();
       } catch (e2) {
         return false;
       }
     }
     function getWellKnownCertificateConfigFileLocation() {
-      const configDir = process.env.CLOUDSDK_CONFIG || (_isWindows() ? path3.join(process.env.APPDATA || "", CLOUDSDK_CONFIG_DIRECTORY) : path3.join(process.env.HOME || "", ".config", CLOUDSDK_CONFIG_DIRECTORY));
-      return path3.join(configDir, WELL_KNOWN_CERTIFICATE_CONFIG_FILE);
+      const configDir = process.env.CLOUDSDK_CONFIG || (_isWindows() ? path4.join(process.env.APPDATA || "", CLOUDSDK_CONFIG_DIRECTORY) : path4.join(process.env.HOME || "", ".config", CLOUDSDK_CONFIG_DIRECTORY));
+      return path4.join(configDir, WELL_KNOWN_CERTIFICATE_CONFIG_FILE);
     }
     function _isWindows() {
       return os2.platform().startsWith("win");
@@ -12644,9 +12643,9 @@ var require_authclient = __commonJS({
        * @param args `fetch` API or {@link Gaxios.fetch `Gaxios#fetch`} parameters
        * @returns the {@link GaxiosResponse} with Gaxios-added properties
        */
-      fetch(...args) {
-        const input = args[0];
-        const init = args[1];
+      fetch(...args2) {
+        const input = args2[0];
+        const init = args2[1];
         let url = void 0;
         const headers = new Headers();
         if (typeof input === "string") {
@@ -13920,8 +13919,8 @@ var require_jwa = __commonJS({
       return base64url.replace(/\-/g, "+").replace(/_/g, "/");
     }
     function typeError(template) {
-      var args = [].slice.call(arguments, 1);
-      var errMsg = util.format.bind(util, template).apply(null, args);
+      var args2 = [].slice.call(arguments, 1);
+      var errMsg = util.format.bind(util, template).apply(null, args2);
       return new TypeError(errMsg);
     }
     function bufferOrString(obj) {
@@ -14397,11 +14396,11 @@ var require_getCredentials = __commonJS({
     "use strict";
     Object.defineProperty(exports2, "__esModule", { value: true });
     exports2.getCredentials = getCredentials;
-    var path3 = require("path");
-    var fs4 = require("fs");
+    var path4 = require("path");
+    var fs5 = require("fs");
     var util_1 = require("util");
     var errorWithCode_1 = require_errorWithCode();
-    var readFile = fs4.readFile ? (0, util_1.promisify)(fs4.readFile) : async () => {
+    var readFile = fs5.readFile ? (0, util_1.promisify)(fs5.readFile) : async () => {
       throw new errorWithCode_1.ErrorWithCode("use key rather than keyFile.", "MISSING_CREDENTIALS");
     };
     var ExtensionFiles;
@@ -14469,7 +14468,7 @@ var require_getCredentials = __commonJS({
        * @returns An instance of a class that implements ICredentialsProvider.
        */
       static create(keyFilePath) {
-        const keyFileExtension = path3.extname(keyFilePath);
+        const keyFileExtension = path4.extname(keyFilePath);
         switch (keyFileExtension) {
           case ExtensionFiles.JSON:
             return new JsonCredentialsProvider(keyFilePath);
@@ -16078,12 +16077,12 @@ var require_filesubjecttokensupplier = __commonJS({
     Object.defineProperty(exports2, "__esModule", { value: true });
     exports2.FileSubjectTokenSupplier = void 0;
     var util_1 = require("util");
-    var fs4 = require("fs");
-    var readFile = (0, util_1.promisify)(fs4.readFile ?? (() => {
+    var fs5 = require("fs");
+    var readFile = (0, util_1.promisify)(fs5.readFile ?? (() => {
     }));
-    var realpath = (0, util_1.promisify)(fs4.realpath ?? (() => {
+    var realpath = (0, util_1.promisify)(fs5.realpath ?? (() => {
     }));
-    var lstat = (0, util_1.promisify)(fs4.lstat ?? (() => {
+    var lstat = (0, util_1.promisify)(fs5.lstat ?? (() => {
     }));
     var FileSubjectTokenSupplier = class {
       filePath;
@@ -16201,7 +16200,7 @@ var require_certificatesubjecttokensupplier = __commonJS({
     Object.defineProperty(exports2, "__esModule", { value: true });
     exports2.CertificateSubjectTokenSupplier = exports2.InvalidConfigurationError = exports2.CertificateSourceUnavailableError = exports2.CERTIFICATE_CONFIGURATION_ENV_VARIABLE = void 0;
     var util_1 = require_util2();
-    var fs4 = require("fs");
+    var fs5 = require("fs");
     var crypto_1 = require("crypto");
     var https2 = require("https");
     exports2.CERTIFICATE_CONFIGURATION_ENV_VARIABLE = "GOOGLE_API_CERTIFICATE_CONFIG";
@@ -16295,7 +16294,7 @@ var require_certificatesubjecttokensupplier = __commonJS({
         const configPath = this.certificateConfigPath;
         let fileContents;
         try {
-          fileContents = await fs4.promises.readFile(configPath, "utf8");
+          fileContents = await fs5.promises.readFile(configPath, "utf8");
         } catch (err) {
           throw new CertificateSourceUnavailableError(`Failed to read certificate config file at: ${configPath}`);
         }
@@ -16320,14 +16319,14 @@ var require_certificatesubjecttokensupplier = __commonJS({
       async #getKeyAndCert(certPath, keyPath) {
         let cert, key;
         try {
-          cert = await fs4.promises.readFile(certPath);
+          cert = await fs5.promises.readFile(certPath);
           new crypto_1.X509Certificate(cert);
         } catch (err) {
           const message = err instanceof Error ? err.message : String(err);
           throw new CertificateSourceUnavailableError(`Failed to read certificate file at ${certPath}: ${message}`);
         }
         try {
-          key = await fs4.promises.readFile(keyPath);
+          key = await fs5.promises.readFile(keyPath);
           (0, crypto_1.createPrivateKey)(key);
         } catch (err) {
           const message = err instanceof Error ? err.message : String(err);
@@ -16346,7 +16345,7 @@ var require_certificatesubjecttokensupplier = __commonJS({
           return JSON.stringify([leafCert.raw.toString("base64")]);
         }
         try {
-          const chainPems = await fs4.promises.readFile(this.trustChainPath, "utf8");
+          const chainPems = await fs5.promises.readFile(this.trustChainPath, "utf8");
           const pemBlocks = chainPems.match(/-----BEGIN CERTIFICATE-----[^-]+-----END CERTIFICATE-----/g) ?? [];
           const chainCerts = pemBlocks.map((pem, index) => {
             try {
@@ -17048,7 +17047,7 @@ var require_pluggable_auth_handler = __commonJS({
     exports2.PluggableAuthHandler = exports2.ExecutableError = void 0;
     var executable_response_1 = require_executable_response();
     var childProcess = require("child_process");
-    var fs4 = require("fs");
+    var fs5 = require("fs");
     var ExecutableError = class extends Error {
       /**
        * The exit code returned by the executable.
@@ -17133,14 +17132,14 @@ var require_pluggable_auth_handler = __commonJS({
         }
         let filePath;
         try {
-          filePath = await fs4.promises.realpath(this.outputFile);
+          filePath = await fs5.promises.realpath(this.outputFile);
         } catch {
           return void 0;
         }
-        if (!(await fs4.promises.lstat(filePath)).isFile()) {
+        if (!(await fs5.promises.lstat(filePath)).isFile()) {
           return void 0;
         }
-        const responseString = await fs4.promises.readFile(filePath, {
+        const responseString = await fs5.promises.readFile(filePath, {
           encoding: "utf8"
         });
         if (responseString === "") {
@@ -17551,7 +17550,7 @@ var require_gdchclient = __commonJS({
     Object.defineProperty(exports2, "__esModule", { value: true });
     exports2.GdchClient = exports2.GDCH_SERVICE_ACCOUNT_TYPE = void 0;
     var crypto2 = require("crypto");
-    var fs4 = require("fs");
+    var fs5 = require("fs");
     var https2 = require("https");
     var oauth2client_1 = require_oauth2client();
     var DEFAULT_LIFETIME_IN_SECONDS = 3600;
@@ -17774,7 +17773,7 @@ var require_gdchclient = __commonJS({
         const currentPath = this.caCertPath;
         this.caAgentPromise = (async () => {
           try {
-            const ca = await fs4.promises.readFile(currentPath);
+            const ca = await fs5.promises.readFile(currentPath);
             return new https2.Agent({ ca });
           } catch (err) {
             if (this.cachedCaCertPath === currentPath) {
@@ -17834,11 +17833,11 @@ var require_googleauth = __commonJS({
     Object.defineProperty(exports2, "__esModule", { value: true });
     exports2.GoogleAuth = exports2.GoogleAuthExceptionMessages = void 0;
     var child_process_1 = require("child_process");
-    var fs4 = require("fs");
+    var fs5 = require("fs");
     var gaxios_1 = require_src2();
     var gcpMetadata = require_src4();
     var os2 = require("os");
-    var path3 = require("path");
+    var path4 = require("path");
     var crypto_1 = require_crypto3();
     var computeclient_1 = require_computeclient();
     var idtokenclient_1 = require_idtokenclient();
@@ -18123,20 +18122,20 @@ var require_googleauth = __commonJS({
         if (!configDir) {
           if (this._isWindows()) {
             if (process.env["APPDATA"]) {
-              configDir = path3.join(process.env["APPDATA"], "gcloud");
+              configDir = path4.join(process.env["APPDATA"], "gcloud");
             }
           } else {
             const home = process.env["HOME"];
             if (home) {
-              configDir = path3.join(home, ".config", "gcloud");
+              configDir = path4.join(home, ".config", "gcloud");
             }
           }
         }
         if (!configDir) {
           return null;
         }
-        const location = path3.join(configDir, "application_default_credentials.json");
-        if (!fs4.existsSync(location)) {
+        const location = path4.join(configDir, "application_default_credentials.json");
+        if (!fs5.existsSync(location)) {
           return null;
         }
         const client = await this._getApplicationCredentialsFromFilePath(location, options);
@@ -18153,8 +18152,8 @@ var require_googleauth = __commonJS({
           throw new Error("The file path is invalid.");
         }
         try {
-          filePath = fs4.realpathSync(filePath);
-          if (!fs4.lstatSync(filePath).isFile()) {
+          filePath = fs5.realpathSync(filePath);
+          if (!fs5.lstatSync(filePath).isFile()) {
             throw new Error();
           }
         } catch (err) {
@@ -18163,7 +18162,7 @@ var require_googleauth = __commonJS({
           }
           throw err;
         }
-        const readStream = fs4.createReadStream(filePath);
+        const readStream = fs5.createReadStream(filePath);
         return this.fromStream(readStream, options);
       }
       /**
@@ -18490,8 +18489,8 @@ var require_googleauth = __commonJS({
         if (this.jsonContent) {
           return this._cacheClientFromJSON(this.jsonContent, this.clientOptions);
         } else if (this.keyFilename) {
-          const filePath = path3.resolve(this.keyFilename);
-          const stream = fs4.createReadStream(filePath);
+          const filePath = path4.resolve(this.keyFilename);
+          const stream = fs5.createReadStream(filePath);
           return await this.fromStreamAsync(stream, this.clientOptions);
         } else if (this.apiKey) {
           const client = await this.fromAPIKey(this.apiKey, this.clientOptions);
@@ -18563,9 +18562,9 @@ var require_googleauth = __commonJS({
        * @param args `fetch` API or {@link Gaxios.fetch `Gaxios#fetch`} parameters
        * @returns the {@link GaxiosResponse} with Gaxios-added properties
        */
-      async fetch(...args) {
+      async fetch(...args2) {
         const client = await this.getClient();
-        return client.fetch(...args);
+        return client.fetch(...args2);
       }
       /**
        * Automatically obtain application default credentials, and make an
@@ -22707,10 +22706,4860 @@ var require_websocket_server = __commonJS({
   }
 });
 
+// node_modules/kleur/index.js
+var require_kleur = __commonJS({
+  "node_modules/kleur/index.js"(exports2, module2) {
+    "use strict";
+    var { FORCE_COLOR, NODE_DISABLE_COLORS, TERM } = process.env;
+    var $ = {
+      enabled: !NODE_DISABLE_COLORS && TERM !== "dumb" && FORCE_COLOR !== "0",
+      // modifiers
+      reset: init(0, 0),
+      bold: init(1, 22),
+      dim: init(2, 22),
+      italic: init(3, 23),
+      underline: init(4, 24),
+      inverse: init(7, 27),
+      hidden: init(8, 28),
+      strikethrough: init(9, 29),
+      // colors
+      black: init(30, 39),
+      red: init(31, 39),
+      green: init(32, 39),
+      yellow: init(33, 39),
+      blue: init(34, 39),
+      magenta: init(35, 39),
+      cyan: init(36, 39),
+      white: init(37, 39),
+      gray: init(90, 39),
+      grey: init(90, 39),
+      // background colors
+      bgBlack: init(40, 49),
+      bgRed: init(41, 49),
+      bgGreen: init(42, 49),
+      bgYellow: init(43, 49),
+      bgBlue: init(44, 49),
+      bgMagenta: init(45, 49),
+      bgCyan: init(46, 49),
+      bgWhite: init(47, 49)
+    };
+    function run(arr, str) {
+      let i2 = 0, tmp, beg = "", end = "";
+      for (; i2 < arr.length; i2++) {
+        tmp = arr[i2];
+        beg += tmp.open;
+        end += tmp.close;
+        if (str.includes(tmp.close)) {
+          str = str.replace(tmp.rgx, tmp.close + tmp.open);
+        }
+      }
+      return beg + str + end;
+    }
+    function chain(has, keys) {
+      let ctx = { has, keys };
+      ctx.reset = $.reset.bind(ctx);
+      ctx.bold = $.bold.bind(ctx);
+      ctx.dim = $.dim.bind(ctx);
+      ctx.italic = $.italic.bind(ctx);
+      ctx.underline = $.underline.bind(ctx);
+      ctx.inverse = $.inverse.bind(ctx);
+      ctx.hidden = $.hidden.bind(ctx);
+      ctx.strikethrough = $.strikethrough.bind(ctx);
+      ctx.black = $.black.bind(ctx);
+      ctx.red = $.red.bind(ctx);
+      ctx.green = $.green.bind(ctx);
+      ctx.yellow = $.yellow.bind(ctx);
+      ctx.blue = $.blue.bind(ctx);
+      ctx.magenta = $.magenta.bind(ctx);
+      ctx.cyan = $.cyan.bind(ctx);
+      ctx.white = $.white.bind(ctx);
+      ctx.gray = $.gray.bind(ctx);
+      ctx.grey = $.grey.bind(ctx);
+      ctx.bgBlack = $.bgBlack.bind(ctx);
+      ctx.bgRed = $.bgRed.bind(ctx);
+      ctx.bgGreen = $.bgGreen.bind(ctx);
+      ctx.bgYellow = $.bgYellow.bind(ctx);
+      ctx.bgBlue = $.bgBlue.bind(ctx);
+      ctx.bgMagenta = $.bgMagenta.bind(ctx);
+      ctx.bgCyan = $.bgCyan.bind(ctx);
+      ctx.bgWhite = $.bgWhite.bind(ctx);
+      return ctx;
+    }
+    function init(open2, close) {
+      let blk = {
+        open: `\x1B[${open2}m`,
+        close: `\x1B[${close}m`,
+        rgx: new RegExp(`\\x1b\\[${close}m`, "g")
+      };
+      return function(txt) {
+        if (this !== void 0 && this.has !== void 0) {
+          this.has.includes(open2) || (this.has.push(open2), this.keys.push(blk));
+          return txt === void 0 ? this : $.enabled ? run(this.keys, txt + "") : txt + "";
+        }
+        return txt === void 0 ? chain([open2], [blk]) : $.enabled ? run([blk], txt + "") : txt + "";
+      };
+    }
+    module2.exports = $;
+  }
+});
+
+// node_modules/prompts/dist/util/action.js
+var require_action = __commonJS({
+  "node_modules/prompts/dist/util/action.js"(exports2, module2) {
+    "use strict";
+    module2.exports = (key, isSelect) => {
+      if (key.meta && key.name !== "escape") return;
+      if (key.ctrl) {
+        if (key.name === "a") return "first";
+        if (key.name === "c") return "abort";
+        if (key.name === "d") return "abort";
+        if (key.name === "e") return "last";
+        if (key.name === "g") return "reset";
+      }
+      if (isSelect) {
+        if (key.name === "j") return "down";
+        if (key.name === "k") return "up";
+      }
+      if (key.name === "return") return "submit";
+      if (key.name === "enter") return "submit";
+      if (key.name === "backspace") return "delete";
+      if (key.name === "delete") return "deleteForward";
+      if (key.name === "abort") return "abort";
+      if (key.name === "escape") return "exit";
+      if (key.name === "tab") return "next";
+      if (key.name === "pagedown") return "nextPage";
+      if (key.name === "pageup") return "prevPage";
+      if (key.name === "home") return "home";
+      if (key.name === "end") return "end";
+      if (key.name === "up") return "up";
+      if (key.name === "down") return "down";
+      if (key.name === "right") return "right";
+      if (key.name === "left") return "left";
+      return false;
+    };
+  }
+});
+
+// node_modules/prompts/dist/util/strip.js
+var require_strip = __commonJS({
+  "node_modules/prompts/dist/util/strip.js"(exports2, module2) {
+    "use strict";
+    module2.exports = (str) => {
+      const pattern = ["[\\u001B\\u009B][[\\]()#;?]*(?:(?:(?:(?:;[-a-zA-Z\\d\\/#&.:=?%@~_]+)*|[a-zA-Z\\d]+(?:;[-a-zA-Z\\d\\/#&.:=?%@~_]*)*)?\\u0007)", "(?:(?:\\d{1,4}(?:;\\d{0,4})*)?[\\dA-PRZcf-ntqry=><~]))"].join("|");
+      const RGX = new RegExp(pattern, "g");
+      return typeof str === "string" ? str.replace(RGX, "") : str;
+    };
+  }
+});
+
+// node_modules/sisteransi/src/index.js
+var require_src6 = __commonJS({
+  "node_modules/sisteransi/src/index.js"(exports2, module2) {
+    "use strict";
+    var ESC = "\x1B";
+    var CSI = `${ESC}[`;
+    var beep = "\x07";
+    var cursor = {
+      to(x2, y) {
+        if (!y) return `${CSI}${x2 + 1}G`;
+        return `${CSI}${y + 1};${x2 + 1}H`;
+      },
+      move(x2, y) {
+        let ret = "";
+        if (x2 < 0) ret += `${CSI}${-x2}D`;
+        else if (x2 > 0) ret += `${CSI}${x2}C`;
+        if (y < 0) ret += `${CSI}${-y}A`;
+        else if (y > 0) ret += `${CSI}${y}B`;
+        return ret;
+      },
+      up: (count = 1) => `${CSI}${count}A`,
+      down: (count = 1) => `${CSI}${count}B`,
+      forward: (count = 1) => `${CSI}${count}C`,
+      backward: (count = 1) => `${CSI}${count}D`,
+      nextLine: (count = 1) => `${CSI}E`.repeat(count),
+      prevLine: (count = 1) => `${CSI}F`.repeat(count),
+      left: `${CSI}G`,
+      hide: `${CSI}?25l`,
+      show: `${CSI}?25h`,
+      save: `${ESC}7`,
+      restore: `${ESC}8`
+    };
+    var scroll = {
+      up: (count = 1) => `${CSI}S`.repeat(count),
+      down: (count = 1) => `${CSI}T`.repeat(count)
+    };
+    var erase = {
+      screen: `${CSI}2J`,
+      up: (count = 1) => `${CSI}1J`.repeat(count),
+      down: (count = 1) => `${CSI}J`.repeat(count),
+      line: `${CSI}2K`,
+      lineEnd: `${CSI}K`,
+      lineStart: `${CSI}1K`,
+      lines(count) {
+        let clear = "";
+        for (let i2 = 0; i2 < count; i2++)
+          clear += this.line + (i2 < count - 1 ? cursor.up() : "");
+        if (count)
+          clear += cursor.left;
+        return clear;
+      }
+    };
+    module2.exports = { cursor, scroll, erase, beep };
+  }
+});
+
+// node_modules/prompts/dist/util/clear.js
+var require_clear = __commonJS({
+  "node_modules/prompts/dist/util/clear.js"(exports2, module2) {
+    "use strict";
+    function _createForOfIteratorHelper(o, allowArrayLike) {
+      var it = typeof Symbol !== "undefined" && o[Symbol.iterator] || o["@@iterator"];
+      if (!it) {
+        if (Array.isArray(o) || (it = _unsupportedIterableToArray(o)) || allowArrayLike && o && typeof o.length === "number") {
+          if (it) o = it;
+          var i2 = 0;
+          var F2 = function F3() {
+          };
+          return { s: F2, n: function n() {
+            if (i2 >= o.length) return { done: true };
+            return { done: false, value: o[i2++] };
+          }, e: function e2(_e) {
+            throw _e;
+          }, f: F2 };
+        }
+        throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.");
+      }
+      var normalCompletion = true, didErr = false, err;
+      return { s: function s2() {
+        it = it.call(o);
+      }, n: function n() {
+        var step = it.next();
+        normalCompletion = step.done;
+        return step;
+      }, e: function e2(_e2) {
+        didErr = true;
+        err = _e2;
+      }, f: function f3() {
+        try {
+          if (!normalCompletion && it.return != null) it.return();
+        } finally {
+          if (didErr) throw err;
+        }
+      } };
+    }
+    function _unsupportedIterableToArray(o, minLen) {
+      if (!o) return;
+      if (typeof o === "string") return _arrayLikeToArray(o, minLen);
+      var n = Object.prototype.toString.call(o).slice(8, -1);
+      if (n === "Object" && o.constructor) n = o.constructor.name;
+      if (n === "Map" || n === "Set") return Array.from(o);
+      if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return _arrayLikeToArray(o, minLen);
+    }
+    function _arrayLikeToArray(arr, len) {
+      if (len == null || len > arr.length) len = arr.length;
+      for (var i2 = 0, arr2 = new Array(len); i2 < len; i2++) arr2[i2] = arr[i2];
+      return arr2;
+    }
+    var strip = require_strip();
+    var _require = require_src6();
+    var erase = _require.erase;
+    var cursor = _require.cursor;
+    var width = (str) => [...strip(str)].length;
+    module2.exports = function(prompt, perLine) {
+      if (!perLine) return erase.line + cursor.to(0);
+      let rows = 0;
+      const lines = prompt.split(/\r?\n/);
+      var _iterator = _createForOfIteratorHelper(lines), _step;
+      try {
+        for (_iterator.s(); !(_step = _iterator.n()).done; ) {
+          let line = _step.value;
+          rows += 1 + Math.floor(Math.max(width(line) - 1, 0) / perLine);
+        }
+      } catch (err) {
+        _iterator.e(err);
+      } finally {
+        _iterator.f();
+      }
+      return erase.lines(rows);
+    };
+  }
+});
+
+// node_modules/prompts/dist/util/figures.js
+var require_figures = __commonJS({
+  "node_modules/prompts/dist/util/figures.js"(exports2, module2) {
+    "use strict";
+    var main2 = {
+      arrowUp: "\u2191",
+      arrowDown: "\u2193",
+      arrowLeft: "\u2190",
+      arrowRight: "\u2192",
+      radioOn: "\u25C9",
+      radioOff: "\u25EF",
+      tick: "\u2714",
+      cross: "\u2716",
+      ellipsis: "\u2026",
+      pointerSmall: "\u203A",
+      line: "\u2500",
+      pointer: "\u276F"
+    };
+    var win = {
+      arrowUp: main2.arrowUp,
+      arrowDown: main2.arrowDown,
+      arrowLeft: main2.arrowLeft,
+      arrowRight: main2.arrowRight,
+      radioOn: "(*)",
+      radioOff: "( )",
+      tick: "\u221A",
+      cross: "\xD7",
+      ellipsis: "...",
+      pointerSmall: "\xBB",
+      line: "\u2500",
+      pointer: ">"
+    };
+    var figures = process.platform === "win32" ? win : main2;
+    module2.exports = figures;
+  }
+});
+
+// node_modules/prompts/dist/util/style.js
+var require_style = __commonJS({
+  "node_modules/prompts/dist/util/style.js"(exports2, module2) {
+    "use strict";
+    var c = require_kleur();
+    var figures = require_figures();
+    var styles3 = Object.freeze({
+      password: {
+        scale: 1,
+        render: (input) => "*".repeat(input.length)
+      },
+      emoji: {
+        scale: 2,
+        render: (input) => "\u{1F603}".repeat(input.length)
+      },
+      invisible: {
+        scale: 0,
+        render: (input) => ""
+      },
+      default: {
+        scale: 1,
+        render: (input) => `${input}`
+      }
+    });
+    var render = (type) => styles3[type] || styles3.default;
+    var symbols = Object.freeze({
+      aborted: c.red(figures.cross),
+      done: c.green(figures.tick),
+      exited: c.yellow(figures.cross),
+      default: c.cyan("?")
+    });
+    var symbol = (done, aborted, exited) => aborted ? symbols.aborted : exited ? symbols.exited : done ? symbols.done : symbols.default;
+    var delimiter = (completing) => c.gray(completing ? figures.ellipsis : figures.pointerSmall);
+    var item = (expandable, expanded) => c.gray(expandable ? expanded ? figures.pointerSmall : "+" : figures.line);
+    module2.exports = {
+      styles: styles3,
+      render,
+      symbols,
+      symbol,
+      delimiter,
+      item
+    };
+  }
+});
+
+// node_modules/prompts/dist/util/lines.js
+var require_lines = __commonJS({
+  "node_modules/prompts/dist/util/lines.js"(exports2, module2) {
+    "use strict";
+    var strip = require_strip();
+    module2.exports = function(msg, perLine) {
+      let lines = String(strip(msg) || "").split(/\r?\n/);
+      if (!perLine) return lines.length;
+      return lines.map((l) => Math.ceil(l.length / perLine)).reduce((a, b) => a + b);
+    };
+  }
+});
+
+// node_modules/prompts/dist/util/wrap.js
+var require_wrap = __commonJS({
+  "node_modules/prompts/dist/util/wrap.js"(exports2, module2) {
+    "use strict";
+    module2.exports = (msg, opts = {}) => {
+      const tab = Number.isSafeInteger(parseInt(opts.margin)) ? new Array(parseInt(opts.margin)).fill(" ").join("") : opts.margin || "";
+      const width = opts.width;
+      return (msg || "").split(/\r?\n/g).map((line) => line.split(/\s+/g).reduce((arr, w) => {
+        if (w.length + tab.length >= width || arr[arr.length - 1].length + w.length + 1 < width) arr[arr.length - 1] += ` ${w}`;
+        else arr.push(`${tab}${w}`);
+        return arr;
+      }, [tab]).join("\n")).join("\n");
+    };
+  }
+});
+
+// node_modules/prompts/dist/util/entriesToDisplay.js
+var require_entriesToDisplay = __commonJS({
+  "node_modules/prompts/dist/util/entriesToDisplay.js"(exports2, module2) {
+    "use strict";
+    module2.exports = (cursor, total, maxVisible) => {
+      maxVisible = maxVisible || total;
+      let startIndex = Math.min(total - maxVisible, cursor - Math.floor(maxVisible / 2));
+      if (startIndex < 0) startIndex = 0;
+      let endIndex = Math.min(startIndex + maxVisible, total);
+      return {
+        startIndex,
+        endIndex
+      };
+    };
+  }
+});
+
+// node_modules/prompts/dist/util/index.js
+var require_util3 = __commonJS({
+  "node_modules/prompts/dist/util/index.js"(exports2, module2) {
+    "use strict";
+    module2.exports = {
+      action: require_action(),
+      clear: require_clear(),
+      style: require_style(),
+      strip: require_strip(),
+      figures: require_figures(),
+      lines: require_lines(),
+      wrap: require_wrap(),
+      entriesToDisplay: require_entriesToDisplay()
+    };
+  }
+});
+
+// node_modules/prompts/dist/elements/prompt.js
+var require_prompt = __commonJS({
+  "node_modules/prompts/dist/elements/prompt.js"(exports2, module2) {
+    "use strict";
+    var readline = require("readline");
+    var _require = require_util3();
+    var action = _require.action;
+    var EventEmitter = require("events");
+    var _require2 = require_src6();
+    var beep = _require2.beep;
+    var cursor = _require2.cursor;
+    var color = require_kleur();
+    var Prompt = class extends EventEmitter {
+      constructor(opts = {}) {
+        super();
+        this.firstRender = true;
+        this.in = opts.stdin || process.stdin;
+        this.out = opts.stdout || process.stdout;
+        this.onRender = (opts.onRender || (() => void 0)).bind(this);
+        const rl = readline.createInterface({
+          input: this.in,
+          escapeCodeTimeout: 50
+        });
+        readline.emitKeypressEvents(this.in, rl);
+        if (this.in.isTTY) this.in.setRawMode(true);
+        const isSelect = ["SelectPrompt", "MultiselectPrompt"].indexOf(this.constructor.name) > -1;
+        const keypress = (str, key) => {
+          let a = action(key, isSelect);
+          if (a === false) {
+            this._ && this._(str, key);
+          } else if (typeof this[a] === "function") {
+            this[a](key);
+          } else {
+            this.bell();
+          }
+        };
+        this.close = () => {
+          this.out.write(cursor.show);
+          this.in.removeListener("keypress", keypress);
+          if (this.in.isTTY) this.in.setRawMode(false);
+          rl.close();
+          this.emit(this.aborted ? "abort" : this.exited ? "exit" : "submit", this.value);
+          this.closed = true;
+        };
+        this.in.on("keypress", keypress);
+      }
+      fire() {
+        this.emit("state", {
+          value: this.value,
+          aborted: !!this.aborted,
+          exited: !!this.exited
+        });
+      }
+      bell() {
+        this.out.write(beep);
+      }
+      render() {
+        this.onRender(color);
+        if (this.firstRender) this.firstRender = false;
+      }
+    };
+    module2.exports = Prompt;
+  }
+});
+
+// node_modules/prompts/dist/elements/text.js
+var require_text = __commonJS({
+  "node_modules/prompts/dist/elements/text.js"(exports2, module2) {
+    "use strict";
+    function asyncGeneratorStep(gen, resolve, reject, _next, _throw, key, arg) {
+      try {
+        var info = gen[key](arg);
+        var value = info.value;
+      } catch (error) {
+        reject(error);
+        return;
+      }
+      if (info.done) {
+        resolve(value);
+      } else {
+        Promise.resolve(value).then(_next, _throw);
+      }
+    }
+    function _asyncToGenerator(fn) {
+      return function() {
+        var self2 = this, args2 = arguments;
+        return new Promise(function(resolve, reject) {
+          var gen = fn.apply(self2, args2);
+          function _next(value) {
+            asyncGeneratorStep(gen, resolve, reject, _next, _throw, "next", value);
+          }
+          function _throw(err) {
+            asyncGeneratorStep(gen, resolve, reject, _next, _throw, "throw", err);
+          }
+          _next(void 0);
+        });
+      };
+    }
+    var color = require_kleur();
+    var Prompt = require_prompt();
+    var _require = require_src6();
+    var erase = _require.erase;
+    var cursor = _require.cursor;
+    var _require2 = require_util3();
+    var style = _require2.style;
+    var clear = _require2.clear;
+    var lines = _require2.lines;
+    var figures = _require2.figures;
+    var TextPrompt = class extends Prompt {
+      constructor(opts = {}) {
+        super(opts);
+        this.transform = style.render(opts.style);
+        this.scale = this.transform.scale;
+        this.msg = opts.message;
+        this.initial = opts.initial || ``;
+        this.validator = opts.validate || (() => true);
+        this.value = ``;
+        this.errorMsg = opts.error || `Please Enter A Valid Value`;
+        this.cursor = Number(!!this.initial);
+        this.cursorOffset = 0;
+        this.clear = clear(``, this.out.columns);
+        this.render();
+      }
+      set value(v) {
+        if (!v && this.initial) {
+          this.placeholder = true;
+          this.rendered = color.gray(this.transform.render(this.initial));
+        } else {
+          this.placeholder = false;
+          this.rendered = this.transform.render(v);
+        }
+        this._value = v;
+        this.fire();
+      }
+      get value() {
+        return this._value;
+      }
+      reset() {
+        this.value = ``;
+        this.cursor = Number(!!this.initial);
+        this.cursorOffset = 0;
+        this.fire();
+        this.render();
+      }
+      exit() {
+        this.abort();
+      }
+      abort() {
+        this.value = this.value || this.initial;
+        this.done = this.aborted = true;
+        this.error = false;
+        this.red = false;
+        this.fire();
+        this.render();
+        this.out.write("\n");
+        this.close();
+      }
+      validate() {
+        var _this = this;
+        return _asyncToGenerator(function* () {
+          let valid = yield _this.validator(_this.value);
+          if (typeof valid === `string`) {
+            _this.errorMsg = valid;
+            valid = false;
+          }
+          _this.error = !valid;
+        })();
+      }
+      submit() {
+        var _this2 = this;
+        return _asyncToGenerator(function* () {
+          _this2.value = _this2.value || _this2.initial;
+          _this2.cursorOffset = 0;
+          _this2.cursor = _this2.rendered.length;
+          yield _this2.validate();
+          if (_this2.error) {
+            _this2.red = true;
+            _this2.fire();
+            _this2.render();
+            return;
+          }
+          _this2.done = true;
+          _this2.aborted = false;
+          _this2.fire();
+          _this2.render();
+          _this2.out.write("\n");
+          _this2.close();
+        })();
+      }
+      next() {
+        if (!this.placeholder) return this.bell();
+        this.value = this.initial;
+        this.cursor = this.rendered.length;
+        this.fire();
+        this.render();
+      }
+      moveCursor(n) {
+        if (this.placeholder) return;
+        this.cursor = this.cursor + n;
+        this.cursorOffset += n;
+      }
+      _(c, key) {
+        let s1 = this.value.slice(0, this.cursor);
+        let s2 = this.value.slice(this.cursor);
+        this.value = `${s1}${c}${s2}`;
+        this.red = false;
+        this.cursor = this.placeholder ? 0 : s1.length + 1;
+        this.render();
+      }
+      delete() {
+        if (this.isCursorAtStart()) return this.bell();
+        let s1 = this.value.slice(0, this.cursor - 1);
+        let s2 = this.value.slice(this.cursor);
+        this.value = `${s1}${s2}`;
+        this.red = false;
+        if (this.isCursorAtStart()) {
+          this.cursorOffset = 0;
+        } else {
+          this.cursorOffset++;
+          this.moveCursor(-1);
+        }
+        this.render();
+      }
+      deleteForward() {
+        if (this.cursor * this.scale >= this.rendered.length || this.placeholder) return this.bell();
+        let s1 = this.value.slice(0, this.cursor);
+        let s2 = this.value.slice(this.cursor + 1);
+        this.value = `${s1}${s2}`;
+        this.red = false;
+        if (this.isCursorAtEnd()) {
+          this.cursorOffset = 0;
+        } else {
+          this.cursorOffset++;
+        }
+        this.render();
+      }
+      first() {
+        this.cursor = 0;
+        this.render();
+      }
+      last() {
+        this.cursor = this.value.length;
+        this.render();
+      }
+      left() {
+        if (this.cursor <= 0 || this.placeholder) return this.bell();
+        this.moveCursor(-1);
+        this.render();
+      }
+      right() {
+        if (this.cursor * this.scale >= this.rendered.length || this.placeholder) return this.bell();
+        this.moveCursor(1);
+        this.render();
+      }
+      isCursorAtStart() {
+        return this.cursor === 0 || this.placeholder && this.cursor === 1;
+      }
+      isCursorAtEnd() {
+        return this.cursor === this.rendered.length || this.placeholder && this.cursor === this.rendered.length + 1;
+      }
+      render() {
+        if (this.closed) return;
+        if (!this.firstRender) {
+          if (this.outputError) this.out.write(cursor.down(lines(this.outputError, this.out.columns) - 1) + clear(this.outputError, this.out.columns));
+          this.out.write(clear(this.outputText, this.out.columns));
+        }
+        super.render();
+        this.outputError = "";
+        this.outputText = [style.symbol(this.done, this.aborted), color.bold(this.msg), style.delimiter(this.done), this.red ? color.red(this.rendered) : this.rendered].join(` `);
+        if (this.error) {
+          this.outputError += this.errorMsg.split(`
+`).reduce((a, l, i2) => a + `
+${i2 ? " " : figures.pointerSmall} ${color.red().italic(l)}`, ``);
+        }
+        this.out.write(erase.line + cursor.to(0) + this.outputText + cursor.save + this.outputError + cursor.restore + cursor.move(this.cursorOffset, 0));
+      }
+    };
+    module2.exports = TextPrompt;
+  }
+});
+
+// node_modules/prompts/dist/elements/select.js
+var require_select = __commonJS({
+  "node_modules/prompts/dist/elements/select.js"(exports2, module2) {
+    "use strict";
+    var color = require_kleur();
+    var Prompt = require_prompt();
+    var _require = require_util3();
+    var style = _require.style;
+    var clear = _require.clear;
+    var figures = _require.figures;
+    var wrap = _require.wrap;
+    var entriesToDisplay = _require.entriesToDisplay;
+    var _require2 = require_src6();
+    var cursor = _require2.cursor;
+    var SelectPrompt = class extends Prompt {
+      constructor(opts = {}) {
+        super(opts);
+        this.msg = opts.message;
+        this.hint = opts.hint || "- Use arrow-keys. Return to submit.";
+        this.warn = opts.warn || "- This option is disabled";
+        this.cursor = opts.initial || 0;
+        this.choices = opts.choices.map((ch, idx) => {
+          if (typeof ch === "string") ch = {
+            title: ch,
+            value: idx
+          };
+          return {
+            title: ch && (ch.title || ch.value || ch),
+            value: ch && (ch.value === void 0 ? idx : ch.value),
+            description: ch && ch.description,
+            selected: ch && ch.selected,
+            disabled: ch && ch.disabled
+          };
+        });
+        this.optionsPerPage = opts.optionsPerPage || 10;
+        this.value = (this.choices[this.cursor] || {}).value;
+        this.clear = clear("", this.out.columns);
+        this.render();
+      }
+      moveCursor(n) {
+        this.cursor = n;
+        this.value = this.choices[n].value;
+        this.fire();
+      }
+      reset() {
+        this.moveCursor(0);
+        this.fire();
+        this.render();
+      }
+      exit() {
+        this.abort();
+      }
+      abort() {
+        this.done = this.aborted = true;
+        this.fire();
+        this.render();
+        this.out.write("\n");
+        this.close();
+      }
+      submit() {
+        if (!this.selection.disabled) {
+          this.done = true;
+          this.aborted = false;
+          this.fire();
+          this.render();
+          this.out.write("\n");
+          this.close();
+        } else this.bell();
+      }
+      first() {
+        this.moveCursor(0);
+        this.render();
+      }
+      last() {
+        this.moveCursor(this.choices.length - 1);
+        this.render();
+      }
+      up() {
+        if (this.cursor === 0) {
+          this.moveCursor(this.choices.length - 1);
+        } else {
+          this.moveCursor(this.cursor - 1);
+        }
+        this.render();
+      }
+      down() {
+        if (this.cursor === this.choices.length - 1) {
+          this.moveCursor(0);
+        } else {
+          this.moveCursor(this.cursor + 1);
+        }
+        this.render();
+      }
+      next() {
+        this.moveCursor((this.cursor + 1) % this.choices.length);
+        this.render();
+      }
+      _(c, key) {
+        if (c === " ") return this.submit();
+      }
+      get selection() {
+        return this.choices[this.cursor];
+      }
+      render() {
+        if (this.closed) return;
+        if (this.firstRender) this.out.write(cursor.hide);
+        else this.out.write(clear(this.outputText, this.out.columns));
+        super.render();
+        let _entriesToDisplay = entriesToDisplay(this.cursor, this.choices.length, this.optionsPerPage), startIndex = _entriesToDisplay.startIndex, endIndex = _entriesToDisplay.endIndex;
+        this.outputText = [style.symbol(this.done, this.aborted), color.bold(this.msg), style.delimiter(false), this.done ? this.selection.title : this.selection.disabled ? color.yellow(this.warn) : color.gray(this.hint)].join(" ");
+        if (!this.done) {
+          this.outputText += "\n";
+          for (let i2 = startIndex; i2 < endIndex; i2++) {
+            let title, prefix, desc = "", v = this.choices[i2];
+            if (i2 === startIndex && startIndex > 0) {
+              prefix = figures.arrowUp;
+            } else if (i2 === endIndex - 1 && endIndex < this.choices.length) {
+              prefix = figures.arrowDown;
+            } else {
+              prefix = " ";
+            }
+            if (v.disabled) {
+              title = this.cursor === i2 ? color.gray().underline(v.title) : color.strikethrough().gray(v.title);
+              prefix = (this.cursor === i2 ? color.bold().gray(figures.pointer) + " " : "  ") + prefix;
+            } else {
+              title = this.cursor === i2 ? color.cyan().underline(v.title) : v.title;
+              prefix = (this.cursor === i2 ? color.cyan(figures.pointer) + " " : "  ") + prefix;
+              if (v.description && this.cursor === i2) {
+                desc = ` - ${v.description}`;
+                if (prefix.length + title.length + desc.length >= this.out.columns || v.description.split(/\r?\n/).length > 1) {
+                  desc = "\n" + wrap(v.description, {
+                    margin: 3,
+                    width: this.out.columns
+                  });
+                }
+              }
+            }
+            this.outputText += `${prefix} ${title}${color.gray(desc)}
+`;
+          }
+        }
+        this.out.write(this.outputText);
+      }
+    };
+    module2.exports = SelectPrompt;
+  }
+});
+
+// node_modules/prompts/dist/elements/toggle.js
+var require_toggle = __commonJS({
+  "node_modules/prompts/dist/elements/toggle.js"(exports2, module2) {
+    "use strict";
+    var color = require_kleur();
+    var Prompt = require_prompt();
+    var _require = require_util3();
+    var style = _require.style;
+    var clear = _require.clear;
+    var _require2 = require_src6();
+    var cursor = _require2.cursor;
+    var erase = _require2.erase;
+    var TogglePrompt = class extends Prompt {
+      constructor(opts = {}) {
+        super(opts);
+        this.msg = opts.message;
+        this.value = !!opts.initial;
+        this.active = opts.active || "on";
+        this.inactive = opts.inactive || "off";
+        this.initialValue = this.value;
+        this.render();
+      }
+      reset() {
+        this.value = this.initialValue;
+        this.fire();
+        this.render();
+      }
+      exit() {
+        this.abort();
+      }
+      abort() {
+        this.done = this.aborted = true;
+        this.fire();
+        this.render();
+        this.out.write("\n");
+        this.close();
+      }
+      submit() {
+        this.done = true;
+        this.aborted = false;
+        this.fire();
+        this.render();
+        this.out.write("\n");
+        this.close();
+      }
+      deactivate() {
+        if (this.value === false) return this.bell();
+        this.value = false;
+        this.render();
+      }
+      activate() {
+        if (this.value === true) return this.bell();
+        this.value = true;
+        this.render();
+      }
+      delete() {
+        this.deactivate();
+      }
+      left() {
+        this.deactivate();
+      }
+      right() {
+        this.activate();
+      }
+      down() {
+        this.deactivate();
+      }
+      up() {
+        this.activate();
+      }
+      next() {
+        this.value = !this.value;
+        this.fire();
+        this.render();
+      }
+      _(c, key) {
+        if (c === " ") {
+          this.value = !this.value;
+        } else if (c === "1") {
+          this.value = true;
+        } else if (c === "0") {
+          this.value = false;
+        } else return this.bell();
+        this.render();
+      }
+      render() {
+        if (this.closed) return;
+        if (this.firstRender) this.out.write(cursor.hide);
+        else this.out.write(clear(this.outputText, this.out.columns));
+        super.render();
+        this.outputText = [style.symbol(this.done, this.aborted), color.bold(this.msg), style.delimiter(this.done), this.value ? this.inactive : color.cyan().underline(this.inactive), color.gray("/"), this.value ? color.cyan().underline(this.active) : this.active].join(" ");
+        this.out.write(erase.line + cursor.to(0) + this.outputText);
+      }
+    };
+    module2.exports = TogglePrompt;
+  }
+});
+
+// node_modules/prompts/dist/dateparts/datepart.js
+var require_datepart = __commonJS({
+  "node_modules/prompts/dist/dateparts/datepart.js"(exports2, module2) {
+    "use strict";
+    var DatePart = class _DatePart {
+      constructor({
+        token,
+        date,
+        parts,
+        locales
+      }) {
+        this.token = token;
+        this.date = date || /* @__PURE__ */ new Date();
+        this.parts = parts || [this];
+        this.locales = locales || {};
+      }
+      up() {
+      }
+      down() {
+      }
+      next() {
+        const currentIdx = this.parts.indexOf(this);
+        return this.parts.find((part, idx) => idx > currentIdx && part instanceof _DatePart);
+      }
+      setTo(val) {
+      }
+      prev() {
+        let parts = [].concat(this.parts).reverse();
+        const currentIdx = parts.indexOf(this);
+        return parts.find((part, idx) => idx > currentIdx && part instanceof _DatePart);
+      }
+      toString() {
+        return String(this.date);
+      }
+    };
+    module2.exports = DatePart;
+  }
+});
+
+// node_modules/prompts/dist/dateparts/meridiem.js
+var require_meridiem = __commonJS({
+  "node_modules/prompts/dist/dateparts/meridiem.js"(exports2, module2) {
+    "use strict";
+    var DatePart = require_datepart();
+    var Meridiem = class extends DatePart {
+      constructor(opts = {}) {
+        super(opts);
+      }
+      up() {
+        this.date.setHours((this.date.getHours() + 12) % 24);
+      }
+      down() {
+        this.up();
+      }
+      toString() {
+        let meridiem = this.date.getHours() > 12 ? "pm" : "am";
+        return /\A/.test(this.token) ? meridiem.toUpperCase() : meridiem;
+      }
+    };
+    module2.exports = Meridiem;
+  }
+});
+
+// node_modules/prompts/dist/dateparts/day.js
+var require_day = __commonJS({
+  "node_modules/prompts/dist/dateparts/day.js"(exports2, module2) {
+    "use strict";
+    var DatePart = require_datepart();
+    var pos = (n) => {
+      n = n % 10;
+      return n === 1 ? "st" : n === 2 ? "nd" : n === 3 ? "rd" : "th";
+    };
+    var Day = class extends DatePart {
+      constructor(opts = {}) {
+        super(opts);
+      }
+      up() {
+        this.date.setDate(this.date.getDate() + 1);
+      }
+      down() {
+        this.date.setDate(this.date.getDate() - 1);
+      }
+      setTo(val) {
+        this.date.setDate(parseInt(val.substr(-2)));
+      }
+      toString() {
+        let date = this.date.getDate();
+        let day = this.date.getDay();
+        return this.token === "DD" ? String(date).padStart(2, "0") : this.token === "Do" ? date + pos(date) : this.token === "d" ? day + 1 : this.token === "ddd" ? this.locales.weekdaysShort[day] : this.token === "dddd" ? this.locales.weekdays[day] : date;
+      }
+    };
+    module2.exports = Day;
+  }
+});
+
+// node_modules/prompts/dist/dateparts/hours.js
+var require_hours = __commonJS({
+  "node_modules/prompts/dist/dateparts/hours.js"(exports2, module2) {
+    "use strict";
+    var DatePart = require_datepart();
+    var Hours = class extends DatePart {
+      constructor(opts = {}) {
+        super(opts);
+      }
+      up() {
+        this.date.setHours(this.date.getHours() + 1);
+      }
+      down() {
+        this.date.setHours(this.date.getHours() - 1);
+      }
+      setTo(val) {
+        this.date.setHours(parseInt(val.substr(-2)));
+      }
+      toString() {
+        let hours = this.date.getHours();
+        if (/h/.test(this.token)) hours = hours % 12 || 12;
+        return this.token.length > 1 ? String(hours).padStart(2, "0") : hours;
+      }
+    };
+    module2.exports = Hours;
+  }
+});
+
+// node_modules/prompts/dist/dateparts/milliseconds.js
+var require_milliseconds = __commonJS({
+  "node_modules/prompts/dist/dateparts/milliseconds.js"(exports2, module2) {
+    "use strict";
+    var DatePart = require_datepart();
+    var Milliseconds = class extends DatePart {
+      constructor(opts = {}) {
+        super(opts);
+      }
+      up() {
+        this.date.setMilliseconds(this.date.getMilliseconds() + 1);
+      }
+      down() {
+        this.date.setMilliseconds(this.date.getMilliseconds() - 1);
+      }
+      setTo(val) {
+        this.date.setMilliseconds(parseInt(val.substr(-this.token.length)));
+      }
+      toString() {
+        return String(this.date.getMilliseconds()).padStart(4, "0").substr(0, this.token.length);
+      }
+    };
+    module2.exports = Milliseconds;
+  }
+});
+
+// node_modules/prompts/dist/dateparts/minutes.js
+var require_minutes = __commonJS({
+  "node_modules/prompts/dist/dateparts/minutes.js"(exports2, module2) {
+    "use strict";
+    var DatePart = require_datepart();
+    var Minutes = class extends DatePart {
+      constructor(opts = {}) {
+        super(opts);
+      }
+      up() {
+        this.date.setMinutes(this.date.getMinutes() + 1);
+      }
+      down() {
+        this.date.setMinutes(this.date.getMinutes() - 1);
+      }
+      setTo(val) {
+        this.date.setMinutes(parseInt(val.substr(-2)));
+      }
+      toString() {
+        let m2 = this.date.getMinutes();
+        return this.token.length > 1 ? String(m2).padStart(2, "0") : m2;
+      }
+    };
+    module2.exports = Minutes;
+  }
+});
+
+// node_modules/prompts/dist/dateparts/month.js
+var require_month = __commonJS({
+  "node_modules/prompts/dist/dateparts/month.js"(exports2, module2) {
+    "use strict";
+    var DatePart = require_datepart();
+    var Month = class extends DatePart {
+      constructor(opts = {}) {
+        super(opts);
+      }
+      up() {
+        this.date.setMonth(this.date.getMonth() + 1);
+      }
+      down() {
+        this.date.setMonth(this.date.getMonth() - 1);
+      }
+      setTo(val) {
+        val = parseInt(val.substr(-2)) - 1;
+        this.date.setMonth(val < 0 ? 0 : val);
+      }
+      toString() {
+        let month = this.date.getMonth();
+        let tl = this.token.length;
+        return tl === 2 ? String(month + 1).padStart(2, "0") : tl === 3 ? this.locales.monthsShort[month] : tl === 4 ? this.locales.months[month] : String(month + 1);
+      }
+    };
+    module2.exports = Month;
+  }
+});
+
+// node_modules/prompts/dist/dateparts/seconds.js
+var require_seconds = __commonJS({
+  "node_modules/prompts/dist/dateparts/seconds.js"(exports2, module2) {
+    "use strict";
+    var DatePart = require_datepart();
+    var Seconds = class extends DatePart {
+      constructor(opts = {}) {
+        super(opts);
+      }
+      up() {
+        this.date.setSeconds(this.date.getSeconds() + 1);
+      }
+      down() {
+        this.date.setSeconds(this.date.getSeconds() - 1);
+      }
+      setTo(val) {
+        this.date.setSeconds(parseInt(val.substr(-2)));
+      }
+      toString() {
+        let s2 = this.date.getSeconds();
+        return this.token.length > 1 ? String(s2).padStart(2, "0") : s2;
+      }
+    };
+    module2.exports = Seconds;
+  }
+});
+
+// node_modules/prompts/dist/dateparts/year.js
+var require_year = __commonJS({
+  "node_modules/prompts/dist/dateparts/year.js"(exports2, module2) {
+    "use strict";
+    var DatePart = require_datepart();
+    var Year = class extends DatePart {
+      constructor(opts = {}) {
+        super(opts);
+      }
+      up() {
+        this.date.setFullYear(this.date.getFullYear() + 1);
+      }
+      down() {
+        this.date.setFullYear(this.date.getFullYear() - 1);
+      }
+      setTo(val) {
+        this.date.setFullYear(val.substr(-4));
+      }
+      toString() {
+        let year = String(this.date.getFullYear()).padStart(4, "0");
+        return this.token.length === 2 ? year.substr(-2) : year;
+      }
+    };
+    module2.exports = Year;
+  }
+});
+
+// node_modules/prompts/dist/dateparts/index.js
+var require_dateparts = __commonJS({
+  "node_modules/prompts/dist/dateparts/index.js"(exports2, module2) {
+    "use strict";
+    module2.exports = {
+      DatePart: require_datepart(),
+      Meridiem: require_meridiem(),
+      Day: require_day(),
+      Hours: require_hours(),
+      Milliseconds: require_milliseconds(),
+      Minutes: require_minutes(),
+      Month: require_month(),
+      Seconds: require_seconds(),
+      Year: require_year()
+    };
+  }
+});
+
+// node_modules/prompts/dist/elements/date.js
+var require_date = __commonJS({
+  "node_modules/prompts/dist/elements/date.js"(exports2, module2) {
+    "use strict";
+    function asyncGeneratorStep(gen, resolve, reject, _next, _throw, key, arg) {
+      try {
+        var info = gen[key](arg);
+        var value = info.value;
+      } catch (error) {
+        reject(error);
+        return;
+      }
+      if (info.done) {
+        resolve(value);
+      } else {
+        Promise.resolve(value).then(_next, _throw);
+      }
+    }
+    function _asyncToGenerator(fn) {
+      return function() {
+        var self2 = this, args2 = arguments;
+        return new Promise(function(resolve, reject) {
+          var gen = fn.apply(self2, args2);
+          function _next(value) {
+            asyncGeneratorStep(gen, resolve, reject, _next, _throw, "next", value);
+          }
+          function _throw(err) {
+            asyncGeneratorStep(gen, resolve, reject, _next, _throw, "throw", err);
+          }
+          _next(void 0);
+        });
+      };
+    }
+    var color = require_kleur();
+    var Prompt = require_prompt();
+    var _require = require_util3();
+    var style = _require.style;
+    var clear = _require.clear;
+    var figures = _require.figures;
+    var _require2 = require_src6();
+    var erase = _require2.erase;
+    var cursor = _require2.cursor;
+    var _require3 = require_dateparts();
+    var DatePart = _require3.DatePart;
+    var Meridiem = _require3.Meridiem;
+    var Day = _require3.Day;
+    var Hours = _require3.Hours;
+    var Milliseconds = _require3.Milliseconds;
+    var Minutes = _require3.Minutes;
+    var Month = _require3.Month;
+    var Seconds = _require3.Seconds;
+    var Year = _require3.Year;
+    var regex = /\\(.)|"((?:\\["\\]|[^"])+)"|(D[Do]?|d{3,4}|d)|(M{1,4})|(YY(?:YY)?)|([aA])|([Hh]{1,2})|(m{1,2})|(s{1,2})|(S{1,4})|./g;
+    var regexGroups = {
+      1: ({
+        token
+      }) => token.replace(/\\(.)/g, "$1"),
+      2: (opts) => new Day(opts),
+      // Day // TODO
+      3: (opts) => new Month(opts),
+      // Month
+      4: (opts) => new Year(opts),
+      // Year
+      5: (opts) => new Meridiem(opts),
+      // AM/PM // TODO (special)
+      6: (opts) => new Hours(opts),
+      // Hours
+      7: (opts) => new Minutes(opts),
+      // Minutes
+      8: (opts) => new Seconds(opts),
+      // Seconds
+      9: (opts) => new Milliseconds(opts)
+      // Fractional seconds
+    };
+    var dfltLocales = {
+      months: "January,February,March,April,May,June,July,August,September,October,November,December".split(","),
+      monthsShort: "Jan,Feb,Mar,Apr,May,Jun,Jul,Aug,Sep,Oct,Nov,Dec".split(","),
+      weekdays: "Sunday,Monday,Tuesday,Wednesday,Thursday,Friday,Saturday".split(","),
+      weekdaysShort: "Sun,Mon,Tue,Wed,Thu,Fri,Sat".split(",")
+    };
+    var DatePrompt = class extends Prompt {
+      constructor(opts = {}) {
+        super(opts);
+        this.msg = opts.message;
+        this.cursor = 0;
+        this.typed = "";
+        this.locales = Object.assign(dfltLocales, opts.locales);
+        this._date = opts.initial || /* @__PURE__ */ new Date();
+        this.errorMsg = opts.error || "Please Enter A Valid Value";
+        this.validator = opts.validate || (() => true);
+        this.mask = opts.mask || "YYYY-MM-DD HH:mm:ss";
+        this.clear = clear("", this.out.columns);
+        this.render();
+      }
+      get value() {
+        return this.date;
+      }
+      get date() {
+        return this._date;
+      }
+      set date(date) {
+        if (date) this._date.setTime(date.getTime());
+      }
+      set mask(mask) {
+        let result;
+        this.parts = [];
+        while (result = regex.exec(mask)) {
+          let match2 = result.shift();
+          let idx = result.findIndex((gr) => gr != null);
+          this.parts.push(idx in regexGroups ? regexGroups[idx]({
+            token: result[idx] || match2,
+            date: this.date,
+            parts: this.parts,
+            locales: this.locales
+          }) : result[idx] || match2);
+        }
+        let parts = this.parts.reduce((arr, i2) => {
+          if (typeof i2 === "string" && typeof arr[arr.length - 1] === "string") arr[arr.length - 1] += i2;
+          else arr.push(i2);
+          return arr;
+        }, []);
+        this.parts.splice(0);
+        this.parts.push(...parts);
+        this.reset();
+      }
+      moveCursor(n) {
+        this.typed = "";
+        this.cursor = n;
+        this.fire();
+      }
+      reset() {
+        this.moveCursor(this.parts.findIndex((p) => p instanceof DatePart));
+        this.fire();
+        this.render();
+      }
+      exit() {
+        this.abort();
+      }
+      abort() {
+        this.done = this.aborted = true;
+        this.error = false;
+        this.fire();
+        this.render();
+        this.out.write("\n");
+        this.close();
+      }
+      validate() {
+        var _this = this;
+        return _asyncToGenerator(function* () {
+          let valid = yield _this.validator(_this.value);
+          if (typeof valid === "string") {
+            _this.errorMsg = valid;
+            valid = false;
+          }
+          _this.error = !valid;
+        })();
+      }
+      submit() {
+        var _this2 = this;
+        return _asyncToGenerator(function* () {
+          yield _this2.validate();
+          if (_this2.error) {
+            _this2.color = "red";
+            _this2.fire();
+            _this2.render();
+            return;
+          }
+          _this2.done = true;
+          _this2.aborted = false;
+          _this2.fire();
+          _this2.render();
+          _this2.out.write("\n");
+          _this2.close();
+        })();
+      }
+      up() {
+        this.typed = "";
+        this.parts[this.cursor].up();
+        this.render();
+      }
+      down() {
+        this.typed = "";
+        this.parts[this.cursor].down();
+        this.render();
+      }
+      left() {
+        let prev = this.parts[this.cursor].prev();
+        if (prev == null) return this.bell();
+        this.moveCursor(this.parts.indexOf(prev));
+        this.render();
+      }
+      right() {
+        let next = this.parts[this.cursor].next();
+        if (next == null) return this.bell();
+        this.moveCursor(this.parts.indexOf(next));
+        this.render();
+      }
+      next() {
+        let next = this.parts[this.cursor].next();
+        this.moveCursor(next ? this.parts.indexOf(next) : this.parts.findIndex((part) => part instanceof DatePart));
+        this.render();
+      }
+      _(c) {
+        if (/\d/.test(c)) {
+          this.typed += c;
+          this.parts[this.cursor].setTo(this.typed);
+          this.render();
+        }
+      }
+      render() {
+        if (this.closed) return;
+        if (this.firstRender) this.out.write(cursor.hide);
+        else this.out.write(clear(this.outputText, this.out.columns));
+        super.render();
+        this.outputText = [style.symbol(this.done, this.aborted), color.bold(this.msg), style.delimiter(false), this.parts.reduce((arr, p, idx) => arr.concat(idx === this.cursor && !this.done ? color.cyan().underline(p.toString()) : p), []).join("")].join(" ");
+        if (this.error) {
+          this.outputText += this.errorMsg.split("\n").reduce((a, l, i2) => a + `
+${i2 ? ` ` : figures.pointerSmall} ${color.red().italic(l)}`, ``);
+        }
+        this.out.write(erase.line + cursor.to(0) + this.outputText);
+      }
+    };
+    module2.exports = DatePrompt;
+  }
+});
+
+// node_modules/prompts/dist/elements/number.js
+var require_number = __commonJS({
+  "node_modules/prompts/dist/elements/number.js"(exports2, module2) {
+    "use strict";
+    function asyncGeneratorStep(gen, resolve, reject, _next, _throw, key, arg) {
+      try {
+        var info = gen[key](arg);
+        var value = info.value;
+      } catch (error) {
+        reject(error);
+        return;
+      }
+      if (info.done) {
+        resolve(value);
+      } else {
+        Promise.resolve(value).then(_next, _throw);
+      }
+    }
+    function _asyncToGenerator(fn) {
+      return function() {
+        var self2 = this, args2 = arguments;
+        return new Promise(function(resolve, reject) {
+          var gen = fn.apply(self2, args2);
+          function _next(value) {
+            asyncGeneratorStep(gen, resolve, reject, _next, _throw, "next", value);
+          }
+          function _throw(err) {
+            asyncGeneratorStep(gen, resolve, reject, _next, _throw, "throw", err);
+          }
+          _next(void 0);
+        });
+      };
+    }
+    var color = require_kleur();
+    var Prompt = require_prompt();
+    var _require = require_src6();
+    var cursor = _require.cursor;
+    var erase = _require.erase;
+    var _require2 = require_util3();
+    var style = _require2.style;
+    var figures = _require2.figures;
+    var clear = _require2.clear;
+    var lines = _require2.lines;
+    var isNumber = /[0-9]/;
+    var isDef = (any) => any !== void 0;
+    var round = (number, precision) => {
+      let factor = Math.pow(10, precision);
+      return Math.round(number * factor) / factor;
+    };
+    var NumberPrompt = class extends Prompt {
+      constructor(opts = {}) {
+        super(opts);
+        this.transform = style.render(opts.style);
+        this.msg = opts.message;
+        this.initial = isDef(opts.initial) ? opts.initial : "";
+        this.float = !!opts.float;
+        this.round = opts.round || 2;
+        this.inc = opts.increment || 1;
+        this.min = isDef(opts.min) ? opts.min : -Infinity;
+        this.max = isDef(opts.max) ? opts.max : Infinity;
+        this.errorMsg = opts.error || `Please Enter A Valid Value`;
+        this.validator = opts.validate || (() => true);
+        this.color = `cyan`;
+        this.value = ``;
+        this.typed = ``;
+        this.lastHit = 0;
+        this.render();
+      }
+      set value(v) {
+        if (!v && v !== 0) {
+          this.placeholder = true;
+          this.rendered = color.gray(this.transform.render(`${this.initial}`));
+          this._value = ``;
+        } else {
+          this.placeholder = false;
+          this.rendered = this.transform.render(`${round(v, this.round)}`);
+          this._value = round(v, this.round);
+        }
+        this.fire();
+      }
+      get value() {
+        return this._value;
+      }
+      parse(x2) {
+        return this.float ? parseFloat(x2) : parseInt(x2);
+      }
+      valid(c) {
+        return c === `-` || c === `.` && this.float || isNumber.test(c);
+      }
+      reset() {
+        this.typed = ``;
+        this.value = ``;
+        this.fire();
+        this.render();
+      }
+      exit() {
+        this.abort();
+      }
+      abort() {
+        let x2 = this.value;
+        this.value = x2 !== `` ? x2 : this.initial;
+        this.done = this.aborted = true;
+        this.error = false;
+        this.fire();
+        this.render();
+        this.out.write(`
+`);
+        this.close();
+      }
+      validate() {
+        var _this = this;
+        return _asyncToGenerator(function* () {
+          let valid = yield _this.validator(_this.value);
+          if (typeof valid === `string`) {
+            _this.errorMsg = valid;
+            valid = false;
+          }
+          _this.error = !valid;
+        })();
+      }
+      submit() {
+        var _this2 = this;
+        return _asyncToGenerator(function* () {
+          yield _this2.validate();
+          if (_this2.error) {
+            _this2.color = `red`;
+            _this2.fire();
+            _this2.render();
+            return;
+          }
+          let x2 = _this2.value;
+          _this2.value = x2 !== `` ? x2 : _this2.initial;
+          _this2.done = true;
+          _this2.aborted = false;
+          _this2.error = false;
+          _this2.fire();
+          _this2.render();
+          _this2.out.write(`
+`);
+          _this2.close();
+        })();
+      }
+      up() {
+        this.typed = ``;
+        if (this.value === "") {
+          this.value = this.min - this.inc;
+        }
+        if (this.value >= this.max) return this.bell();
+        this.value += this.inc;
+        this.color = `cyan`;
+        this.fire();
+        this.render();
+      }
+      down() {
+        this.typed = ``;
+        if (this.value === "") {
+          this.value = this.min + this.inc;
+        }
+        if (this.value <= this.min) return this.bell();
+        this.value -= this.inc;
+        this.color = `cyan`;
+        this.fire();
+        this.render();
+      }
+      delete() {
+        let val = this.value.toString();
+        if (val.length === 0) return this.bell();
+        this.value = this.parse(val = val.slice(0, -1)) || ``;
+        if (this.value !== "" && this.value < this.min) {
+          this.value = this.min;
+        }
+        this.color = `cyan`;
+        this.fire();
+        this.render();
+      }
+      next() {
+        this.value = this.initial;
+        this.fire();
+        this.render();
+      }
+      _(c, key) {
+        if (!this.valid(c)) return this.bell();
+        const now = Date.now();
+        if (now - this.lastHit > 1e3) this.typed = ``;
+        this.typed += c;
+        this.lastHit = now;
+        this.color = `cyan`;
+        if (c === `.`) return this.fire();
+        this.value = Math.min(this.parse(this.typed), this.max);
+        if (this.value > this.max) this.value = this.max;
+        if (this.value < this.min) this.value = this.min;
+        this.fire();
+        this.render();
+      }
+      render() {
+        if (this.closed) return;
+        if (!this.firstRender) {
+          if (this.outputError) this.out.write(cursor.down(lines(this.outputError, this.out.columns) - 1) + clear(this.outputError, this.out.columns));
+          this.out.write(clear(this.outputText, this.out.columns));
+        }
+        super.render();
+        this.outputError = "";
+        this.outputText = [style.symbol(this.done, this.aborted), color.bold(this.msg), style.delimiter(this.done), !this.done || !this.done && !this.placeholder ? color[this.color]().underline(this.rendered) : this.rendered].join(` `);
+        if (this.error) {
+          this.outputError += this.errorMsg.split(`
+`).reduce((a, l, i2) => a + `
+${i2 ? ` ` : figures.pointerSmall} ${color.red().italic(l)}`, ``);
+        }
+        this.out.write(erase.line + cursor.to(0) + this.outputText + cursor.save + this.outputError + cursor.restore);
+      }
+    };
+    module2.exports = NumberPrompt;
+  }
+});
+
+// node_modules/prompts/dist/elements/multiselect.js
+var require_multiselect = __commonJS({
+  "node_modules/prompts/dist/elements/multiselect.js"(exports2, module2) {
+    "use strict";
+    var color = require_kleur();
+    var _require = require_src6();
+    var cursor = _require.cursor;
+    var Prompt = require_prompt();
+    var _require2 = require_util3();
+    var clear = _require2.clear;
+    var figures = _require2.figures;
+    var style = _require2.style;
+    var wrap = _require2.wrap;
+    var entriesToDisplay = _require2.entriesToDisplay;
+    var MultiselectPrompt = class extends Prompt {
+      constructor(opts = {}) {
+        super(opts);
+        this.msg = opts.message;
+        this.cursor = opts.cursor || 0;
+        this.scrollIndex = opts.cursor || 0;
+        this.hint = opts.hint || "";
+        this.warn = opts.warn || "- This option is disabled -";
+        this.minSelected = opts.min;
+        this.showMinError = false;
+        this.maxChoices = opts.max;
+        this.instructions = opts.instructions;
+        this.optionsPerPage = opts.optionsPerPage || 10;
+        this.value = opts.choices.map((ch, idx) => {
+          if (typeof ch === "string") ch = {
+            title: ch,
+            value: idx
+          };
+          return {
+            title: ch && (ch.title || ch.value || ch),
+            description: ch && ch.description,
+            value: ch && (ch.value === void 0 ? idx : ch.value),
+            selected: ch && ch.selected,
+            disabled: ch && ch.disabled
+          };
+        });
+        this.clear = clear("", this.out.columns);
+        if (!opts.overrideRender) {
+          this.render();
+        }
+      }
+      reset() {
+        this.value.map((v) => !v.selected);
+        this.cursor = 0;
+        this.fire();
+        this.render();
+      }
+      selected() {
+        return this.value.filter((v) => v.selected);
+      }
+      exit() {
+        this.abort();
+      }
+      abort() {
+        this.done = this.aborted = true;
+        this.fire();
+        this.render();
+        this.out.write("\n");
+        this.close();
+      }
+      submit() {
+        const selected = this.value.filter((e2) => e2.selected);
+        if (this.minSelected && selected.length < this.minSelected) {
+          this.showMinError = true;
+          this.render();
+        } else {
+          this.done = true;
+          this.aborted = false;
+          this.fire();
+          this.render();
+          this.out.write("\n");
+          this.close();
+        }
+      }
+      first() {
+        this.cursor = 0;
+        this.render();
+      }
+      last() {
+        this.cursor = this.value.length - 1;
+        this.render();
+      }
+      next() {
+        this.cursor = (this.cursor + 1) % this.value.length;
+        this.render();
+      }
+      up() {
+        if (this.cursor === 0) {
+          this.cursor = this.value.length - 1;
+        } else {
+          this.cursor--;
+        }
+        this.render();
+      }
+      down() {
+        if (this.cursor === this.value.length - 1) {
+          this.cursor = 0;
+        } else {
+          this.cursor++;
+        }
+        this.render();
+      }
+      left() {
+        this.value[this.cursor].selected = false;
+        this.render();
+      }
+      right() {
+        if (this.value.filter((e2) => e2.selected).length >= this.maxChoices) return this.bell();
+        this.value[this.cursor].selected = true;
+        this.render();
+      }
+      handleSpaceToggle() {
+        const v = this.value[this.cursor];
+        if (v.selected) {
+          v.selected = false;
+          this.render();
+        } else if (v.disabled || this.value.filter((e2) => e2.selected).length >= this.maxChoices) {
+          return this.bell();
+        } else {
+          v.selected = true;
+          this.render();
+        }
+      }
+      toggleAll() {
+        if (this.maxChoices !== void 0 || this.value[this.cursor].disabled) {
+          return this.bell();
+        }
+        const newSelected = !this.value[this.cursor].selected;
+        this.value.filter((v) => !v.disabled).forEach((v) => v.selected = newSelected);
+        this.render();
+      }
+      _(c, key) {
+        if (c === " ") {
+          this.handleSpaceToggle();
+        } else if (c === "a") {
+          this.toggleAll();
+        } else {
+          return this.bell();
+        }
+      }
+      renderInstructions() {
+        if (this.instructions === void 0 || this.instructions) {
+          if (typeof this.instructions === "string") {
+            return this.instructions;
+          }
+          return `
+Instructions:
+    ${figures.arrowUp}/${figures.arrowDown}: Highlight option
+    ${figures.arrowLeft}/${figures.arrowRight}/[space]: Toggle selection
+` + (this.maxChoices === void 0 ? `    a: Toggle all
+` : "") + `    enter/return: Complete answer`;
+        }
+        return "";
+      }
+      renderOption(cursor2, v, i2, arrowIndicator) {
+        const prefix = (v.selected ? color.green(figures.radioOn) : figures.radioOff) + " " + arrowIndicator + " ";
+        let title, desc;
+        if (v.disabled) {
+          title = cursor2 === i2 ? color.gray().underline(v.title) : color.strikethrough().gray(v.title);
+        } else {
+          title = cursor2 === i2 ? color.cyan().underline(v.title) : v.title;
+          if (cursor2 === i2 && v.description) {
+            desc = ` - ${v.description}`;
+            if (prefix.length + title.length + desc.length >= this.out.columns || v.description.split(/\r?\n/).length > 1) {
+              desc = "\n" + wrap(v.description, {
+                margin: prefix.length,
+                width: this.out.columns
+              });
+            }
+          }
+        }
+        return prefix + title + color.gray(desc || "");
+      }
+      // shared with autocompleteMultiselect
+      paginateOptions(options) {
+        if (options.length === 0) {
+          return color.red("No matches for this query.");
+        }
+        let _entriesToDisplay = entriesToDisplay(this.cursor, options.length, this.optionsPerPage), startIndex = _entriesToDisplay.startIndex, endIndex = _entriesToDisplay.endIndex;
+        let prefix, styledOptions = [];
+        for (let i2 = startIndex; i2 < endIndex; i2++) {
+          if (i2 === startIndex && startIndex > 0) {
+            prefix = figures.arrowUp;
+          } else if (i2 === endIndex - 1 && endIndex < options.length) {
+            prefix = figures.arrowDown;
+          } else {
+            prefix = " ";
+          }
+          styledOptions.push(this.renderOption(this.cursor, options[i2], i2, prefix));
+        }
+        return "\n" + styledOptions.join("\n");
+      }
+      // shared with autocomleteMultiselect
+      renderOptions(options) {
+        if (!this.done) {
+          return this.paginateOptions(options);
+        }
+        return "";
+      }
+      renderDoneOrInstructions() {
+        if (this.done) {
+          return this.value.filter((e2) => e2.selected).map((v) => v.title).join(", ");
+        }
+        const output = [color.gray(this.hint), this.renderInstructions()];
+        if (this.value[this.cursor].disabled) {
+          output.push(color.yellow(this.warn));
+        }
+        return output.join(" ");
+      }
+      render() {
+        if (this.closed) return;
+        if (this.firstRender) this.out.write(cursor.hide);
+        super.render();
+        let prompt = [style.symbol(this.done, this.aborted), color.bold(this.msg), style.delimiter(false), this.renderDoneOrInstructions()].join(" ");
+        if (this.showMinError) {
+          prompt += color.red(`You must select a minimum of ${this.minSelected} choices.`);
+          this.showMinError = false;
+        }
+        prompt += this.renderOptions(this.value);
+        this.out.write(this.clear + prompt);
+        this.clear = clear(prompt, this.out.columns);
+      }
+    };
+    module2.exports = MultiselectPrompt;
+  }
+});
+
+// node_modules/prompts/dist/elements/autocomplete.js
+var require_autocomplete = __commonJS({
+  "node_modules/prompts/dist/elements/autocomplete.js"(exports2, module2) {
+    "use strict";
+    function asyncGeneratorStep(gen, resolve, reject, _next, _throw, key, arg) {
+      try {
+        var info = gen[key](arg);
+        var value = info.value;
+      } catch (error) {
+        reject(error);
+        return;
+      }
+      if (info.done) {
+        resolve(value);
+      } else {
+        Promise.resolve(value).then(_next, _throw);
+      }
+    }
+    function _asyncToGenerator(fn) {
+      return function() {
+        var self2 = this, args2 = arguments;
+        return new Promise(function(resolve, reject) {
+          var gen = fn.apply(self2, args2);
+          function _next(value) {
+            asyncGeneratorStep(gen, resolve, reject, _next, _throw, "next", value);
+          }
+          function _throw(err) {
+            asyncGeneratorStep(gen, resolve, reject, _next, _throw, "throw", err);
+          }
+          _next(void 0);
+        });
+      };
+    }
+    var color = require_kleur();
+    var Prompt = require_prompt();
+    var _require = require_src6();
+    var erase = _require.erase;
+    var cursor = _require.cursor;
+    var _require2 = require_util3();
+    var style = _require2.style;
+    var clear = _require2.clear;
+    var figures = _require2.figures;
+    var wrap = _require2.wrap;
+    var entriesToDisplay = _require2.entriesToDisplay;
+    var getVal = (arr, i2) => arr[i2] && (arr[i2].value || arr[i2].title || arr[i2]);
+    var getTitle = (arr, i2) => arr[i2] && (arr[i2].title || arr[i2].value || arr[i2]);
+    var getIndex = (arr, valOrTitle) => {
+      const index = arr.findIndex((el) => el.value === valOrTitle || el.title === valOrTitle);
+      return index > -1 ? index : void 0;
+    };
+    var AutocompletePrompt = class extends Prompt {
+      constructor(opts = {}) {
+        super(opts);
+        this.msg = opts.message;
+        this.suggest = opts.suggest;
+        this.choices = opts.choices;
+        this.initial = typeof opts.initial === "number" ? opts.initial : getIndex(opts.choices, opts.initial);
+        this.select = this.initial || opts.cursor || 0;
+        this.i18n = {
+          noMatches: opts.noMatches || "no matches found"
+        };
+        this.fallback = opts.fallback || this.initial;
+        this.clearFirst = opts.clearFirst || false;
+        this.suggestions = [];
+        this.input = "";
+        this.limit = opts.limit || 10;
+        this.cursor = 0;
+        this.transform = style.render(opts.style);
+        this.scale = this.transform.scale;
+        this.render = this.render.bind(this);
+        this.complete = this.complete.bind(this);
+        this.clear = clear("", this.out.columns);
+        this.complete(this.render);
+        this.render();
+      }
+      set fallback(fb) {
+        this._fb = Number.isSafeInteger(parseInt(fb)) ? parseInt(fb) : fb;
+      }
+      get fallback() {
+        let choice;
+        if (typeof this._fb === "number") choice = this.choices[this._fb];
+        else if (typeof this._fb === "string") choice = {
+          title: this._fb
+        };
+        return choice || this._fb || {
+          title: this.i18n.noMatches
+        };
+      }
+      moveSelect(i2) {
+        this.select = i2;
+        if (this.suggestions.length > 0) this.value = getVal(this.suggestions, i2);
+        else this.value = this.fallback.value;
+        this.fire();
+      }
+      complete(cb) {
+        var _this = this;
+        return _asyncToGenerator(function* () {
+          const p = _this.completing = _this.suggest(_this.input, _this.choices);
+          const suggestions = yield p;
+          if (_this.completing !== p) return;
+          _this.suggestions = suggestions.map((s2, i2, arr) => ({
+            title: getTitle(arr, i2),
+            value: getVal(arr, i2),
+            description: s2.description
+          }));
+          _this.completing = false;
+          const l = Math.max(suggestions.length - 1, 0);
+          _this.moveSelect(Math.min(l, _this.select));
+          cb && cb();
+        })();
+      }
+      reset() {
+        this.input = "";
+        this.complete(() => {
+          this.moveSelect(this.initial !== void 0 ? this.initial : 0);
+          this.render();
+        });
+        this.render();
+      }
+      exit() {
+        if (this.clearFirst && this.input.length > 0) {
+          this.reset();
+        } else {
+          this.done = this.exited = true;
+          this.aborted = false;
+          this.fire();
+          this.render();
+          this.out.write("\n");
+          this.close();
+        }
+      }
+      abort() {
+        this.done = this.aborted = true;
+        this.exited = false;
+        this.fire();
+        this.render();
+        this.out.write("\n");
+        this.close();
+      }
+      submit() {
+        this.done = true;
+        this.aborted = this.exited = false;
+        this.fire();
+        this.render();
+        this.out.write("\n");
+        this.close();
+      }
+      _(c, key) {
+        let s1 = this.input.slice(0, this.cursor);
+        let s2 = this.input.slice(this.cursor);
+        this.input = `${s1}${c}${s2}`;
+        this.cursor = s1.length + 1;
+        this.complete(this.render);
+        this.render();
+      }
+      delete() {
+        if (this.cursor === 0) return this.bell();
+        let s1 = this.input.slice(0, this.cursor - 1);
+        let s2 = this.input.slice(this.cursor);
+        this.input = `${s1}${s2}`;
+        this.complete(this.render);
+        this.cursor = this.cursor - 1;
+        this.render();
+      }
+      deleteForward() {
+        if (this.cursor * this.scale >= this.rendered.length) return this.bell();
+        let s1 = this.input.slice(0, this.cursor);
+        let s2 = this.input.slice(this.cursor + 1);
+        this.input = `${s1}${s2}`;
+        this.complete(this.render);
+        this.render();
+      }
+      first() {
+        this.moveSelect(0);
+        this.render();
+      }
+      last() {
+        this.moveSelect(this.suggestions.length - 1);
+        this.render();
+      }
+      up() {
+        if (this.select === 0) {
+          this.moveSelect(this.suggestions.length - 1);
+        } else {
+          this.moveSelect(this.select - 1);
+        }
+        this.render();
+      }
+      down() {
+        if (this.select === this.suggestions.length - 1) {
+          this.moveSelect(0);
+        } else {
+          this.moveSelect(this.select + 1);
+        }
+        this.render();
+      }
+      next() {
+        if (this.select === this.suggestions.length - 1) {
+          this.moveSelect(0);
+        } else this.moveSelect(this.select + 1);
+        this.render();
+      }
+      nextPage() {
+        this.moveSelect(Math.min(this.select + this.limit, this.suggestions.length - 1));
+        this.render();
+      }
+      prevPage() {
+        this.moveSelect(Math.max(this.select - this.limit, 0));
+        this.render();
+      }
+      left() {
+        if (this.cursor <= 0) return this.bell();
+        this.cursor = this.cursor - 1;
+        this.render();
+      }
+      right() {
+        if (this.cursor * this.scale >= this.rendered.length) return this.bell();
+        this.cursor = this.cursor + 1;
+        this.render();
+      }
+      renderOption(v, hovered, isStart, isEnd) {
+        let desc;
+        let prefix = isStart ? figures.arrowUp : isEnd ? figures.arrowDown : " ";
+        let title = hovered ? color.cyan().underline(v.title) : v.title;
+        prefix = (hovered ? color.cyan(figures.pointer) + " " : "  ") + prefix;
+        if (v.description) {
+          desc = ` - ${v.description}`;
+          if (prefix.length + title.length + desc.length >= this.out.columns || v.description.split(/\r?\n/).length > 1) {
+            desc = "\n" + wrap(v.description, {
+              margin: 3,
+              width: this.out.columns
+            });
+          }
+        }
+        return prefix + " " + title + color.gray(desc || "");
+      }
+      render() {
+        if (this.closed) return;
+        if (this.firstRender) this.out.write(cursor.hide);
+        else this.out.write(clear(this.outputText, this.out.columns));
+        super.render();
+        let _entriesToDisplay = entriesToDisplay(this.select, this.choices.length, this.limit), startIndex = _entriesToDisplay.startIndex, endIndex = _entriesToDisplay.endIndex;
+        this.outputText = [style.symbol(this.done, this.aborted, this.exited), color.bold(this.msg), style.delimiter(this.completing), this.done && this.suggestions[this.select] ? this.suggestions[this.select].title : this.rendered = this.transform.render(this.input)].join(" ");
+        if (!this.done) {
+          const suggestions = this.suggestions.slice(startIndex, endIndex).map((item, i2) => this.renderOption(item, this.select === i2 + startIndex, i2 === 0 && startIndex > 0, i2 + startIndex === endIndex - 1 && endIndex < this.choices.length)).join("\n");
+          this.outputText += `
+` + (suggestions || color.gray(this.fallback.title));
+        }
+        this.out.write(erase.line + cursor.to(0) + this.outputText);
+      }
+    };
+    module2.exports = AutocompletePrompt;
+  }
+});
+
+// node_modules/prompts/dist/elements/autocompleteMultiselect.js
+var require_autocompleteMultiselect = __commonJS({
+  "node_modules/prompts/dist/elements/autocompleteMultiselect.js"(exports2, module2) {
+    "use strict";
+    var color = require_kleur();
+    var _require = require_src6();
+    var cursor = _require.cursor;
+    var MultiselectPrompt = require_multiselect();
+    var _require2 = require_util3();
+    var clear = _require2.clear;
+    var style = _require2.style;
+    var figures = _require2.figures;
+    var AutocompleteMultiselectPrompt = class extends MultiselectPrompt {
+      constructor(opts = {}) {
+        opts.overrideRender = true;
+        super(opts);
+        this.inputValue = "";
+        this.clear = clear("", this.out.columns);
+        this.filteredOptions = this.value;
+        this.render();
+      }
+      last() {
+        this.cursor = this.filteredOptions.length - 1;
+        this.render();
+      }
+      next() {
+        this.cursor = (this.cursor + 1) % this.filteredOptions.length;
+        this.render();
+      }
+      up() {
+        if (this.cursor === 0) {
+          this.cursor = this.filteredOptions.length - 1;
+        } else {
+          this.cursor--;
+        }
+        this.render();
+      }
+      down() {
+        if (this.cursor === this.filteredOptions.length - 1) {
+          this.cursor = 0;
+        } else {
+          this.cursor++;
+        }
+        this.render();
+      }
+      left() {
+        this.filteredOptions[this.cursor].selected = false;
+        this.render();
+      }
+      right() {
+        if (this.value.filter((e2) => e2.selected).length >= this.maxChoices) return this.bell();
+        this.filteredOptions[this.cursor].selected = true;
+        this.render();
+      }
+      delete() {
+        if (this.inputValue.length) {
+          this.inputValue = this.inputValue.substr(0, this.inputValue.length - 1);
+          this.updateFilteredOptions();
+        }
+      }
+      updateFilteredOptions() {
+        const currentHighlight = this.filteredOptions[this.cursor];
+        this.filteredOptions = this.value.filter((v) => {
+          if (this.inputValue) {
+            if (typeof v.title === "string") {
+              if (v.title.toLowerCase().includes(this.inputValue.toLowerCase())) {
+                return true;
+              }
+            }
+            if (typeof v.value === "string") {
+              if (v.value.toLowerCase().includes(this.inputValue.toLowerCase())) {
+                return true;
+              }
+            }
+            return false;
+          }
+          return true;
+        });
+        const newHighlightIndex = this.filteredOptions.findIndex((v) => v === currentHighlight);
+        this.cursor = newHighlightIndex < 0 ? 0 : newHighlightIndex;
+        this.render();
+      }
+      handleSpaceToggle() {
+        const v = this.filteredOptions[this.cursor];
+        if (v.selected) {
+          v.selected = false;
+          this.render();
+        } else if (v.disabled || this.value.filter((e2) => e2.selected).length >= this.maxChoices) {
+          return this.bell();
+        } else {
+          v.selected = true;
+          this.render();
+        }
+      }
+      handleInputChange(c) {
+        this.inputValue = this.inputValue + c;
+        this.updateFilteredOptions();
+      }
+      _(c, key) {
+        if (c === " ") {
+          this.handleSpaceToggle();
+        } else {
+          this.handleInputChange(c);
+        }
+      }
+      renderInstructions() {
+        if (this.instructions === void 0 || this.instructions) {
+          if (typeof this.instructions === "string") {
+            return this.instructions;
+          }
+          return `
+Instructions:
+    ${figures.arrowUp}/${figures.arrowDown}: Highlight option
+    ${figures.arrowLeft}/${figures.arrowRight}/[space]: Toggle selection
+    [a,b,c]/delete: Filter choices
+    enter/return: Complete answer
+`;
+        }
+        return "";
+      }
+      renderCurrentInput() {
+        return `
+Filtered results for: ${this.inputValue ? this.inputValue : color.gray("Enter something to filter")}
+`;
+      }
+      renderOption(cursor2, v, i2) {
+        let title;
+        if (v.disabled) title = cursor2 === i2 ? color.gray().underline(v.title) : color.strikethrough().gray(v.title);
+        else title = cursor2 === i2 ? color.cyan().underline(v.title) : v.title;
+        return (v.selected ? color.green(figures.radioOn) : figures.radioOff) + "  " + title;
+      }
+      renderDoneOrInstructions() {
+        if (this.done) {
+          return this.value.filter((e2) => e2.selected).map((v) => v.title).join(", ");
+        }
+        const output = [color.gray(this.hint), this.renderInstructions(), this.renderCurrentInput()];
+        if (this.filteredOptions.length && this.filteredOptions[this.cursor].disabled) {
+          output.push(color.yellow(this.warn));
+        }
+        return output.join(" ");
+      }
+      render() {
+        if (this.closed) return;
+        if (this.firstRender) this.out.write(cursor.hide);
+        super.render();
+        let prompt = [style.symbol(this.done, this.aborted), color.bold(this.msg), style.delimiter(false), this.renderDoneOrInstructions()].join(" ");
+        if (this.showMinError) {
+          prompt += color.red(`You must select a minimum of ${this.minSelected} choices.`);
+          this.showMinError = false;
+        }
+        prompt += this.renderOptions(this.filteredOptions);
+        this.out.write(this.clear + prompt);
+        this.clear = clear(prompt, this.out.columns);
+      }
+    };
+    module2.exports = AutocompleteMultiselectPrompt;
+  }
+});
+
+// node_modules/prompts/dist/elements/confirm.js
+var require_confirm = __commonJS({
+  "node_modules/prompts/dist/elements/confirm.js"(exports2, module2) {
+    "use strict";
+    var color = require_kleur();
+    var Prompt = require_prompt();
+    var _require = require_util3();
+    var style = _require.style;
+    var clear = _require.clear;
+    var _require2 = require_src6();
+    var erase = _require2.erase;
+    var cursor = _require2.cursor;
+    var ConfirmPrompt = class extends Prompt {
+      constructor(opts = {}) {
+        super(opts);
+        this.msg = opts.message;
+        this.value = opts.initial;
+        this.initialValue = !!opts.initial;
+        this.yesMsg = opts.yes || "yes";
+        this.yesOption = opts.yesOption || "(Y/n)";
+        this.noMsg = opts.no || "no";
+        this.noOption = opts.noOption || "(y/N)";
+        this.render();
+      }
+      reset() {
+        this.value = this.initialValue;
+        this.fire();
+        this.render();
+      }
+      exit() {
+        this.abort();
+      }
+      abort() {
+        this.done = this.aborted = true;
+        this.fire();
+        this.render();
+        this.out.write("\n");
+        this.close();
+      }
+      submit() {
+        this.value = this.value || false;
+        this.done = true;
+        this.aborted = false;
+        this.fire();
+        this.render();
+        this.out.write("\n");
+        this.close();
+      }
+      _(c, key) {
+        if (c.toLowerCase() === "y") {
+          this.value = true;
+          return this.submit();
+        }
+        if (c.toLowerCase() === "n") {
+          this.value = false;
+          return this.submit();
+        }
+        return this.bell();
+      }
+      render() {
+        if (this.closed) return;
+        if (this.firstRender) this.out.write(cursor.hide);
+        else this.out.write(clear(this.outputText, this.out.columns));
+        super.render();
+        this.outputText = [style.symbol(this.done, this.aborted), color.bold(this.msg), style.delimiter(this.done), this.done ? this.value ? this.yesMsg : this.noMsg : color.gray(this.initialValue ? this.yesOption : this.noOption)].join(" ");
+        this.out.write(erase.line + cursor.to(0) + this.outputText);
+      }
+    };
+    module2.exports = ConfirmPrompt;
+  }
+});
+
+// node_modules/prompts/dist/elements/index.js
+var require_elements = __commonJS({
+  "node_modules/prompts/dist/elements/index.js"(exports2, module2) {
+    "use strict";
+    module2.exports = {
+      TextPrompt: require_text(),
+      SelectPrompt: require_select(),
+      TogglePrompt: require_toggle(),
+      DatePrompt: require_date(),
+      NumberPrompt: require_number(),
+      MultiselectPrompt: require_multiselect(),
+      AutocompletePrompt: require_autocomplete(),
+      AutocompleteMultiselectPrompt: require_autocompleteMultiselect(),
+      ConfirmPrompt: require_confirm()
+    };
+  }
+});
+
+// node_modules/prompts/dist/prompts.js
+var require_prompts = __commonJS({
+  "node_modules/prompts/dist/prompts.js"(exports2) {
+    "use strict";
+    var $ = exports2;
+    var el = require_elements();
+    var noop2 = (v) => v;
+    function toPrompt(type, args2, opts = {}) {
+      return new Promise((res, rej) => {
+        const p = new el[type](args2);
+        const onAbort = opts.onAbort || noop2;
+        const onSubmit = opts.onSubmit || noop2;
+        const onExit = opts.onExit || noop2;
+        p.on("state", args2.onState || noop2);
+        p.on("submit", (x2) => res(onSubmit(x2)));
+        p.on("exit", (x2) => res(onExit(x2)));
+        p.on("abort", (x2) => rej(onAbort(x2)));
+      });
+    }
+    $.text = (args2) => toPrompt("TextPrompt", args2);
+    $.password = (args2) => {
+      args2.style = "password";
+      return $.text(args2);
+    };
+    $.invisible = (args2) => {
+      args2.style = "invisible";
+      return $.text(args2);
+    };
+    $.number = (args2) => toPrompt("NumberPrompt", args2);
+    $.date = (args2) => toPrompt("DatePrompt", args2);
+    $.confirm = (args2) => toPrompt("ConfirmPrompt", args2);
+    $.list = (args2) => {
+      const sep = args2.separator || ",";
+      return toPrompt("TextPrompt", args2, {
+        onSubmit: (str) => str.split(sep).map((s2) => s2.trim())
+      });
+    };
+    $.toggle = (args2) => toPrompt("TogglePrompt", args2);
+    $.select = (args2) => toPrompt("SelectPrompt", args2);
+    $.multiselect = (args2) => {
+      args2.choices = [].concat(args2.choices || []);
+      const toSelected = (items) => items.filter((item) => item.selected).map((item) => item.value);
+      return toPrompt("MultiselectPrompt", args2, {
+        onAbort: toSelected,
+        onSubmit: toSelected
+      });
+    };
+    $.autocompleteMultiselect = (args2) => {
+      args2.choices = [].concat(args2.choices || []);
+      const toSelected = (items) => items.filter((item) => item.selected).map((item) => item.value);
+      return toPrompt("AutocompleteMultiselectPrompt", args2, {
+        onAbort: toSelected,
+        onSubmit: toSelected
+      });
+    };
+    var byTitle = (input, choices) => Promise.resolve(choices.filter((item) => item.title.slice(0, input.length).toLowerCase() === input.toLowerCase()));
+    $.autocomplete = (args2) => {
+      args2.suggest = args2.suggest || byTitle;
+      args2.choices = [].concat(args2.choices || []);
+      return toPrompt("AutocompletePrompt", args2);
+    };
+  }
+});
+
+// node_modules/prompts/dist/index.js
+var require_dist3 = __commonJS({
+  "node_modules/prompts/dist/index.js"(exports2, module2) {
+    "use strict";
+    function ownKeys(object, enumerableOnly) {
+      var keys = Object.keys(object);
+      if (Object.getOwnPropertySymbols) {
+        var symbols = Object.getOwnPropertySymbols(object);
+        if (enumerableOnly) {
+          symbols = symbols.filter(function(sym) {
+            return Object.getOwnPropertyDescriptor(object, sym).enumerable;
+          });
+        }
+        keys.push.apply(keys, symbols);
+      }
+      return keys;
+    }
+    function _objectSpread(target) {
+      for (var i2 = 1; i2 < arguments.length; i2++) {
+        var source = arguments[i2] != null ? arguments[i2] : {};
+        if (i2 % 2) {
+          ownKeys(Object(source), true).forEach(function(key) {
+            _defineProperty(target, key, source[key]);
+          });
+        } else if (Object.getOwnPropertyDescriptors) {
+          Object.defineProperties(target, Object.getOwnPropertyDescriptors(source));
+        } else {
+          ownKeys(Object(source)).forEach(function(key) {
+            Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key));
+          });
+        }
+      }
+      return target;
+    }
+    function _defineProperty(obj, key, value) {
+      if (key in obj) {
+        Object.defineProperty(obj, key, { value, enumerable: true, configurable: true, writable: true });
+      } else {
+        obj[key] = value;
+      }
+      return obj;
+    }
+    function _createForOfIteratorHelper(o, allowArrayLike) {
+      var it = typeof Symbol !== "undefined" && o[Symbol.iterator] || o["@@iterator"];
+      if (!it) {
+        if (Array.isArray(o) || (it = _unsupportedIterableToArray(o)) || allowArrayLike && o && typeof o.length === "number") {
+          if (it) o = it;
+          var i2 = 0;
+          var F2 = function F3() {
+          };
+          return { s: F2, n: function n() {
+            if (i2 >= o.length) return { done: true };
+            return { done: false, value: o[i2++] };
+          }, e: function e2(_e) {
+            throw _e;
+          }, f: F2 };
+        }
+        throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.");
+      }
+      var normalCompletion = true, didErr = false, err;
+      return { s: function s2() {
+        it = it.call(o);
+      }, n: function n() {
+        var step = it.next();
+        normalCompletion = step.done;
+        return step;
+      }, e: function e2(_e2) {
+        didErr = true;
+        err = _e2;
+      }, f: function f3() {
+        try {
+          if (!normalCompletion && it.return != null) it.return();
+        } finally {
+          if (didErr) throw err;
+        }
+      } };
+    }
+    function _unsupportedIterableToArray(o, minLen) {
+      if (!o) return;
+      if (typeof o === "string") return _arrayLikeToArray(o, minLen);
+      var n = Object.prototype.toString.call(o).slice(8, -1);
+      if (n === "Object" && o.constructor) n = o.constructor.name;
+      if (n === "Map" || n === "Set") return Array.from(o);
+      if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return _arrayLikeToArray(o, minLen);
+    }
+    function _arrayLikeToArray(arr, len) {
+      if (len == null || len > arr.length) len = arr.length;
+      for (var i2 = 0, arr2 = new Array(len); i2 < len; i2++) arr2[i2] = arr[i2];
+      return arr2;
+    }
+    function asyncGeneratorStep(gen, resolve, reject, _next, _throw, key, arg) {
+      try {
+        var info = gen[key](arg);
+        var value = info.value;
+      } catch (error) {
+        reject(error);
+        return;
+      }
+      if (info.done) {
+        resolve(value);
+      } else {
+        Promise.resolve(value).then(_next, _throw);
+      }
+    }
+    function _asyncToGenerator(fn) {
+      return function() {
+        var self2 = this, args2 = arguments;
+        return new Promise(function(resolve, reject) {
+          var gen = fn.apply(self2, args2);
+          function _next(value) {
+            asyncGeneratorStep(gen, resolve, reject, _next, _throw, "next", value);
+          }
+          function _throw(err) {
+            asyncGeneratorStep(gen, resolve, reject, _next, _throw, "throw", err);
+          }
+          _next(void 0);
+        });
+      };
+    }
+    var prompts2 = require_prompts();
+    var passOn = ["suggest", "format", "onState", "validate", "onRender", "type"];
+    var noop2 = () => {
+    };
+    function prompt() {
+      return _prompt.apply(this, arguments);
+    }
+    function _prompt() {
+      _prompt = _asyncToGenerator(function* (questions = [], {
+        onSubmit = noop2,
+        onCancel = noop2
+      } = {}) {
+        const answers = {};
+        const override2 = prompt._override || {};
+        questions = [].concat(questions);
+        let answer, question, quit, name, type, lastPrompt;
+        const getFormattedAnswer = /* @__PURE__ */ (function() {
+          var _ref = _asyncToGenerator(function* (question2, answer2, skipValidation = false) {
+            if (!skipValidation && question2.validate && question2.validate(answer2) !== true) {
+              return;
+            }
+            return question2.format ? yield question2.format(answer2, answers) : answer2;
+          });
+          return function getFormattedAnswer2(_x, _x2) {
+            return _ref.apply(this, arguments);
+          };
+        })();
+        var _iterator = _createForOfIteratorHelper(questions), _step;
+        try {
+          for (_iterator.s(); !(_step = _iterator.n()).done; ) {
+            question = _step.value;
+            var _question = question;
+            name = _question.name;
+            type = _question.type;
+            if (typeof type === "function") {
+              type = yield type(answer, _objectSpread({}, answers), question);
+              question["type"] = type;
+            }
+            if (!type) continue;
+            for (let key in question) {
+              if (passOn.includes(key)) continue;
+              let value = question[key];
+              question[key] = typeof value === "function" ? yield value(answer, _objectSpread({}, answers), lastPrompt) : value;
+            }
+            lastPrompt = question;
+            if (typeof question.message !== "string") {
+              throw new Error("prompt message is required");
+            }
+            var _question2 = question;
+            name = _question2.name;
+            type = _question2.type;
+            if (prompts2[type] === void 0) {
+              throw new Error(`prompt type (${type}) is not defined`);
+            }
+            if (override2[question.name] !== void 0) {
+              answer = yield getFormattedAnswer(question, override2[question.name]);
+              if (answer !== void 0) {
+                answers[name] = answer;
+                continue;
+              }
+            }
+            try {
+              answer = prompt._injected ? getInjectedAnswer(prompt._injected, question.initial) : yield prompts2[type](question);
+              answers[name] = answer = yield getFormattedAnswer(question, answer, true);
+              quit = yield onSubmit(question, answer, answers);
+            } catch (err) {
+              quit = !(yield onCancel(question, answers));
+            }
+            if (quit) return answers;
+          }
+        } catch (err) {
+          _iterator.e(err);
+        } finally {
+          _iterator.f();
+        }
+        return answers;
+      });
+      return _prompt.apply(this, arguments);
+    }
+    function getInjectedAnswer(injected, deafultValue) {
+      const answer = injected.shift();
+      if (answer instanceof Error) {
+        throw answer;
+      }
+      return answer === void 0 ? deafultValue : answer;
+    }
+    function inject(answers) {
+      prompt._injected = (prompt._injected || []).concat(answers);
+    }
+    function override(answers) {
+      prompt._override = Object.assign({}, answers);
+    }
+    module2.exports = Object.assign(prompt, {
+      prompt,
+      prompts: prompts2,
+      inject,
+      override
+    });
+  }
+});
+
+// node_modules/prompts/lib/util/action.js
+var require_action2 = __commonJS({
+  "node_modules/prompts/lib/util/action.js"(exports2, module2) {
+    "use strict";
+    module2.exports = (key, isSelect) => {
+      if (key.meta && key.name !== "escape") return;
+      if (key.ctrl) {
+        if (key.name === "a") return "first";
+        if (key.name === "c") return "abort";
+        if (key.name === "d") return "abort";
+        if (key.name === "e") return "last";
+        if (key.name === "g") return "reset";
+      }
+      if (isSelect) {
+        if (key.name === "j") return "down";
+        if (key.name === "k") return "up";
+      }
+      if (key.name === "return") return "submit";
+      if (key.name === "enter") return "submit";
+      if (key.name === "backspace") return "delete";
+      if (key.name === "delete") return "deleteForward";
+      if (key.name === "abort") return "abort";
+      if (key.name === "escape") return "exit";
+      if (key.name === "tab") return "next";
+      if (key.name === "pagedown") return "nextPage";
+      if (key.name === "pageup") return "prevPage";
+      if (key.name === "home") return "home";
+      if (key.name === "end") return "end";
+      if (key.name === "up") return "up";
+      if (key.name === "down") return "down";
+      if (key.name === "right") return "right";
+      if (key.name === "left") return "left";
+      return false;
+    };
+  }
+});
+
+// node_modules/prompts/lib/util/strip.js
+var require_strip2 = __commonJS({
+  "node_modules/prompts/lib/util/strip.js"(exports2, module2) {
+    "use strict";
+    module2.exports = (str) => {
+      const pattern = [
+        "[\\u001B\\u009B][[\\]()#;?]*(?:(?:(?:(?:;[-a-zA-Z\\d\\/#&.:=?%@~_]+)*|[a-zA-Z\\d]+(?:;[-a-zA-Z\\d\\/#&.:=?%@~_]*)*)?\\u0007)",
+        "(?:(?:\\d{1,4}(?:;\\d{0,4})*)?[\\dA-PRZcf-ntqry=><~]))"
+      ].join("|");
+      const RGX = new RegExp(pattern, "g");
+      return typeof str === "string" ? str.replace(RGX, "") : str;
+    };
+  }
+});
+
+// node_modules/prompts/lib/util/clear.js
+var require_clear2 = __commonJS({
+  "node_modules/prompts/lib/util/clear.js"(exports2, module2) {
+    "use strict";
+    var strip = require_strip2();
+    var { erase, cursor } = require_src6();
+    var width = (str) => [...strip(str)].length;
+    module2.exports = function(prompt, perLine) {
+      if (!perLine) return erase.line + cursor.to(0);
+      let rows = 0;
+      const lines = prompt.split(/\r?\n/);
+      for (let line of lines) {
+        rows += 1 + Math.floor(Math.max(width(line) - 1, 0) / perLine);
+      }
+      return erase.lines(rows);
+    };
+  }
+});
+
+// node_modules/prompts/lib/util/figures.js
+var require_figures2 = __commonJS({
+  "node_modules/prompts/lib/util/figures.js"(exports2, module2) {
+    "use strict";
+    var main2 = {
+      arrowUp: "\u2191",
+      arrowDown: "\u2193",
+      arrowLeft: "\u2190",
+      arrowRight: "\u2192",
+      radioOn: "\u25C9",
+      radioOff: "\u25EF",
+      tick: "\u2714",
+      cross: "\u2716",
+      ellipsis: "\u2026",
+      pointerSmall: "\u203A",
+      line: "\u2500",
+      pointer: "\u276F"
+    };
+    var win = {
+      arrowUp: main2.arrowUp,
+      arrowDown: main2.arrowDown,
+      arrowLeft: main2.arrowLeft,
+      arrowRight: main2.arrowRight,
+      radioOn: "(*)",
+      radioOff: "( )",
+      tick: "\u221A",
+      cross: "\xD7",
+      ellipsis: "...",
+      pointerSmall: "\xBB",
+      line: "\u2500",
+      pointer: ">"
+    };
+    var figures = process.platform === "win32" ? win : main2;
+    module2.exports = figures;
+  }
+});
+
+// node_modules/prompts/lib/util/style.js
+var require_style2 = __commonJS({
+  "node_modules/prompts/lib/util/style.js"(exports2, module2) {
+    "use strict";
+    var c = require_kleur();
+    var figures = require_figures2();
+    var styles3 = Object.freeze({
+      password: { scale: 1, render: (input) => "*".repeat(input.length) },
+      emoji: { scale: 2, render: (input) => "\u{1F603}".repeat(input.length) },
+      invisible: { scale: 0, render: (input) => "" },
+      default: { scale: 1, render: (input) => `${input}` }
+    });
+    var render = (type) => styles3[type] || styles3.default;
+    var symbols = Object.freeze({
+      aborted: c.red(figures.cross),
+      done: c.green(figures.tick),
+      exited: c.yellow(figures.cross),
+      default: c.cyan("?")
+    });
+    var symbol = (done, aborted, exited) => aborted ? symbols.aborted : exited ? symbols.exited : done ? symbols.done : symbols.default;
+    var delimiter = (completing) => c.gray(completing ? figures.ellipsis : figures.pointerSmall);
+    var item = (expandable, expanded) => c.gray(expandable ? expanded ? figures.pointerSmall : "+" : figures.line);
+    module2.exports = {
+      styles: styles3,
+      render,
+      symbols,
+      symbol,
+      delimiter,
+      item
+    };
+  }
+});
+
+// node_modules/prompts/lib/util/lines.js
+var require_lines2 = __commonJS({
+  "node_modules/prompts/lib/util/lines.js"(exports2, module2) {
+    "use strict";
+    var strip = require_strip2();
+    module2.exports = function(msg, perLine) {
+      let lines = String(strip(msg) || "").split(/\r?\n/);
+      if (!perLine) return lines.length;
+      return lines.map((l) => Math.ceil(l.length / perLine)).reduce((a, b) => a + b);
+    };
+  }
+});
+
+// node_modules/prompts/lib/util/wrap.js
+var require_wrap2 = __commonJS({
+  "node_modules/prompts/lib/util/wrap.js"(exports2, module2) {
+    "use strict";
+    module2.exports = (msg, opts = {}) => {
+      const tab = Number.isSafeInteger(parseInt(opts.margin)) ? new Array(parseInt(opts.margin)).fill(" ").join("") : opts.margin || "";
+      const width = opts.width;
+      return (msg || "").split(/\r?\n/g).map((line) => line.split(/\s+/g).reduce((arr, w) => {
+        if (w.length + tab.length >= width || arr[arr.length - 1].length + w.length + 1 < width)
+          arr[arr.length - 1] += ` ${w}`;
+        else arr.push(`${tab}${w}`);
+        return arr;
+      }, [tab]).join("\n")).join("\n");
+    };
+  }
+});
+
+// node_modules/prompts/lib/util/entriesToDisplay.js
+var require_entriesToDisplay2 = __commonJS({
+  "node_modules/prompts/lib/util/entriesToDisplay.js"(exports2, module2) {
+    "use strict";
+    module2.exports = (cursor, total, maxVisible) => {
+      maxVisible = maxVisible || total;
+      let startIndex = Math.min(total - maxVisible, cursor - Math.floor(maxVisible / 2));
+      if (startIndex < 0) startIndex = 0;
+      let endIndex = Math.min(startIndex + maxVisible, total);
+      return { startIndex, endIndex };
+    };
+  }
+});
+
+// node_modules/prompts/lib/util/index.js
+var require_util4 = __commonJS({
+  "node_modules/prompts/lib/util/index.js"(exports2, module2) {
+    "use strict";
+    module2.exports = {
+      action: require_action2(),
+      clear: require_clear2(),
+      style: require_style2(),
+      strip: require_strip2(),
+      figures: require_figures2(),
+      lines: require_lines2(),
+      wrap: require_wrap2(),
+      entriesToDisplay: require_entriesToDisplay2()
+    };
+  }
+});
+
+// node_modules/prompts/lib/elements/prompt.js
+var require_prompt2 = __commonJS({
+  "node_modules/prompts/lib/elements/prompt.js"(exports2, module2) {
+    "use strict";
+    var readline = require("readline");
+    var { action } = require_util4();
+    var EventEmitter = require("events");
+    var { beep, cursor } = require_src6();
+    var color = require_kleur();
+    var Prompt = class extends EventEmitter {
+      constructor(opts = {}) {
+        super();
+        this.firstRender = true;
+        this.in = opts.stdin || process.stdin;
+        this.out = opts.stdout || process.stdout;
+        this.onRender = (opts.onRender || (() => void 0)).bind(this);
+        const rl = readline.createInterface({ input: this.in, escapeCodeTimeout: 50 });
+        readline.emitKeypressEvents(this.in, rl);
+        if (this.in.isTTY) this.in.setRawMode(true);
+        const isSelect = ["SelectPrompt", "MultiselectPrompt"].indexOf(this.constructor.name) > -1;
+        const keypress = (str, key) => {
+          let a = action(key, isSelect);
+          if (a === false) {
+            this._ && this._(str, key);
+          } else if (typeof this[a] === "function") {
+            this[a](key);
+          } else {
+            this.bell();
+          }
+        };
+        this.close = () => {
+          this.out.write(cursor.show);
+          this.in.removeListener("keypress", keypress);
+          if (this.in.isTTY) this.in.setRawMode(false);
+          rl.close();
+          this.emit(this.aborted ? "abort" : this.exited ? "exit" : "submit", this.value);
+          this.closed = true;
+        };
+        this.in.on("keypress", keypress);
+      }
+      fire() {
+        this.emit("state", {
+          value: this.value,
+          aborted: !!this.aborted,
+          exited: !!this.exited
+        });
+      }
+      bell() {
+        this.out.write(beep);
+      }
+      render() {
+        this.onRender(color);
+        if (this.firstRender) this.firstRender = false;
+      }
+    };
+    module2.exports = Prompt;
+  }
+});
+
+// node_modules/prompts/lib/elements/text.js
+var require_text2 = __commonJS({
+  "node_modules/prompts/lib/elements/text.js"(exports2, module2) {
+    var color = require_kleur();
+    var Prompt = require_prompt2();
+    var { erase, cursor } = require_src6();
+    var { style, clear, lines, figures } = require_util4();
+    var TextPrompt = class extends Prompt {
+      constructor(opts = {}) {
+        super(opts);
+        this.transform = style.render(opts.style);
+        this.scale = this.transform.scale;
+        this.msg = opts.message;
+        this.initial = opts.initial || ``;
+        this.validator = opts.validate || (() => true);
+        this.value = ``;
+        this.errorMsg = opts.error || `Please Enter A Valid Value`;
+        this.cursor = Number(!!this.initial);
+        this.cursorOffset = 0;
+        this.clear = clear(``, this.out.columns);
+        this.render();
+      }
+      set value(v) {
+        if (!v && this.initial) {
+          this.placeholder = true;
+          this.rendered = color.gray(this.transform.render(this.initial));
+        } else {
+          this.placeholder = false;
+          this.rendered = this.transform.render(v);
+        }
+        this._value = v;
+        this.fire();
+      }
+      get value() {
+        return this._value;
+      }
+      reset() {
+        this.value = ``;
+        this.cursor = Number(!!this.initial);
+        this.cursorOffset = 0;
+        this.fire();
+        this.render();
+      }
+      exit() {
+        this.abort();
+      }
+      abort() {
+        this.value = this.value || this.initial;
+        this.done = this.aborted = true;
+        this.error = false;
+        this.red = false;
+        this.fire();
+        this.render();
+        this.out.write("\n");
+        this.close();
+      }
+      async validate() {
+        let valid = await this.validator(this.value);
+        if (typeof valid === `string`) {
+          this.errorMsg = valid;
+          valid = false;
+        }
+        this.error = !valid;
+      }
+      async submit() {
+        this.value = this.value || this.initial;
+        this.cursorOffset = 0;
+        this.cursor = this.rendered.length;
+        await this.validate();
+        if (this.error) {
+          this.red = true;
+          this.fire();
+          this.render();
+          return;
+        }
+        this.done = true;
+        this.aborted = false;
+        this.fire();
+        this.render();
+        this.out.write("\n");
+        this.close();
+      }
+      next() {
+        if (!this.placeholder) return this.bell();
+        this.value = this.initial;
+        this.cursor = this.rendered.length;
+        this.fire();
+        this.render();
+      }
+      moveCursor(n) {
+        if (this.placeholder) return;
+        this.cursor = this.cursor + n;
+        this.cursorOffset += n;
+      }
+      _(c, key) {
+        let s1 = this.value.slice(0, this.cursor);
+        let s2 = this.value.slice(this.cursor);
+        this.value = `${s1}${c}${s2}`;
+        this.red = false;
+        this.cursor = this.placeholder ? 0 : s1.length + 1;
+        this.render();
+      }
+      delete() {
+        if (this.isCursorAtStart()) return this.bell();
+        let s1 = this.value.slice(0, this.cursor - 1);
+        let s2 = this.value.slice(this.cursor);
+        this.value = `${s1}${s2}`;
+        this.red = false;
+        if (this.isCursorAtStart()) {
+          this.cursorOffset = 0;
+        } else {
+          this.cursorOffset++;
+          this.moveCursor(-1);
+        }
+        this.render();
+      }
+      deleteForward() {
+        if (this.cursor * this.scale >= this.rendered.length || this.placeholder) return this.bell();
+        let s1 = this.value.slice(0, this.cursor);
+        let s2 = this.value.slice(this.cursor + 1);
+        this.value = `${s1}${s2}`;
+        this.red = false;
+        if (this.isCursorAtEnd()) {
+          this.cursorOffset = 0;
+        } else {
+          this.cursorOffset++;
+        }
+        this.render();
+      }
+      first() {
+        this.cursor = 0;
+        this.render();
+      }
+      last() {
+        this.cursor = this.value.length;
+        this.render();
+      }
+      left() {
+        if (this.cursor <= 0 || this.placeholder) return this.bell();
+        this.moveCursor(-1);
+        this.render();
+      }
+      right() {
+        if (this.cursor * this.scale >= this.rendered.length || this.placeholder) return this.bell();
+        this.moveCursor(1);
+        this.render();
+      }
+      isCursorAtStart() {
+        return this.cursor === 0 || this.placeholder && this.cursor === 1;
+      }
+      isCursorAtEnd() {
+        return this.cursor === this.rendered.length || this.placeholder && this.cursor === this.rendered.length + 1;
+      }
+      render() {
+        if (this.closed) return;
+        if (!this.firstRender) {
+          if (this.outputError)
+            this.out.write(cursor.down(lines(this.outputError, this.out.columns) - 1) + clear(this.outputError, this.out.columns));
+          this.out.write(clear(this.outputText, this.out.columns));
+        }
+        super.render();
+        this.outputError = "";
+        this.outputText = [
+          style.symbol(this.done, this.aborted),
+          color.bold(this.msg),
+          style.delimiter(this.done),
+          this.red ? color.red(this.rendered) : this.rendered
+        ].join(` `);
+        if (this.error) {
+          this.outputError += this.errorMsg.split(`
+`).reduce((a, l, i2) => a + `
+${i2 ? " " : figures.pointerSmall} ${color.red().italic(l)}`, ``);
+        }
+        this.out.write(erase.line + cursor.to(0) + this.outputText + cursor.save + this.outputError + cursor.restore + cursor.move(this.cursorOffset, 0));
+      }
+    };
+    module2.exports = TextPrompt;
+  }
+});
+
+// node_modules/prompts/lib/elements/select.js
+var require_select2 = __commonJS({
+  "node_modules/prompts/lib/elements/select.js"(exports2, module2) {
+    "use strict";
+    var color = require_kleur();
+    var Prompt = require_prompt2();
+    var { style, clear, figures, wrap, entriesToDisplay } = require_util4();
+    var { cursor } = require_src6();
+    var SelectPrompt = class extends Prompt {
+      constructor(opts = {}) {
+        super(opts);
+        this.msg = opts.message;
+        this.hint = opts.hint || "- Use arrow-keys. Return to submit.";
+        this.warn = opts.warn || "- This option is disabled";
+        this.cursor = opts.initial || 0;
+        this.choices = opts.choices.map((ch, idx) => {
+          if (typeof ch === "string")
+            ch = { title: ch, value: idx };
+          return {
+            title: ch && (ch.title || ch.value || ch),
+            value: ch && (ch.value === void 0 ? idx : ch.value),
+            description: ch && ch.description,
+            selected: ch && ch.selected,
+            disabled: ch && ch.disabled
+          };
+        });
+        this.optionsPerPage = opts.optionsPerPage || 10;
+        this.value = (this.choices[this.cursor] || {}).value;
+        this.clear = clear("", this.out.columns);
+        this.render();
+      }
+      moveCursor(n) {
+        this.cursor = n;
+        this.value = this.choices[n].value;
+        this.fire();
+      }
+      reset() {
+        this.moveCursor(0);
+        this.fire();
+        this.render();
+      }
+      exit() {
+        this.abort();
+      }
+      abort() {
+        this.done = this.aborted = true;
+        this.fire();
+        this.render();
+        this.out.write("\n");
+        this.close();
+      }
+      submit() {
+        if (!this.selection.disabled) {
+          this.done = true;
+          this.aborted = false;
+          this.fire();
+          this.render();
+          this.out.write("\n");
+          this.close();
+        } else
+          this.bell();
+      }
+      first() {
+        this.moveCursor(0);
+        this.render();
+      }
+      last() {
+        this.moveCursor(this.choices.length - 1);
+        this.render();
+      }
+      up() {
+        if (this.cursor === 0) {
+          this.moveCursor(this.choices.length - 1);
+        } else {
+          this.moveCursor(this.cursor - 1);
+        }
+        this.render();
+      }
+      down() {
+        if (this.cursor === this.choices.length - 1) {
+          this.moveCursor(0);
+        } else {
+          this.moveCursor(this.cursor + 1);
+        }
+        this.render();
+      }
+      next() {
+        this.moveCursor((this.cursor + 1) % this.choices.length);
+        this.render();
+      }
+      _(c, key) {
+        if (c === " ") return this.submit();
+      }
+      get selection() {
+        return this.choices[this.cursor];
+      }
+      render() {
+        if (this.closed) return;
+        if (this.firstRender) this.out.write(cursor.hide);
+        else this.out.write(clear(this.outputText, this.out.columns));
+        super.render();
+        let { startIndex, endIndex } = entriesToDisplay(this.cursor, this.choices.length, this.optionsPerPage);
+        this.outputText = [
+          style.symbol(this.done, this.aborted),
+          color.bold(this.msg),
+          style.delimiter(false),
+          this.done ? this.selection.title : this.selection.disabled ? color.yellow(this.warn) : color.gray(this.hint)
+        ].join(" ");
+        if (!this.done) {
+          this.outputText += "\n";
+          for (let i2 = startIndex; i2 < endIndex; i2++) {
+            let title, prefix, desc = "", v = this.choices[i2];
+            if (i2 === startIndex && startIndex > 0) {
+              prefix = figures.arrowUp;
+            } else if (i2 === endIndex - 1 && endIndex < this.choices.length) {
+              prefix = figures.arrowDown;
+            } else {
+              prefix = " ";
+            }
+            if (v.disabled) {
+              title = this.cursor === i2 ? color.gray().underline(v.title) : color.strikethrough().gray(v.title);
+              prefix = (this.cursor === i2 ? color.bold().gray(figures.pointer) + " " : "  ") + prefix;
+            } else {
+              title = this.cursor === i2 ? color.cyan().underline(v.title) : v.title;
+              prefix = (this.cursor === i2 ? color.cyan(figures.pointer) + " " : "  ") + prefix;
+              if (v.description && this.cursor === i2) {
+                desc = ` - ${v.description}`;
+                if (prefix.length + title.length + desc.length >= this.out.columns || v.description.split(/\r?\n/).length > 1) {
+                  desc = "\n" + wrap(v.description, { margin: 3, width: this.out.columns });
+                }
+              }
+            }
+            this.outputText += `${prefix} ${title}${color.gray(desc)}
+`;
+          }
+        }
+        this.out.write(this.outputText);
+      }
+    };
+    module2.exports = SelectPrompt;
+  }
+});
+
+// node_modules/prompts/lib/elements/toggle.js
+var require_toggle2 = __commonJS({
+  "node_modules/prompts/lib/elements/toggle.js"(exports2, module2) {
+    var color = require_kleur();
+    var Prompt = require_prompt2();
+    var { style, clear } = require_util4();
+    var { cursor, erase } = require_src6();
+    var TogglePrompt = class extends Prompt {
+      constructor(opts = {}) {
+        super(opts);
+        this.msg = opts.message;
+        this.value = !!opts.initial;
+        this.active = opts.active || "on";
+        this.inactive = opts.inactive || "off";
+        this.initialValue = this.value;
+        this.render();
+      }
+      reset() {
+        this.value = this.initialValue;
+        this.fire();
+        this.render();
+      }
+      exit() {
+        this.abort();
+      }
+      abort() {
+        this.done = this.aborted = true;
+        this.fire();
+        this.render();
+        this.out.write("\n");
+        this.close();
+      }
+      submit() {
+        this.done = true;
+        this.aborted = false;
+        this.fire();
+        this.render();
+        this.out.write("\n");
+        this.close();
+      }
+      deactivate() {
+        if (this.value === false) return this.bell();
+        this.value = false;
+        this.render();
+      }
+      activate() {
+        if (this.value === true) return this.bell();
+        this.value = true;
+        this.render();
+      }
+      delete() {
+        this.deactivate();
+      }
+      left() {
+        this.deactivate();
+      }
+      right() {
+        this.activate();
+      }
+      down() {
+        this.deactivate();
+      }
+      up() {
+        this.activate();
+      }
+      next() {
+        this.value = !this.value;
+        this.fire();
+        this.render();
+      }
+      _(c, key) {
+        if (c === " ") {
+          this.value = !this.value;
+        } else if (c === "1") {
+          this.value = true;
+        } else if (c === "0") {
+          this.value = false;
+        } else return this.bell();
+        this.render();
+      }
+      render() {
+        if (this.closed) return;
+        if (this.firstRender) this.out.write(cursor.hide);
+        else this.out.write(clear(this.outputText, this.out.columns));
+        super.render();
+        this.outputText = [
+          style.symbol(this.done, this.aborted),
+          color.bold(this.msg),
+          style.delimiter(this.done),
+          this.value ? this.inactive : color.cyan().underline(this.inactive),
+          color.gray("/"),
+          this.value ? color.cyan().underline(this.active) : this.active
+        ].join(" ");
+        this.out.write(erase.line + cursor.to(0) + this.outputText);
+      }
+    };
+    module2.exports = TogglePrompt;
+  }
+});
+
+// node_modules/prompts/lib/dateparts/datepart.js
+var require_datepart2 = __commonJS({
+  "node_modules/prompts/lib/dateparts/datepart.js"(exports2, module2) {
+    "use strict";
+    var DatePart = class _DatePart {
+      constructor({ token, date, parts, locales }) {
+        this.token = token;
+        this.date = date || /* @__PURE__ */ new Date();
+        this.parts = parts || [this];
+        this.locales = locales || {};
+      }
+      up() {
+      }
+      down() {
+      }
+      next() {
+        const currentIdx = this.parts.indexOf(this);
+        return this.parts.find((part, idx) => idx > currentIdx && part instanceof _DatePart);
+      }
+      setTo(val) {
+      }
+      prev() {
+        let parts = [].concat(this.parts).reverse();
+        const currentIdx = parts.indexOf(this);
+        return parts.find((part, idx) => idx > currentIdx && part instanceof _DatePart);
+      }
+      toString() {
+        return String(this.date);
+      }
+    };
+    module2.exports = DatePart;
+  }
+});
+
+// node_modules/prompts/lib/dateparts/meridiem.js
+var require_meridiem2 = __commonJS({
+  "node_modules/prompts/lib/dateparts/meridiem.js"(exports2, module2) {
+    "use strict";
+    var DatePart = require_datepart2();
+    var Meridiem = class extends DatePart {
+      constructor(opts = {}) {
+        super(opts);
+      }
+      up() {
+        this.date.setHours((this.date.getHours() + 12) % 24);
+      }
+      down() {
+        this.up();
+      }
+      toString() {
+        let meridiem = this.date.getHours() > 12 ? "pm" : "am";
+        return /\A/.test(this.token) ? meridiem.toUpperCase() : meridiem;
+      }
+    };
+    module2.exports = Meridiem;
+  }
+});
+
+// node_modules/prompts/lib/dateparts/day.js
+var require_day2 = __commonJS({
+  "node_modules/prompts/lib/dateparts/day.js"(exports2, module2) {
+    "use strict";
+    var DatePart = require_datepart2();
+    var pos = (n) => {
+      n = n % 10;
+      return n === 1 ? "st" : n === 2 ? "nd" : n === 3 ? "rd" : "th";
+    };
+    var Day = class extends DatePart {
+      constructor(opts = {}) {
+        super(opts);
+      }
+      up() {
+        this.date.setDate(this.date.getDate() + 1);
+      }
+      down() {
+        this.date.setDate(this.date.getDate() - 1);
+      }
+      setTo(val) {
+        this.date.setDate(parseInt(val.substr(-2)));
+      }
+      toString() {
+        let date = this.date.getDate();
+        let day = this.date.getDay();
+        return this.token === "DD" ? String(date).padStart(2, "0") : this.token === "Do" ? date + pos(date) : this.token === "d" ? day + 1 : this.token === "ddd" ? this.locales.weekdaysShort[day] : this.token === "dddd" ? this.locales.weekdays[day] : date;
+      }
+    };
+    module2.exports = Day;
+  }
+});
+
+// node_modules/prompts/lib/dateparts/hours.js
+var require_hours2 = __commonJS({
+  "node_modules/prompts/lib/dateparts/hours.js"(exports2, module2) {
+    "use strict";
+    var DatePart = require_datepart2();
+    var Hours = class extends DatePart {
+      constructor(opts = {}) {
+        super(opts);
+      }
+      up() {
+        this.date.setHours(this.date.getHours() + 1);
+      }
+      down() {
+        this.date.setHours(this.date.getHours() - 1);
+      }
+      setTo(val) {
+        this.date.setHours(parseInt(val.substr(-2)));
+      }
+      toString() {
+        let hours = this.date.getHours();
+        if (/h/.test(this.token))
+          hours = hours % 12 || 12;
+        return this.token.length > 1 ? String(hours).padStart(2, "0") : hours;
+      }
+    };
+    module2.exports = Hours;
+  }
+});
+
+// node_modules/prompts/lib/dateparts/milliseconds.js
+var require_milliseconds2 = __commonJS({
+  "node_modules/prompts/lib/dateparts/milliseconds.js"(exports2, module2) {
+    "use strict";
+    var DatePart = require_datepart2();
+    var Milliseconds = class extends DatePart {
+      constructor(opts = {}) {
+        super(opts);
+      }
+      up() {
+        this.date.setMilliseconds(this.date.getMilliseconds() + 1);
+      }
+      down() {
+        this.date.setMilliseconds(this.date.getMilliseconds() - 1);
+      }
+      setTo(val) {
+        this.date.setMilliseconds(parseInt(val.substr(-this.token.length)));
+      }
+      toString() {
+        return String(this.date.getMilliseconds()).padStart(4, "0").substr(0, this.token.length);
+      }
+    };
+    module2.exports = Milliseconds;
+  }
+});
+
+// node_modules/prompts/lib/dateparts/minutes.js
+var require_minutes2 = __commonJS({
+  "node_modules/prompts/lib/dateparts/minutes.js"(exports2, module2) {
+    "use strict";
+    var DatePart = require_datepart2();
+    var Minutes = class extends DatePart {
+      constructor(opts = {}) {
+        super(opts);
+      }
+      up() {
+        this.date.setMinutes(this.date.getMinutes() + 1);
+      }
+      down() {
+        this.date.setMinutes(this.date.getMinutes() - 1);
+      }
+      setTo(val) {
+        this.date.setMinutes(parseInt(val.substr(-2)));
+      }
+      toString() {
+        let m2 = this.date.getMinutes();
+        return this.token.length > 1 ? String(m2).padStart(2, "0") : m2;
+      }
+    };
+    module2.exports = Minutes;
+  }
+});
+
+// node_modules/prompts/lib/dateparts/month.js
+var require_month2 = __commonJS({
+  "node_modules/prompts/lib/dateparts/month.js"(exports2, module2) {
+    "use strict";
+    var DatePart = require_datepart2();
+    var Month = class extends DatePart {
+      constructor(opts = {}) {
+        super(opts);
+      }
+      up() {
+        this.date.setMonth(this.date.getMonth() + 1);
+      }
+      down() {
+        this.date.setMonth(this.date.getMonth() - 1);
+      }
+      setTo(val) {
+        val = parseInt(val.substr(-2)) - 1;
+        this.date.setMonth(val < 0 ? 0 : val);
+      }
+      toString() {
+        let month = this.date.getMonth();
+        let tl = this.token.length;
+        return tl === 2 ? String(month + 1).padStart(2, "0") : tl === 3 ? this.locales.monthsShort[month] : tl === 4 ? this.locales.months[month] : String(month + 1);
+      }
+    };
+    module2.exports = Month;
+  }
+});
+
+// node_modules/prompts/lib/dateparts/seconds.js
+var require_seconds2 = __commonJS({
+  "node_modules/prompts/lib/dateparts/seconds.js"(exports2, module2) {
+    "use strict";
+    var DatePart = require_datepart2();
+    var Seconds = class extends DatePart {
+      constructor(opts = {}) {
+        super(opts);
+      }
+      up() {
+        this.date.setSeconds(this.date.getSeconds() + 1);
+      }
+      down() {
+        this.date.setSeconds(this.date.getSeconds() - 1);
+      }
+      setTo(val) {
+        this.date.setSeconds(parseInt(val.substr(-2)));
+      }
+      toString() {
+        let s2 = this.date.getSeconds();
+        return this.token.length > 1 ? String(s2).padStart(2, "0") : s2;
+      }
+    };
+    module2.exports = Seconds;
+  }
+});
+
+// node_modules/prompts/lib/dateparts/year.js
+var require_year2 = __commonJS({
+  "node_modules/prompts/lib/dateparts/year.js"(exports2, module2) {
+    "use strict";
+    var DatePart = require_datepart2();
+    var Year = class extends DatePart {
+      constructor(opts = {}) {
+        super(opts);
+      }
+      up() {
+        this.date.setFullYear(this.date.getFullYear() + 1);
+      }
+      down() {
+        this.date.setFullYear(this.date.getFullYear() - 1);
+      }
+      setTo(val) {
+        this.date.setFullYear(val.substr(-4));
+      }
+      toString() {
+        let year = String(this.date.getFullYear()).padStart(4, "0");
+        return this.token.length === 2 ? year.substr(-2) : year;
+      }
+    };
+    module2.exports = Year;
+  }
+});
+
+// node_modules/prompts/lib/dateparts/index.js
+var require_dateparts2 = __commonJS({
+  "node_modules/prompts/lib/dateparts/index.js"(exports2, module2) {
+    "use strict";
+    module2.exports = {
+      DatePart: require_datepart2(),
+      Meridiem: require_meridiem2(),
+      Day: require_day2(),
+      Hours: require_hours2(),
+      Milliseconds: require_milliseconds2(),
+      Minutes: require_minutes2(),
+      Month: require_month2(),
+      Seconds: require_seconds2(),
+      Year: require_year2()
+    };
+  }
+});
+
+// node_modules/prompts/lib/elements/date.js
+var require_date2 = __commonJS({
+  "node_modules/prompts/lib/elements/date.js"(exports2, module2) {
+    "use strict";
+    var color = require_kleur();
+    var Prompt = require_prompt2();
+    var { style, clear, figures } = require_util4();
+    var { erase, cursor } = require_src6();
+    var { DatePart, Meridiem, Day, Hours, Milliseconds, Minutes, Month, Seconds, Year } = require_dateparts2();
+    var regex = /\\(.)|"((?:\\["\\]|[^"])+)"|(D[Do]?|d{3,4}|d)|(M{1,4})|(YY(?:YY)?)|([aA])|([Hh]{1,2})|(m{1,2})|(s{1,2})|(S{1,4})|./g;
+    var regexGroups = {
+      1: ({ token }) => token.replace(/\\(.)/g, "$1"),
+      2: (opts) => new Day(opts),
+      // Day // TODO
+      3: (opts) => new Month(opts),
+      // Month
+      4: (opts) => new Year(opts),
+      // Year
+      5: (opts) => new Meridiem(opts),
+      // AM/PM // TODO (special)
+      6: (opts) => new Hours(opts),
+      // Hours
+      7: (opts) => new Minutes(opts),
+      // Minutes
+      8: (opts) => new Seconds(opts),
+      // Seconds
+      9: (opts) => new Milliseconds(opts)
+      // Fractional seconds
+    };
+    var dfltLocales = {
+      months: "January,February,March,April,May,June,July,August,September,October,November,December".split(","),
+      monthsShort: "Jan,Feb,Mar,Apr,May,Jun,Jul,Aug,Sep,Oct,Nov,Dec".split(","),
+      weekdays: "Sunday,Monday,Tuesday,Wednesday,Thursday,Friday,Saturday".split(","),
+      weekdaysShort: "Sun,Mon,Tue,Wed,Thu,Fri,Sat".split(",")
+    };
+    var DatePrompt = class extends Prompt {
+      constructor(opts = {}) {
+        super(opts);
+        this.msg = opts.message;
+        this.cursor = 0;
+        this.typed = "";
+        this.locales = Object.assign(dfltLocales, opts.locales);
+        this._date = opts.initial || /* @__PURE__ */ new Date();
+        this.errorMsg = opts.error || "Please Enter A Valid Value";
+        this.validator = opts.validate || (() => true);
+        this.mask = opts.mask || "YYYY-MM-DD HH:mm:ss";
+        this.clear = clear("", this.out.columns);
+        this.render();
+      }
+      get value() {
+        return this.date;
+      }
+      get date() {
+        return this._date;
+      }
+      set date(date) {
+        if (date) this._date.setTime(date.getTime());
+      }
+      set mask(mask) {
+        let result;
+        this.parts = [];
+        while (result = regex.exec(mask)) {
+          let match2 = result.shift();
+          let idx = result.findIndex((gr) => gr != null);
+          this.parts.push(idx in regexGroups ? regexGroups[idx]({ token: result[idx] || match2, date: this.date, parts: this.parts, locales: this.locales }) : result[idx] || match2);
+        }
+        let parts = this.parts.reduce((arr, i2) => {
+          if (typeof i2 === "string" && typeof arr[arr.length - 1] === "string")
+            arr[arr.length - 1] += i2;
+          else arr.push(i2);
+          return arr;
+        }, []);
+        this.parts.splice(0);
+        this.parts.push(...parts);
+        this.reset();
+      }
+      moveCursor(n) {
+        this.typed = "";
+        this.cursor = n;
+        this.fire();
+      }
+      reset() {
+        this.moveCursor(this.parts.findIndex((p) => p instanceof DatePart));
+        this.fire();
+        this.render();
+      }
+      exit() {
+        this.abort();
+      }
+      abort() {
+        this.done = this.aborted = true;
+        this.error = false;
+        this.fire();
+        this.render();
+        this.out.write("\n");
+        this.close();
+      }
+      async validate() {
+        let valid = await this.validator(this.value);
+        if (typeof valid === "string") {
+          this.errorMsg = valid;
+          valid = false;
+        }
+        this.error = !valid;
+      }
+      async submit() {
+        await this.validate();
+        if (this.error) {
+          this.color = "red";
+          this.fire();
+          this.render();
+          return;
+        }
+        this.done = true;
+        this.aborted = false;
+        this.fire();
+        this.render();
+        this.out.write("\n");
+        this.close();
+      }
+      up() {
+        this.typed = "";
+        this.parts[this.cursor].up();
+        this.render();
+      }
+      down() {
+        this.typed = "";
+        this.parts[this.cursor].down();
+        this.render();
+      }
+      left() {
+        let prev = this.parts[this.cursor].prev();
+        if (prev == null) return this.bell();
+        this.moveCursor(this.parts.indexOf(prev));
+        this.render();
+      }
+      right() {
+        let next = this.parts[this.cursor].next();
+        if (next == null) return this.bell();
+        this.moveCursor(this.parts.indexOf(next));
+        this.render();
+      }
+      next() {
+        let next = this.parts[this.cursor].next();
+        this.moveCursor(next ? this.parts.indexOf(next) : this.parts.findIndex((part) => part instanceof DatePart));
+        this.render();
+      }
+      _(c) {
+        if (/\d/.test(c)) {
+          this.typed += c;
+          this.parts[this.cursor].setTo(this.typed);
+          this.render();
+        }
+      }
+      render() {
+        if (this.closed) return;
+        if (this.firstRender) this.out.write(cursor.hide);
+        else this.out.write(clear(this.outputText, this.out.columns));
+        super.render();
+        this.outputText = [
+          style.symbol(this.done, this.aborted),
+          color.bold(this.msg),
+          style.delimiter(false),
+          this.parts.reduce((arr, p, idx) => arr.concat(idx === this.cursor && !this.done ? color.cyan().underline(p.toString()) : p), []).join("")
+        ].join(" ");
+        if (this.error) {
+          this.outputText += this.errorMsg.split("\n").reduce(
+            (a, l, i2) => a + `
+${i2 ? ` ` : figures.pointerSmall} ${color.red().italic(l)}`,
+            ``
+          );
+        }
+        this.out.write(erase.line + cursor.to(0) + this.outputText);
+      }
+    };
+    module2.exports = DatePrompt;
+  }
+});
+
+// node_modules/prompts/lib/elements/number.js
+var require_number2 = __commonJS({
+  "node_modules/prompts/lib/elements/number.js"(exports2, module2) {
+    var color = require_kleur();
+    var Prompt = require_prompt2();
+    var { cursor, erase } = require_src6();
+    var { style, figures, clear, lines } = require_util4();
+    var isNumber = /[0-9]/;
+    var isDef = (any) => any !== void 0;
+    var round = (number, precision) => {
+      let factor = Math.pow(10, precision);
+      return Math.round(number * factor) / factor;
+    };
+    var NumberPrompt = class extends Prompt {
+      constructor(opts = {}) {
+        super(opts);
+        this.transform = style.render(opts.style);
+        this.msg = opts.message;
+        this.initial = isDef(opts.initial) ? opts.initial : "";
+        this.float = !!opts.float;
+        this.round = opts.round || 2;
+        this.inc = opts.increment || 1;
+        this.min = isDef(opts.min) ? opts.min : -Infinity;
+        this.max = isDef(opts.max) ? opts.max : Infinity;
+        this.errorMsg = opts.error || `Please Enter A Valid Value`;
+        this.validator = opts.validate || (() => true);
+        this.color = `cyan`;
+        this.value = ``;
+        this.typed = ``;
+        this.lastHit = 0;
+        this.render();
+      }
+      set value(v) {
+        if (!v && v !== 0) {
+          this.placeholder = true;
+          this.rendered = color.gray(this.transform.render(`${this.initial}`));
+          this._value = ``;
+        } else {
+          this.placeholder = false;
+          this.rendered = this.transform.render(`${round(v, this.round)}`);
+          this._value = round(v, this.round);
+        }
+        this.fire();
+      }
+      get value() {
+        return this._value;
+      }
+      parse(x2) {
+        return this.float ? parseFloat(x2) : parseInt(x2);
+      }
+      valid(c) {
+        return c === `-` || c === `.` && this.float || isNumber.test(c);
+      }
+      reset() {
+        this.typed = ``;
+        this.value = ``;
+        this.fire();
+        this.render();
+      }
+      exit() {
+        this.abort();
+      }
+      abort() {
+        let x2 = this.value;
+        this.value = x2 !== `` ? x2 : this.initial;
+        this.done = this.aborted = true;
+        this.error = false;
+        this.fire();
+        this.render();
+        this.out.write(`
+`);
+        this.close();
+      }
+      async validate() {
+        let valid = await this.validator(this.value);
+        if (typeof valid === `string`) {
+          this.errorMsg = valid;
+          valid = false;
+        }
+        this.error = !valid;
+      }
+      async submit() {
+        await this.validate();
+        if (this.error) {
+          this.color = `red`;
+          this.fire();
+          this.render();
+          return;
+        }
+        let x2 = this.value;
+        this.value = x2 !== `` ? x2 : this.initial;
+        this.done = true;
+        this.aborted = false;
+        this.error = false;
+        this.fire();
+        this.render();
+        this.out.write(`
+`);
+        this.close();
+      }
+      up() {
+        this.typed = ``;
+        if (this.value === "") {
+          this.value = this.min - this.inc;
+        }
+        if (this.value >= this.max) return this.bell();
+        this.value += this.inc;
+        this.color = `cyan`;
+        this.fire();
+        this.render();
+      }
+      down() {
+        this.typed = ``;
+        if (this.value === "") {
+          this.value = this.min + this.inc;
+        }
+        if (this.value <= this.min) return this.bell();
+        this.value -= this.inc;
+        this.color = `cyan`;
+        this.fire();
+        this.render();
+      }
+      delete() {
+        let val = this.value.toString();
+        if (val.length === 0) return this.bell();
+        this.value = this.parse(val = val.slice(0, -1)) || ``;
+        if (this.value !== "" && this.value < this.min) {
+          this.value = this.min;
+        }
+        this.color = `cyan`;
+        this.fire();
+        this.render();
+      }
+      next() {
+        this.value = this.initial;
+        this.fire();
+        this.render();
+      }
+      _(c, key) {
+        if (!this.valid(c)) return this.bell();
+        const now = Date.now();
+        if (now - this.lastHit > 1e3) this.typed = ``;
+        this.typed += c;
+        this.lastHit = now;
+        this.color = `cyan`;
+        if (c === `.`) return this.fire();
+        this.value = Math.min(this.parse(this.typed), this.max);
+        if (this.value > this.max) this.value = this.max;
+        if (this.value < this.min) this.value = this.min;
+        this.fire();
+        this.render();
+      }
+      render() {
+        if (this.closed) return;
+        if (!this.firstRender) {
+          if (this.outputError)
+            this.out.write(cursor.down(lines(this.outputError, this.out.columns) - 1) + clear(this.outputError, this.out.columns));
+          this.out.write(clear(this.outputText, this.out.columns));
+        }
+        super.render();
+        this.outputError = "";
+        this.outputText = [
+          style.symbol(this.done, this.aborted),
+          color.bold(this.msg),
+          style.delimiter(this.done),
+          !this.done || !this.done && !this.placeholder ? color[this.color]().underline(this.rendered) : this.rendered
+        ].join(` `);
+        if (this.error) {
+          this.outputError += this.errorMsg.split(`
+`).reduce((a, l, i2) => a + `
+${i2 ? ` ` : figures.pointerSmall} ${color.red().italic(l)}`, ``);
+        }
+        this.out.write(erase.line + cursor.to(0) + this.outputText + cursor.save + this.outputError + cursor.restore);
+      }
+    };
+    module2.exports = NumberPrompt;
+  }
+});
+
+// node_modules/prompts/lib/elements/multiselect.js
+var require_multiselect2 = __commonJS({
+  "node_modules/prompts/lib/elements/multiselect.js"(exports2, module2) {
+    "use strict";
+    var color = require_kleur();
+    var { cursor } = require_src6();
+    var Prompt = require_prompt2();
+    var { clear, figures, style, wrap, entriesToDisplay } = require_util4();
+    var MultiselectPrompt = class extends Prompt {
+      constructor(opts = {}) {
+        super(opts);
+        this.msg = opts.message;
+        this.cursor = opts.cursor || 0;
+        this.scrollIndex = opts.cursor || 0;
+        this.hint = opts.hint || "";
+        this.warn = opts.warn || "- This option is disabled -";
+        this.minSelected = opts.min;
+        this.showMinError = false;
+        this.maxChoices = opts.max;
+        this.instructions = opts.instructions;
+        this.optionsPerPage = opts.optionsPerPage || 10;
+        this.value = opts.choices.map((ch, idx) => {
+          if (typeof ch === "string")
+            ch = { title: ch, value: idx };
+          return {
+            title: ch && (ch.title || ch.value || ch),
+            description: ch && ch.description,
+            value: ch && (ch.value === void 0 ? idx : ch.value),
+            selected: ch && ch.selected,
+            disabled: ch && ch.disabled
+          };
+        });
+        this.clear = clear("", this.out.columns);
+        if (!opts.overrideRender) {
+          this.render();
+        }
+      }
+      reset() {
+        this.value.map((v) => !v.selected);
+        this.cursor = 0;
+        this.fire();
+        this.render();
+      }
+      selected() {
+        return this.value.filter((v) => v.selected);
+      }
+      exit() {
+        this.abort();
+      }
+      abort() {
+        this.done = this.aborted = true;
+        this.fire();
+        this.render();
+        this.out.write("\n");
+        this.close();
+      }
+      submit() {
+        const selected = this.value.filter((e2) => e2.selected);
+        if (this.minSelected && selected.length < this.minSelected) {
+          this.showMinError = true;
+          this.render();
+        } else {
+          this.done = true;
+          this.aborted = false;
+          this.fire();
+          this.render();
+          this.out.write("\n");
+          this.close();
+        }
+      }
+      first() {
+        this.cursor = 0;
+        this.render();
+      }
+      last() {
+        this.cursor = this.value.length - 1;
+        this.render();
+      }
+      next() {
+        this.cursor = (this.cursor + 1) % this.value.length;
+        this.render();
+      }
+      up() {
+        if (this.cursor === 0) {
+          this.cursor = this.value.length - 1;
+        } else {
+          this.cursor--;
+        }
+        this.render();
+      }
+      down() {
+        if (this.cursor === this.value.length - 1) {
+          this.cursor = 0;
+        } else {
+          this.cursor++;
+        }
+        this.render();
+      }
+      left() {
+        this.value[this.cursor].selected = false;
+        this.render();
+      }
+      right() {
+        if (this.value.filter((e2) => e2.selected).length >= this.maxChoices) return this.bell();
+        this.value[this.cursor].selected = true;
+        this.render();
+      }
+      handleSpaceToggle() {
+        const v = this.value[this.cursor];
+        if (v.selected) {
+          v.selected = false;
+          this.render();
+        } else if (v.disabled || this.value.filter((e2) => e2.selected).length >= this.maxChoices) {
+          return this.bell();
+        } else {
+          v.selected = true;
+          this.render();
+        }
+      }
+      toggleAll() {
+        if (this.maxChoices !== void 0 || this.value[this.cursor].disabled) {
+          return this.bell();
+        }
+        const newSelected = !this.value[this.cursor].selected;
+        this.value.filter((v) => !v.disabled).forEach((v) => v.selected = newSelected);
+        this.render();
+      }
+      _(c, key) {
+        if (c === " ") {
+          this.handleSpaceToggle();
+        } else if (c === "a") {
+          this.toggleAll();
+        } else {
+          return this.bell();
+        }
+      }
+      renderInstructions() {
+        if (this.instructions === void 0 || this.instructions) {
+          if (typeof this.instructions === "string") {
+            return this.instructions;
+          }
+          return `
+Instructions:
+    ${figures.arrowUp}/${figures.arrowDown}: Highlight option
+    ${figures.arrowLeft}/${figures.arrowRight}/[space]: Toggle selection
+` + (this.maxChoices === void 0 ? `    a: Toggle all
+` : "") + `    enter/return: Complete answer`;
+        }
+        return "";
+      }
+      renderOption(cursor2, v, i2, arrowIndicator) {
+        const prefix = (v.selected ? color.green(figures.radioOn) : figures.radioOff) + " " + arrowIndicator + " ";
+        let title, desc;
+        if (v.disabled) {
+          title = cursor2 === i2 ? color.gray().underline(v.title) : color.strikethrough().gray(v.title);
+        } else {
+          title = cursor2 === i2 ? color.cyan().underline(v.title) : v.title;
+          if (cursor2 === i2 && v.description) {
+            desc = ` - ${v.description}`;
+            if (prefix.length + title.length + desc.length >= this.out.columns || v.description.split(/\r?\n/).length > 1) {
+              desc = "\n" + wrap(v.description, { margin: prefix.length, width: this.out.columns });
+            }
+          }
+        }
+        return prefix + title + color.gray(desc || "");
+      }
+      // shared with autocompleteMultiselect
+      paginateOptions(options) {
+        if (options.length === 0) {
+          return color.red("No matches for this query.");
+        }
+        let { startIndex, endIndex } = entriesToDisplay(this.cursor, options.length, this.optionsPerPage);
+        let prefix, styledOptions = [];
+        for (let i2 = startIndex; i2 < endIndex; i2++) {
+          if (i2 === startIndex && startIndex > 0) {
+            prefix = figures.arrowUp;
+          } else if (i2 === endIndex - 1 && endIndex < options.length) {
+            prefix = figures.arrowDown;
+          } else {
+            prefix = " ";
+          }
+          styledOptions.push(this.renderOption(this.cursor, options[i2], i2, prefix));
+        }
+        return "\n" + styledOptions.join("\n");
+      }
+      // shared with autocomleteMultiselect
+      renderOptions(options) {
+        if (!this.done) {
+          return this.paginateOptions(options);
+        }
+        return "";
+      }
+      renderDoneOrInstructions() {
+        if (this.done) {
+          return this.value.filter((e2) => e2.selected).map((v) => v.title).join(", ");
+        }
+        const output = [color.gray(this.hint), this.renderInstructions()];
+        if (this.value[this.cursor].disabled) {
+          output.push(color.yellow(this.warn));
+        }
+        return output.join(" ");
+      }
+      render() {
+        if (this.closed) return;
+        if (this.firstRender) this.out.write(cursor.hide);
+        super.render();
+        let prompt = [
+          style.symbol(this.done, this.aborted),
+          color.bold(this.msg),
+          style.delimiter(false),
+          this.renderDoneOrInstructions()
+        ].join(" ");
+        if (this.showMinError) {
+          prompt += color.red(`You must select a minimum of ${this.minSelected} choices.`);
+          this.showMinError = false;
+        }
+        prompt += this.renderOptions(this.value);
+        this.out.write(this.clear + prompt);
+        this.clear = clear(prompt, this.out.columns);
+      }
+    };
+    module2.exports = MultiselectPrompt;
+  }
+});
+
+// node_modules/prompts/lib/elements/autocomplete.js
+var require_autocomplete2 = __commonJS({
+  "node_modules/prompts/lib/elements/autocomplete.js"(exports2, module2) {
+    "use strict";
+    var color = require_kleur();
+    var Prompt = require_prompt2();
+    var { erase, cursor } = require_src6();
+    var { style, clear, figures, wrap, entriesToDisplay } = require_util4();
+    var getVal = (arr, i2) => arr[i2] && (arr[i2].value || arr[i2].title || arr[i2]);
+    var getTitle = (arr, i2) => arr[i2] && (arr[i2].title || arr[i2].value || arr[i2]);
+    var getIndex = (arr, valOrTitle) => {
+      const index = arr.findIndex((el) => el.value === valOrTitle || el.title === valOrTitle);
+      return index > -1 ? index : void 0;
+    };
+    var AutocompletePrompt = class extends Prompt {
+      constructor(opts = {}) {
+        super(opts);
+        this.msg = opts.message;
+        this.suggest = opts.suggest;
+        this.choices = opts.choices;
+        this.initial = typeof opts.initial === "number" ? opts.initial : getIndex(opts.choices, opts.initial);
+        this.select = this.initial || opts.cursor || 0;
+        this.i18n = { noMatches: opts.noMatches || "no matches found" };
+        this.fallback = opts.fallback || this.initial;
+        this.clearFirst = opts.clearFirst || false;
+        this.suggestions = [];
+        this.input = "";
+        this.limit = opts.limit || 10;
+        this.cursor = 0;
+        this.transform = style.render(opts.style);
+        this.scale = this.transform.scale;
+        this.render = this.render.bind(this);
+        this.complete = this.complete.bind(this);
+        this.clear = clear("", this.out.columns);
+        this.complete(this.render);
+        this.render();
+      }
+      set fallback(fb) {
+        this._fb = Number.isSafeInteger(parseInt(fb)) ? parseInt(fb) : fb;
+      }
+      get fallback() {
+        let choice;
+        if (typeof this._fb === "number")
+          choice = this.choices[this._fb];
+        else if (typeof this._fb === "string")
+          choice = { title: this._fb };
+        return choice || this._fb || { title: this.i18n.noMatches };
+      }
+      moveSelect(i2) {
+        this.select = i2;
+        if (this.suggestions.length > 0)
+          this.value = getVal(this.suggestions, i2);
+        else this.value = this.fallback.value;
+        this.fire();
+      }
+      async complete(cb) {
+        const p = this.completing = this.suggest(this.input, this.choices);
+        const suggestions = await p;
+        if (this.completing !== p) return;
+        this.suggestions = suggestions.map((s2, i2, arr) => ({ title: getTitle(arr, i2), value: getVal(arr, i2), description: s2.description }));
+        this.completing = false;
+        const l = Math.max(suggestions.length - 1, 0);
+        this.moveSelect(Math.min(l, this.select));
+        cb && cb();
+      }
+      reset() {
+        this.input = "";
+        this.complete(() => {
+          this.moveSelect(this.initial !== void 0 ? this.initial : 0);
+          this.render();
+        });
+        this.render();
+      }
+      exit() {
+        if (this.clearFirst && this.input.length > 0) {
+          this.reset();
+        } else {
+          this.done = this.exited = true;
+          this.aborted = false;
+          this.fire();
+          this.render();
+          this.out.write("\n");
+          this.close();
+        }
+      }
+      abort() {
+        this.done = this.aborted = true;
+        this.exited = false;
+        this.fire();
+        this.render();
+        this.out.write("\n");
+        this.close();
+      }
+      submit() {
+        this.done = true;
+        this.aborted = this.exited = false;
+        this.fire();
+        this.render();
+        this.out.write("\n");
+        this.close();
+      }
+      _(c, key) {
+        let s1 = this.input.slice(0, this.cursor);
+        let s2 = this.input.slice(this.cursor);
+        this.input = `${s1}${c}${s2}`;
+        this.cursor = s1.length + 1;
+        this.complete(this.render);
+        this.render();
+      }
+      delete() {
+        if (this.cursor === 0) return this.bell();
+        let s1 = this.input.slice(0, this.cursor - 1);
+        let s2 = this.input.slice(this.cursor);
+        this.input = `${s1}${s2}`;
+        this.complete(this.render);
+        this.cursor = this.cursor - 1;
+        this.render();
+      }
+      deleteForward() {
+        if (this.cursor * this.scale >= this.rendered.length) return this.bell();
+        let s1 = this.input.slice(0, this.cursor);
+        let s2 = this.input.slice(this.cursor + 1);
+        this.input = `${s1}${s2}`;
+        this.complete(this.render);
+        this.render();
+      }
+      first() {
+        this.moveSelect(0);
+        this.render();
+      }
+      last() {
+        this.moveSelect(this.suggestions.length - 1);
+        this.render();
+      }
+      up() {
+        if (this.select === 0) {
+          this.moveSelect(this.suggestions.length - 1);
+        } else {
+          this.moveSelect(this.select - 1);
+        }
+        this.render();
+      }
+      down() {
+        if (this.select === this.suggestions.length - 1) {
+          this.moveSelect(0);
+        } else {
+          this.moveSelect(this.select + 1);
+        }
+        this.render();
+      }
+      next() {
+        if (this.select === this.suggestions.length - 1) {
+          this.moveSelect(0);
+        } else this.moveSelect(this.select + 1);
+        this.render();
+      }
+      nextPage() {
+        this.moveSelect(Math.min(this.select + this.limit, this.suggestions.length - 1));
+        this.render();
+      }
+      prevPage() {
+        this.moveSelect(Math.max(this.select - this.limit, 0));
+        this.render();
+      }
+      left() {
+        if (this.cursor <= 0) return this.bell();
+        this.cursor = this.cursor - 1;
+        this.render();
+      }
+      right() {
+        if (this.cursor * this.scale >= this.rendered.length) return this.bell();
+        this.cursor = this.cursor + 1;
+        this.render();
+      }
+      renderOption(v, hovered, isStart, isEnd) {
+        let desc;
+        let prefix = isStart ? figures.arrowUp : isEnd ? figures.arrowDown : " ";
+        let title = hovered ? color.cyan().underline(v.title) : v.title;
+        prefix = (hovered ? color.cyan(figures.pointer) + " " : "  ") + prefix;
+        if (v.description) {
+          desc = ` - ${v.description}`;
+          if (prefix.length + title.length + desc.length >= this.out.columns || v.description.split(/\r?\n/).length > 1) {
+            desc = "\n" + wrap(v.description, { margin: 3, width: this.out.columns });
+          }
+        }
+        return prefix + " " + title + color.gray(desc || "");
+      }
+      render() {
+        if (this.closed) return;
+        if (this.firstRender) this.out.write(cursor.hide);
+        else this.out.write(clear(this.outputText, this.out.columns));
+        super.render();
+        let { startIndex, endIndex } = entriesToDisplay(this.select, this.choices.length, this.limit);
+        this.outputText = [
+          style.symbol(this.done, this.aborted, this.exited),
+          color.bold(this.msg),
+          style.delimiter(this.completing),
+          this.done && this.suggestions[this.select] ? this.suggestions[this.select].title : this.rendered = this.transform.render(this.input)
+        ].join(" ");
+        if (!this.done) {
+          const suggestions = this.suggestions.slice(startIndex, endIndex).map((item, i2) => this.renderOption(
+            item,
+            this.select === i2 + startIndex,
+            i2 === 0 && startIndex > 0,
+            i2 + startIndex === endIndex - 1 && endIndex < this.choices.length
+          )).join("\n");
+          this.outputText += `
+` + (suggestions || color.gray(this.fallback.title));
+        }
+        this.out.write(erase.line + cursor.to(0) + this.outputText);
+      }
+    };
+    module2.exports = AutocompletePrompt;
+  }
+});
+
+// node_modules/prompts/lib/elements/autocompleteMultiselect.js
+var require_autocompleteMultiselect2 = __commonJS({
+  "node_modules/prompts/lib/elements/autocompleteMultiselect.js"(exports2, module2) {
+    "use strict";
+    var color = require_kleur();
+    var { cursor } = require_src6();
+    var MultiselectPrompt = require_multiselect2();
+    var { clear, style, figures } = require_util4();
+    var AutocompleteMultiselectPrompt = class extends MultiselectPrompt {
+      constructor(opts = {}) {
+        opts.overrideRender = true;
+        super(opts);
+        this.inputValue = "";
+        this.clear = clear("", this.out.columns);
+        this.filteredOptions = this.value;
+        this.render();
+      }
+      last() {
+        this.cursor = this.filteredOptions.length - 1;
+        this.render();
+      }
+      next() {
+        this.cursor = (this.cursor + 1) % this.filteredOptions.length;
+        this.render();
+      }
+      up() {
+        if (this.cursor === 0) {
+          this.cursor = this.filteredOptions.length - 1;
+        } else {
+          this.cursor--;
+        }
+        this.render();
+      }
+      down() {
+        if (this.cursor === this.filteredOptions.length - 1) {
+          this.cursor = 0;
+        } else {
+          this.cursor++;
+        }
+        this.render();
+      }
+      left() {
+        this.filteredOptions[this.cursor].selected = false;
+        this.render();
+      }
+      right() {
+        if (this.value.filter((e2) => e2.selected).length >= this.maxChoices) return this.bell();
+        this.filteredOptions[this.cursor].selected = true;
+        this.render();
+      }
+      delete() {
+        if (this.inputValue.length) {
+          this.inputValue = this.inputValue.substr(0, this.inputValue.length - 1);
+          this.updateFilteredOptions();
+        }
+      }
+      updateFilteredOptions() {
+        const currentHighlight = this.filteredOptions[this.cursor];
+        this.filteredOptions = this.value.filter((v) => {
+          if (this.inputValue) {
+            if (typeof v.title === "string") {
+              if (v.title.toLowerCase().includes(this.inputValue.toLowerCase())) {
+                return true;
+              }
+            }
+            if (typeof v.value === "string") {
+              if (v.value.toLowerCase().includes(this.inputValue.toLowerCase())) {
+                return true;
+              }
+            }
+            return false;
+          }
+          return true;
+        });
+        const newHighlightIndex = this.filteredOptions.findIndex((v) => v === currentHighlight);
+        this.cursor = newHighlightIndex < 0 ? 0 : newHighlightIndex;
+        this.render();
+      }
+      handleSpaceToggle() {
+        const v = this.filteredOptions[this.cursor];
+        if (v.selected) {
+          v.selected = false;
+          this.render();
+        } else if (v.disabled || this.value.filter((e2) => e2.selected).length >= this.maxChoices) {
+          return this.bell();
+        } else {
+          v.selected = true;
+          this.render();
+        }
+      }
+      handleInputChange(c) {
+        this.inputValue = this.inputValue + c;
+        this.updateFilteredOptions();
+      }
+      _(c, key) {
+        if (c === " ") {
+          this.handleSpaceToggle();
+        } else {
+          this.handleInputChange(c);
+        }
+      }
+      renderInstructions() {
+        if (this.instructions === void 0 || this.instructions) {
+          if (typeof this.instructions === "string") {
+            return this.instructions;
+          }
+          return `
+Instructions:
+    ${figures.arrowUp}/${figures.arrowDown}: Highlight option
+    ${figures.arrowLeft}/${figures.arrowRight}/[space]: Toggle selection
+    [a,b,c]/delete: Filter choices
+    enter/return: Complete answer
+`;
+        }
+        return "";
+      }
+      renderCurrentInput() {
+        return `
+Filtered results for: ${this.inputValue ? this.inputValue : color.gray("Enter something to filter")}
+`;
+      }
+      renderOption(cursor2, v, i2) {
+        let title;
+        if (v.disabled) title = cursor2 === i2 ? color.gray().underline(v.title) : color.strikethrough().gray(v.title);
+        else title = cursor2 === i2 ? color.cyan().underline(v.title) : v.title;
+        return (v.selected ? color.green(figures.radioOn) : figures.radioOff) + "  " + title;
+      }
+      renderDoneOrInstructions() {
+        if (this.done) {
+          return this.value.filter((e2) => e2.selected).map((v) => v.title).join(", ");
+        }
+        const output = [color.gray(this.hint), this.renderInstructions(), this.renderCurrentInput()];
+        if (this.filteredOptions.length && this.filteredOptions[this.cursor].disabled) {
+          output.push(color.yellow(this.warn));
+        }
+        return output.join(" ");
+      }
+      render() {
+        if (this.closed) return;
+        if (this.firstRender) this.out.write(cursor.hide);
+        super.render();
+        let prompt = [
+          style.symbol(this.done, this.aborted),
+          color.bold(this.msg),
+          style.delimiter(false),
+          this.renderDoneOrInstructions()
+        ].join(" ");
+        if (this.showMinError) {
+          prompt += color.red(`You must select a minimum of ${this.minSelected} choices.`);
+          this.showMinError = false;
+        }
+        prompt += this.renderOptions(this.filteredOptions);
+        this.out.write(this.clear + prompt);
+        this.clear = clear(prompt, this.out.columns);
+      }
+    };
+    module2.exports = AutocompleteMultiselectPrompt;
+  }
+});
+
+// node_modules/prompts/lib/elements/confirm.js
+var require_confirm2 = __commonJS({
+  "node_modules/prompts/lib/elements/confirm.js"(exports2, module2) {
+    var color = require_kleur();
+    var Prompt = require_prompt2();
+    var { style, clear } = require_util4();
+    var { erase, cursor } = require_src6();
+    var ConfirmPrompt = class extends Prompt {
+      constructor(opts = {}) {
+        super(opts);
+        this.msg = opts.message;
+        this.value = opts.initial;
+        this.initialValue = !!opts.initial;
+        this.yesMsg = opts.yes || "yes";
+        this.yesOption = opts.yesOption || "(Y/n)";
+        this.noMsg = opts.no || "no";
+        this.noOption = opts.noOption || "(y/N)";
+        this.render();
+      }
+      reset() {
+        this.value = this.initialValue;
+        this.fire();
+        this.render();
+      }
+      exit() {
+        this.abort();
+      }
+      abort() {
+        this.done = this.aborted = true;
+        this.fire();
+        this.render();
+        this.out.write("\n");
+        this.close();
+      }
+      submit() {
+        this.value = this.value || false;
+        this.done = true;
+        this.aborted = false;
+        this.fire();
+        this.render();
+        this.out.write("\n");
+        this.close();
+      }
+      _(c, key) {
+        if (c.toLowerCase() === "y") {
+          this.value = true;
+          return this.submit();
+        }
+        if (c.toLowerCase() === "n") {
+          this.value = false;
+          return this.submit();
+        }
+        return this.bell();
+      }
+      render() {
+        if (this.closed) return;
+        if (this.firstRender) this.out.write(cursor.hide);
+        else this.out.write(clear(this.outputText, this.out.columns));
+        super.render();
+        this.outputText = [
+          style.symbol(this.done, this.aborted),
+          color.bold(this.msg),
+          style.delimiter(this.done),
+          this.done ? this.value ? this.yesMsg : this.noMsg : color.gray(this.initialValue ? this.yesOption : this.noOption)
+        ].join(" ");
+        this.out.write(erase.line + cursor.to(0) + this.outputText);
+      }
+    };
+    module2.exports = ConfirmPrompt;
+  }
+});
+
+// node_modules/prompts/lib/elements/index.js
+var require_elements2 = __commonJS({
+  "node_modules/prompts/lib/elements/index.js"(exports2, module2) {
+    "use strict";
+    module2.exports = {
+      TextPrompt: require_text2(),
+      SelectPrompt: require_select2(),
+      TogglePrompt: require_toggle2(),
+      DatePrompt: require_date2(),
+      NumberPrompt: require_number2(),
+      MultiselectPrompt: require_multiselect2(),
+      AutocompletePrompt: require_autocomplete2(),
+      AutocompleteMultiselectPrompt: require_autocompleteMultiselect2(),
+      ConfirmPrompt: require_confirm2()
+    };
+  }
+});
+
+// node_modules/prompts/lib/prompts.js
+var require_prompts2 = __commonJS({
+  "node_modules/prompts/lib/prompts.js"(exports2) {
+    "use strict";
+    var $ = exports2;
+    var el = require_elements2();
+    var noop2 = (v) => v;
+    function toPrompt(type, args2, opts = {}) {
+      return new Promise((res, rej) => {
+        const p = new el[type](args2);
+        const onAbort = opts.onAbort || noop2;
+        const onSubmit = opts.onSubmit || noop2;
+        const onExit = opts.onExit || noop2;
+        p.on("state", args2.onState || noop2);
+        p.on("submit", (x2) => res(onSubmit(x2)));
+        p.on("exit", (x2) => res(onExit(x2)));
+        p.on("abort", (x2) => rej(onAbort(x2)));
+      });
+    }
+    $.text = (args2) => toPrompt("TextPrompt", args2);
+    $.password = (args2) => {
+      args2.style = "password";
+      return $.text(args2);
+    };
+    $.invisible = (args2) => {
+      args2.style = "invisible";
+      return $.text(args2);
+    };
+    $.number = (args2) => toPrompt("NumberPrompt", args2);
+    $.date = (args2) => toPrompt("DatePrompt", args2);
+    $.confirm = (args2) => toPrompt("ConfirmPrompt", args2);
+    $.list = (args2) => {
+      const sep = args2.separator || ",";
+      return toPrompt("TextPrompt", args2, {
+        onSubmit: (str) => str.split(sep).map((s2) => s2.trim())
+      });
+    };
+    $.toggle = (args2) => toPrompt("TogglePrompt", args2);
+    $.select = (args2) => toPrompt("SelectPrompt", args2);
+    $.multiselect = (args2) => {
+      args2.choices = [].concat(args2.choices || []);
+      const toSelected = (items) => items.filter((item) => item.selected).map((item) => item.value);
+      return toPrompt("MultiselectPrompt", args2, {
+        onAbort: toSelected,
+        onSubmit: toSelected
+      });
+    };
+    $.autocompleteMultiselect = (args2) => {
+      args2.choices = [].concat(args2.choices || []);
+      const toSelected = (items) => items.filter((item) => item.selected).map((item) => item.value);
+      return toPrompt("AutocompleteMultiselectPrompt", args2, {
+        onAbort: toSelected,
+        onSubmit: toSelected
+      });
+    };
+    var byTitle = (input, choices) => Promise.resolve(
+      choices.filter((item) => item.title.slice(0, input.length).toLowerCase() === input.toLowerCase())
+    );
+    $.autocomplete = (args2) => {
+      args2.suggest = args2.suggest || byTitle;
+      args2.choices = [].concat(args2.choices || []);
+      return toPrompt("AutocompletePrompt", args2);
+    };
+  }
+});
+
+// node_modules/prompts/lib/index.js
+var require_lib = __commonJS({
+  "node_modules/prompts/lib/index.js"(exports2, module2) {
+    "use strict";
+    var prompts2 = require_prompts2();
+    var passOn = ["suggest", "format", "onState", "validate", "onRender", "type"];
+    var noop2 = () => {
+    };
+    async function prompt(questions = [], { onSubmit = noop2, onCancel = noop2 } = {}) {
+      const answers = {};
+      const override2 = prompt._override || {};
+      questions = [].concat(questions);
+      let answer, question, quit, name, type, lastPrompt;
+      const getFormattedAnswer = async (question2, answer2, skipValidation = false) => {
+        if (!skipValidation && question2.validate && question2.validate(answer2) !== true) {
+          return;
+        }
+        return question2.format ? await question2.format(answer2, answers) : answer2;
+      };
+      for (question of questions) {
+        ({ name, type } = question);
+        if (typeof type === "function") {
+          type = await type(answer, { ...answers }, question);
+          question["type"] = type;
+        }
+        if (!type) continue;
+        for (let key in question) {
+          if (passOn.includes(key)) continue;
+          let value = question[key];
+          question[key] = typeof value === "function" ? await value(answer, { ...answers }, lastPrompt) : value;
+        }
+        lastPrompt = question;
+        if (typeof question.message !== "string") {
+          throw new Error("prompt message is required");
+        }
+        ({ name, type } = question);
+        if (prompts2[type] === void 0) {
+          throw new Error(`prompt type (${type}) is not defined`);
+        }
+        if (override2[question.name] !== void 0) {
+          answer = await getFormattedAnswer(question, override2[question.name]);
+          if (answer !== void 0) {
+            answers[name] = answer;
+            continue;
+          }
+        }
+        try {
+          answer = prompt._injected ? getInjectedAnswer(prompt._injected, question.initial) : await prompts2[type](question);
+          answers[name] = answer = await getFormattedAnswer(question, answer, true);
+          quit = await onSubmit(question, answer, answers);
+        } catch (err) {
+          quit = !await onCancel(question, answers);
+        }
+        if (quit) return answers;
+      }
+      return answers;
+    }
+    function getInjectedAnswer(injected, deafultValue) {
+      const answer = injected.shift();
+      if (answer instanceof Error) {
+        throw answer;
+      }
+      return answer === void 0 ? deafultValue : answer;
+    }
+    function inject(answers) {
+      prompt._injected = (prompt._injected || []).concat(answers);
+    }
+    function override(answers) {
+      prompt._override = Object.assign({}, answers);
+    }
+    module2.exports = Object.assign(prompt, { prompt, prompts: prompts2, inject, override });
+  }
+});
+
+// node_modules/prompts/index.js
+var require_prompts3 = __commonJS({
+  "node_modules/prompts/index.js"(exports2, module2) {
+    function isNodeLT(tar) {
+      tar = (Array.isArray(tar) ? tar : tar.split(".")).map(Number);
+      let i2 = 0, src = process.versions.node.split(".").map(Number);
+      for (; i2 < tar.length; i2++) {
+        if (src[i2] > tar[i2]) return false;
+        if (tar[i2] > src[i2]) return true;
+      }
+      return false;
+    }
+    module2.exports = isNodeLT("8.6.0") ? require_dist3() : require_lib();
+  }
+});
+
 // src/engine.js
-var import_fs2 = __toESM(require("fs"), 1);
-var import_path = __toESM(require("path"), 1);
-var import_child_process = require("child_process");
+var import_fs3 = __toESM(require("fs"), 1);
+var import_path2 = __toESM(require("path"), 1);
+var import_child_process2 = require("child_process");
 var import_dotenv = __toESM(require_main(), 1);
 
 // node_modules/chalk/source/vendor/ansi-styles/index.js
@@ -26878,7 +31727,7 @@ var Batches = class extends BaseModule {
       params
     );
     const urlParams = body["_url"];
-    const path3 = formatMap("{model}:batchGenerateContent", urlParams);
+    const path4 = formatMap("{model}:batchGenerateContent", urlParams);
     const batch = body["batch"];
     const inputConfig = batch["inputConfig"];
     const requestsWrapper = inputConfig["requests"];
@@ -26899,7 +31748,7 @@ var Batches = class extends BaseModule {
     delete body["config"];
     delete body["_url"];
     delete body["_query"];
-    return { path: path3, body };
+    return { path: path4, body };
   }
   // Helper function to get the first GCS URI
   getGcsUri(src) {
@@ -26955,16 +31804,16 @@ var Batches = class extends BaseModule {
   async createInternal(params) {
     var _a2, _b, _c, _d;
     let response;
-    let path3 = "";
+    let path4 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = createBatchJobParametersToVertex(this.apiClient, params);
-      path3 = formatMap("batchPredictionJobs", body["_url"]);
+      path4 = formatMap("batchPredictionJobs", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
@@ -26979,12 +31828,12 @@ var Batches = class extends BaseModule {
       });
     } else {
       const body = createBatchJobParametersToMldev(this.apiClient, params);
-      path3 = formatMap("{model}:batchGenerateContent", body["_url"]);
+      path4 = formatMap("{model}:batchGenerateContent", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
@@ -27009,18 +31858,18 @@ var Batches = class extends BaseModule {
   async createEmbeddingsInternal(params) {
     var _a2, _b;
     let response;
-    let path3 = "";
+    let path4 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       throw new Error("This method is only supported by the Gemini Developer API.");
     } else {
       const body = createEmbeddingsBatchJobParametersToMldev(this.apiClient, params);
-      path3 = formatMap("{model}:asyncBatchEmbedContent", body["_url"]);
+      path4 = formatMap("{model}:asyncBatchEmbedContent", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
@@ -27049,16 +31898,16 @@ var Batches = class extends BaseModule {
   async get(params) {
     var _a2, _b, _c, _d;
     let response;
-    let path3 = "";
+    let path4 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = getBatchJobParametersToVertex(this.apiClient, params);
-      path3 = formatMap("batchPredictionJobs/{name}", body["_url"]);
+      path4 = formatMap("batchPredictionJobs/{name}", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "GET",
@@ -27073,12 +31922,12 @@ var Batches = class extends BaseModule {
       });
     } else {
       const body = getBatchJobParametersToMldev(this.apiClient, params);
-      path3 = formatMap("batches/{name}", body["_url"]);
+      path4 = formatMap("batches/{name}", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "GET",
@@ -27106,16 +31955,16 @@ var Batches = class extends BaseModule {
    */
   async cancel(params) {
     var _a2, _b, _c, _d;
-    let path3 = "";
+    let path4 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = cancelBatchJobParametersToVertex(this.apiClient, params);
-      path3 = formatMap("batchPredictionJobs/{name}:cancel", body["_url"]);
+      path4 = formatMap("batchPredictionJobs/{name}:cancel", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       await this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
@@ -27124,12 +31973,12 @@ var Batches = class extends BaseModule {
       });
     } else {
       const body = cancelBatchJobParametersToMldev(this.apiClient, params);
-      path3 = formatMap("batches/{name}:cancel", body["_url"]);
+      path4 = formatMap("batches/{name}:cancel", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       await this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
@@ -27141,16 +31990,16 @@ var Batches = class extends BaseModule {
   async listInternal(params) {
     var _a2, _b, _c, _d;
     let response;
-    let path3 = "";
+    let path4 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = listBatchJobsParametersToVertex(params);
-      path3 = formatMap("batchPredictionJobs", body["_url"]);
+      path4 = formatMap("batchPredictionJobs", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "GET",
@@ -27173,12 +32022,12 @@ var Batches = class extends BaseModule {
       });
     } else {
       const body = listBatchJobsParametersToMldev(params);
-      path3 = formatMap("batches", body["_url"]);
+      path4 = formatMap("batches", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "GET",
@@ -27215,16 +32064,16 @@ var Batches = class extends BaseModule {
   async delete(params) {
     var _a2, _b, _c, _d;
     let response;
-    let path3 = "";
+    let path4 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = deleteBatchJobParametersToVertex(this.apiClient, params);
-      path3 = formatMap("batchPredictionJobs/{name}", body["_url"]);
+      path4 = formatMap("batchPredictionJobs/{name}", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "DELETE",
@@ -27245,12 +32094,12 @@ var Batches = class extends BaseModule {
       });
     } else {
       const body = deleteBatchJobParametersToMldev(this.apiClient, params);
-      path3 = formatMap("batches/{name}", body["_url"]);
+      path4 = formatMap("batches/{name}", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "DELETE",
@@ -28196,16 +33045,16 @@ var Caches = class extends BaseModule {
   async create(params) {
     var _a2, _b, _c, _d;
     let response;
-    let path3 = "";
+    let path4 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = createCachedContentParametersToVertex(this.apiClient, params);
-      path3 = formatMap("cachedContents", body["_url"]);
+      path4 = formatMap("cachedContents", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
@@ -28219,12 +33068,12 @@ var Caches = class extends BaseModule {
       });
     } else {
       const body = createCachedContentParametersToMldev(this.apiClient, params);
-      path3 = formatMap("cachedContents", body["_url"]);
+      path4 = formatMap("cachedContents", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
@@ -28252,16 +33101,16 @@ var Caches = class extends BaseModule {
   async get(params) {
     var _a2, _b, _c, _d;
     let response;
-    let path3 = "";
+    let path4 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = getCachedContentParametersToVertex(this.apiClient, params);
-      path3 = formatMap("{name}", body["_url"]);
+      path4 = formatMap("{name}", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "GET",
@@ -28275,12 +33124,12 @@ var Caches = class extends BaseModule {
       });
     } else {
       const body = getCachedContentParametersToMldev(this.apiClient, params);
-      path3 = formatMap("{name}", body["_url"]);
+      path4 = formatMap("{name}", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "GET",
@@ -28308,16 +33157,16 @@ var Caches = class extends BaseModule {
   async delete(params) {
     var _a2, _b, _c, _d;
     let response;
-    let path3 = "";
+    let path4 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = deleteCachedContentParametersToVertex(this.apiClient, params);
-      path3 = formatMap("{name}", body["_url"]);
+      path4 = formatMap("{name}", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "DELETE",
@@ -28340,12 +33189,12 @@ var Caches = class extends BaseModule {
       });
     } else {
       const body = deleteCachedContentParametersToMldev(this.apiClient, params);
-      path3 = formatMap("{name}", body["_url"]);
+      path4 = formatMap("{name}", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "DELETE",
@@ -28385,16 +33234,16 @@ var Caches = class extends BaseModule {
   async update(params) {
     var _a2, _b, _c, _d;
     let response;
-    let path3 = "";
+    let path4 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = updateCachedContentParametersToVertex(this.apiClient, params);
-      path3 = formatMap("{name}", body["_url"]);
+      path4 = formatMap("{name}", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "PATCH",
@@ -28408,12 +33257,12 @@ var Caches = class extends BaseModule {
       });
     } else {
       const body = updateCachedContentParametersToMldev(this.apiClient, params);
-      path3 = formatMap("{name}", body["_url"]);
+      path4 = formatMap("{name}", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "PATCH",
@@ -28430,16 +33279,16 @@ var Caches = class extends BaseModule {
   async listInternal(params) {
     var _a2, _b, _c, _d;
     let response;
-    let path3 = "";
+    let path4 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = listCachedContentsParametersToVertex(params);
-      path3 = formatMap("cachedContents", body["_url"]);
+      path4 = formatMap("cachedContents", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "GET",
@@ -28462,12 +33311,12 @@ var Caches = class extends BaseModule {
       });
     } else {
       const body = listCachedContentsParametersToMldev(params);
-      path3 = formatMap("cachedContents", body["_url"]);
+      path4 = formatMap("cachedContents", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "GET",
@@ -29063,18 +33912,18 @@ var Files = class extends BaseModule {
   async listInternal(params) {
     var _a2, _b;
     let response;
-    let path3 = "";
+    let path4 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       throw new Error("This method is only supported by the Gemini Developer API.");
     } else {
       const body = listFilesParametersToMldev(params);
-      path3 = formatMap("files", body["_url"]);
+      path4 = formatMap("files", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "GET",
@@ -29100,18 +33949,18 @@ var Files = class extends BaseModule {
   async createInternal(params) {
     var _a2, _b;
     let response;
-    let path3 = "";
+    let path4 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       throw new Error("This method is only supported by the Gemini Developer API.");
     } else {
       const body = createFileParametersToMldev(params);
-      path3 = formatMap("upload/v1beta/files", body["_url"]);
+      path4 = formatMap("upload/v1beta/files", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
@@ -29146,18 +33995,18 @@ var Files = class extends BaseModule {
   async get(params) {
     var _a2, _b;
     let response;
-    let path3 = "";
+    let path4 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       throw new Error("This method is only supported by the Gemini Developer API.");
     } else {
       const body = getFileParametersToMldev(params);
-      path3 = formatMap("files/{file}", body["_url"]);
+      path4 = formatMap("files/{file}", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "GET",
@@ -29187,18 +34036,18 @@ var Files = class extends BaseModule {
   async delete(params) {
     var _a2, _b;
     let response;
-    let path3 = "";
+    let path4 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       throw new Error("This method is only supported by the Gemini Developer API.");
     } else {
       const body = deleteFileParametersToMldev(params);
-      path3 = formatMap("files/{file}", body["_url"]);
+      path4 = formatMap("files/{file}", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "DELETE",
@@ -29224,18 +34073,18 @@ var Files = class extends BaseModule {
   async registerFilesInternal(params) {
     var _a2, _b;
     let response;
-    let path3 = "";
+    let path4 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       throw new Error("This method is only supported by the Gemini Developer API.");
     } else {
       const body = internalRegisterFilesParametersToMldev(params);
-      path3 = formatMap("files:register", body["_url"]);
+      path4 = formatMap("files:register", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
@@ -34787,13 +39636,13 @@ var ApiClient = class {
       throw new Error("HTTP options are not correctly set.");
     }
   }
-  constructUrl(path3, httpOptions, prependProjectLocation) {
+  constructUrl(path4, httpOptions, prependProjectLocation) {
     const urlElement = [this.getRequestUrlInternal(httpOptions)];
     if (prependProjectLocation) {
       urlElement.push(this.getBaseResourcePath());
     }
-    if (path3 !== "") {
-      urlElement.push(path3);
+    if (path4 !== "") {
+      urlElement.push(path4);
     }
     const url = new URL(`${urlElement.join("/")}`);
     return url;
@@ -35086,8 +39935,8 @@ var ApiClient = class {
       file: fileToUpload
     };
     const fileName = this.getFileName(file);
-    const path3 = formatMap("upload/v1beta/files", body["_url"]);
-    const uploadUrl = await this.fetchUploadUrl(path3, fileToUpload.sizeBytes, fileToUpload.mimeType, fileName, body, config === null || config === void 0 ? void 0 : config.httpOptions);
+    const path4 = formatMap("upload/v1beta/files", body["_url"]);
+    const uploadUrl = await this.fetchUploadUrl(path4, fileToUpload.sizeBytes, fileToUpload.mimeType, fileName, body, config === null || config === void 0 ? void 0 : config.httpOptions);
     return uploader.upload(file, uploadUrl, this);
   }
   /**
@@ -35111,13 +39960,13 @@ var ApiClient = class {
     if (mimeType === void 0 || mimeType === "") {
       throw new Error("Can not determine mimeType. Please provide mimeType in the config.");
     }
-    const path3 = `upload/v1beta/${fileSearchStoreName}:uploadToFileSearchStore`;
+    const path4 = `upload/v1beta/${fileSearchStoreName}:uploadToFileSearchStore`;
     const fileName = this.getFileName(file);
     const body = {};
     if (config != null) {
       uploadToFileSearchStoreConfigToMldev(config, body);
     }
-    const uploadUrl = await this.fetchUploadUrl(path3, sizeBytes, mimeType, fileName, body, config === null || config === void 0 ? void 0 : config.httpOptions);
+    const uploadUrl = await this.fetchUploadUrl(path4, sizeBytes, mimeType, fileName, body, config === null || config === void 0 ? void 0 : config.httpOptions);
     return uploader.uploadToFileSearchStore(file, uploadUrl, this);
   }
   /**
@@ -35130,7 +39979,7 @@ var ApiClient = class {
     const downloader = this.clientOptions.downloader;
     await downloader.download(params, this);
   }
-  async fetchUploadUrl(path3, sizeBytes, mimeType, fileName, body, configHttpOptions) {
+  async fetchUploadUrl(path4, sizeBytes, mimeType, fileName, body, configHttpOptions) {
     var _a2;
     let httpOptions = {};
     if (configHttpOptions) {
@@ -35143,7 +39992,7 @@ var ApiClient = class {
       };
     }
     const httpResponse = await this.request({
-      path: path3,
+      path: path4,
       body: JSON.stringify(body),
       httpMethod: "POST",
       httpOptions
@@ -36376,16 +41225,16 @@ var Models = class _Models extends BaseModule {
   async generateContentInternal(params) {
     var _a2, _b, _c, _d;
     let response;
-    let path3 = "";
+    let path4 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = generateContentParametersToVertex(this.apiClient, params);
-      path3 = formatMap("{model}:generateContent", body["_url"]);
+      path4 = formatMap("{model}:generateContent", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
@@ -36408,12 +41257,12 @@ var Models = class _Models extends BaseModule {
       });
     } else {
       const body = generateContentParametersToMldev(this.apiClient, params);
-      path3 = formatMap("{model}:generateContent", body["_url"]);
+      path4 = formatMap("{model}:generateContent", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
@@ -36439,17 +41288,17 @@ var Models = class _Models extends BaseModule {
   async generateContentStreamInternal(params) {
     var _a2, _b, _c, _d;
     let response;
-    let path3 = "";
+    let path4 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = generateContentParametersToVertex(this.apiClient, params);
-      path3 = formatMap("{model}:streamGenerateContent?alt=sse", body["_url"]);
+      path4 = formatMap("{model}:streamGenerateContent?alt=sse", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       const apiClient = this.apiClient;
       response = apiClient.requestStream({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
@@ -36485,13 +41334,13 @@ var Models = class _Models extends BaseModule {
       });
     } else {
       const body = generateContentParametersToMldev(this.apiClient, params);
-      path3 = formatMap("{model}:streamGenerateContent?alt=sse", body["_url"]);
+      path4 = formatMap("{model}:streamGenerateContent?alt=sse", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       const apiClient = this.apiClient;
       response = apiClient.requestStream({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
@@ -36551,17 +41400,17 @@ var Models = class _Models extends BaseModule {
   async embedContentInternal(params) {
     var _a2, _b, _c, _d;
     let response;
-    let path3 = "";
+    let path4 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = embedContentParametersPrivateToVertex(this.apiClient, params, params);
       const endpointUrl = tIsVertexEmbedContentModel(params.model) ? "{model}:embedContent" : "{model}:predict";
-      path3 = formatMap(endpointUrl, body["_url"]);
+      path4 = formatMap(endpointUrl, body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
@@ -36584,12 +41433,12 @@ var Models = class _Models extends BaseModule {
       });
     } else {
       const body = embedContentParametersPrivateToMldev(this.apiClient, params);
-      path3 = formatMap("{model}:batchEmbedContents", body["_url"]);
+      path4 = formatMap("{model}:batchEmbedContents", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
@@ -36618,16 +41467,16 @@ var Models = class _Models extends BaseModule {
   async generateImagesInternal(params) {
     var _a2, _b, _c, _d;
     let response;
-    let path3 = "";
+    let path4 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = generateImagesParametersToVertex(this.apiClient, params);
-      path3 = formatMap("{model}:predict", body["_url"]);
+      path4 = formatMap("{model}:predict", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
@@ -36650,12 +41499,12 @@ var Models = class _Models extends BaseModule {
       });
     } else {
       const body = generateImagesParametersToMldev(this.apiClient, params);
-      path3 = formatMap("{model}:predict", body["_url"]);
+      path4 = formatMap("{model}:predict", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
@@ -36684,16 +41533,16 @@ var Models = class _Models extends BaseModule {
   async editImageInternal(params) {
     var _a2, _b;
     let response;
-    let path3 = "";
+    let path4 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = editImageParametersInternalToVertex(this.apiClient, params);
-      path3 = formatMap("{model}:predict", body["_url"]);
+      path4 = formatMap("{model}:predict", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
@@ -36724,16 +41573,16 @@ var Models = class _Models extends BaseModule {
   async upscaleImageInternal(params) {
     var _a2, _b;
     let response;
-    let path3 = "";
+    let path4 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = upscaleImageAPIParametersInternalToVertex(this.apiClient, params);
-      path3 = formatMap("{model}:predict", body["_url"]);
+      path4 = formatMap("{model}:predict", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
@@ -36785,16 +41634,16 @@ var Models = class _Models extends BaseModule {
   async recontextImage(params) {
     var _a2, _b;
     let response;
-    let path3 = "";
+    let path4 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = recontextImageParametersToVertex(this.apiClient, params);
-      path3 = formatMap("{model}:predict", body["_url"]);
+      path4 = formatMap("{model}:predict", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
@@ -36836,16 +41685,16 @@ var Models = class _Models extends BaseModule {
   async segmentImage(params) {
     var _a2, _b;
     let response;
-    let path3 = "";
+    let path4 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = segmentImageParametersToVertex(this.apiClient, params);
-      path3 = formatMap("{model}:predict", body["_url"]);
+      path4 = formatMap("{model}:predict", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
@@ -36875,16 +41724,16 @@ var Models = class _Models extends BaseModule {
   async get(params) {
     var _a2, _b, _c, _d;
     let response;
-    let path3 = "";
+    let path4 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = getModelParametersToVertex(this.apiClient, params);
-      path3 = formatMap("{name}", body["_url"]);
+      path4 = formatMap("{name}", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "GET",
@@ -36899,12 +41748,12 @@ var Models = class _Models extends BaseModule {
       });
     } else {
       const body = getModelParametersToMldev(this.apiClient, params);
-      path3 = formatMap("{name}", body["_url"]);
+      path4 = formatMap("{name}", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "GET",
@@ -36922,16 +41771,16 @@ var Models = class _Models extends BaseModule {
   async listInternal(params) {
     var _a2, _b, _c, _d;
     let response;
-    let path3 = "";
+    let path4 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = listModelsParametersToVertex(this.apiClient, params);
-      path3 = formatMap("{models_url}", body["_url"]);
+      path4 = formatMap("{models_url}", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "GET",
@@ -36954,12 +41803,12 @@ var Models = class _Models extends BaseModule {
       });
     } else {
       const body = listModelsParametersToMldev(this.apiClient, params);
-      path3 = formatMap("{models_url}", body["_url"]);
+      path4 = formatMap("{models_url}", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "GET",
@@ -37002,16 +41851,16 @@ var Models = class _Models extends BaseModule {
   async update(params) {
     var _a2, _b, _c, _d;
     let response;
-    let path3 = "";
+    let path4 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = updateModelParametersToVertex(this.apiClient, params);
-      path3 = formatMap("{model}", body["_url"]);
+      path4 = formatMap("{model}", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "PATCH",
@@ -37026,12 +41875,12 @@ var Models = class _Models extends BaseModule {
       });
     } else {
       const body = updateModelParametersToMldev(this.apiClient, params);
-      path3 = formatMap("{name}", body["_url"]);
+      path4 = formatMap("{name}", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "PATCH",
@@ -37060,16 +41909,16 @@ var Models = class _Models extends BaseModule {
   async delete(params) {
     var _a2, _b, _c, _d;
     let response;
-    let path3 = "";
+    let path4 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = deleteModelParametersToVertex(this.apiClient, params);
-      path3 = formatMap("{name}", body["_url"]);
+      path4 = formatMap("{name}", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "DELETE",
@@ -37092,12 +41941,12 @@ var Models = class _Models extends BaseModule {
       });
     } else {
       const body = deleteModelParametersToMldev(this.apiClient, params);
-      path3 = formatMap("{name}", body["_url"]);
+      path4 = formatMap("{name}", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "DELETE",
@@ -37139,16 +41988,16 @@ var Models = class _Models extends BaseModule {
   async countTokens(params) {
     var _a2, _b, _c, _d;
     let response;
-    let path3 = "";
+    let path4 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = countTokensParametersToVertex(this.apiClient, params);
-      path3 = formatMap("{model}:countTokens", body["_url"]);
+      path4 = formatMap("{model}:countTokens", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
@@ -37171,12 +42020,12 @@ var Models = class _Models extends BaseModule {
       });
     } else {
       const body = countTokensParametersToMldev(this.apiClient, params);
-      path3 = formatMap("{model}:countTokens", body["_url"]);
+      path4 = formatMap("{model}:countTokens", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
@@ -37220,16 +42069,16 @@ var Models = class _Models extends BaseModule {
   async computeTokens(params) {
     var _a2, _b;
     let response;
-    let path3 = "";
+    let path4 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = computeTokensParametersToVertex(this.apiClient, params);
-      path3 = formatMap("{model}:computeTokens", body["_url"]);
+      path4 = formatMap("{model}:computeTokens", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
@@ -37260,16 +42109,16 @@ var Models = class _Models extends BaseModule {
   async generateVideosInternal(params) {
     var _a2, _b, _c, _d;
     let response;
-    let path3 = "";
+    let path4 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = generateVideosParametersToVertex(this.apiClient, params);
-      path3 = formatMap("{model}:predictLongRunning", body["_url"]);
+      path4 = formatMap("{model}:predictLongRunning", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
@@ -37286,12 +42135,12 @@ var Models = class _Models extends BaseModule {
       });
     } else {
       const body = generateVideosParametersToMldev(this.apiClient, params);
-      path3 = formatMap("{model}:predictLongRunning", body["_url"]);
+      path4 = formatMap("{model}:predictLongRunning", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
@@ -37396,16 +42245,16 @@ var Operations = class extends BaseModule {
   async getVideosOperationInternal(params) {
     var _a2, _b, _c, _d;
     let response;
-    let path3 = "";
+    let path4 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = getOperationParametersToVertex(params);
-      path3 = formatMap("{operationName}", body["_url"]);
+      path4 = formatMap("{operationName}", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "GET",
@@ -37417,12 +42266,12 @@ var Operations = class extends BaseModule {
       return response;
     } else {
       const body = getOperationParametersToMldev(params);
-      path3 = formatMap("{operationName}", body["_url"]);
+      path4 = formatMap("{operationName}", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "GET",
@@ -37437,16 +42286,16 @@ var Operations = class extends BaseModule {
   async fetchPredictVideosOperationInternal(params) {
     var _a2, _b;
     let response;
-    let path3 = "";
+    let path4 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = fetchPredictOperationParametersToVertex(params);
-      path3 = formatMap("{resourceName}:fetchPredictOperation", body["_url"]);
+      path4 = formatMap("{resourceName}:fetchPredictOperation", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
@@ -38123,20 +42972,20 @@ var Tokens = class extends BaseModule {
   async create(params) {
     var _a2, _b;
     let response;
-    let path3 = "";
+    let path4 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       throw new Error("The client.tokens.create method is only supported by the Gemini Developer API.");
     } else {
       const body = createAuthTokenParametersToMldev(this.apiClient, params);
-      path3 = formatMap("auth_tokens", body["_url"]);
+      path4 = formatMap("auth_tokens", body["_url"]);
       queryParams = body["_query"];
       delete body["config"];
       delete body["_url"];
       delete body["_query"];
       const transformedBody = convertBidiSetupToTokenSetup(body, params.config);
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(transformedBody),
         httpMethod: "POST",
@@ -38246,18 +43095,18 @@ var Documents = class extends BaseModule {
   async get(params) {
     var _a2, _b;
     let response;
-    let path3 = "";
+    let path4 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       throw new Error("This method is only supported by the Gemini Developer API.");
     } else {
       const body = getDocumentParametersToMldev(params);
-      path3 = formatMap("{name}", body["_url"]);
+      path4 = formatMap("{name}", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "GET",
@@ -38278,18 +43127,18 @@ var Documents = class extends BaseModule {
    */
   async delete(params) {
     var _a2, _b;
-    let path3 = "";
+    let path4 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       throw new Error("This method is only supported by the Gemini Developer API.");
     } else {
       const body = deleteDocumentParametersToMldev(params);
-      path3 = formatMap("{name}", body["_url"]);
+      path4 = formatMap("{name}", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       await this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "DELETE",
@@ -38301,18 +43150,18 @@ var Documents = class extends BaseModule {
   async listInternal(params) {
     var _a2, _b;
     let response;
-    let path3 = "";
+    let path4 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       throw new Error("This method is only supported by the Gemini Developer API.");
     } else {
       const body = listDocumentsParametersToMldev(params);
-      path3 = formatMap("{parent}/documents", body["_url"]);
+      path4 = formatMap("{parent}/documents", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "GET",
@@ -38429,18 +43278,18 @@ var FileSearchStores = class extends BaseModule {
   async create(params) {
     var _a2, _b;
     let response;
-    let path3 = "";
+    let path4 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       throw new Error("This method is only supported by the Gemini Developer API.");
     } else {
       const body = createFileSearchStoreParametersToMldev(this.apiClient, params);
-      path3 = formatMap("fileSearchStores", body["_url"]);
+      path4 = formatMap("fileSearchStores", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
@@ -38463,18 +43312,18 @@ var FileSearchStores = class extends BaseModule {
   async get(params) {
     var _a2, _b;
     let response;
-    let path3 = "";
+    let path4 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       throw new Error("This method is only supported by the Gemini Developer API.");
     } else {
       const body = getFileSearchStoreParametersToMldev(params);
-      path3 = formatMap("{name}", body["_url"]);
+      path4 = formatMap("{name}", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "GET",
@@ -38495,18 +43344,18 @@ var FileSearchStores = class extends BaseModule {
    */
   async delete(params) {
     var _a2, _b;
-    let path3 = "";
+    let path4 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       throw new Error("This method is only supported by the Gemini Developer API.");
     } else {
       const body = deleteFileSearchStoreParametersToMldev(params);
-      path3 = formatMap("{name}", body["_url"]);
+      path4 = formatMap("{name}", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       await this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "DELETE",
@@ -38518,18 +43367,18 @@ var FileSearchStores = class extends BaseModule {
   async listInternal(params) {
     var _a2, _b;
     let response;
-    let path3 = "";
+    let path4 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       throw new Error("This method is only supported by the Gemini Developer API.");
     } else {
       const body = listFileSearchStoresParametersToMldev(params);
-      path3 = formatMap("fileSearchStores", body["_url"]);
+      path4 = formatMap("fileSearchStores", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "GET",
@@ -38549,18 +43398,18 @@ var FileSearchStores = class extends BaseModule {
   async uploadToFileSearchStoreInternal(params) {
     var _a2, _b;
     let response;
-    let path3 = "";
+    let path4 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       throw new Error("This method is only supported by the Gemini Developer API.");
     } else {
       const body = uploadToFileSearchStoreParametersToMldev(params);
-      path3 = formatMap("upload/v1beta/{file_search_store_name}:uploadToFileSearchStore", body["_url"]);
+      path4 = formatMap("upload/v1beta/{file_search_store_name}:uploadToFileSearchStore", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
@@ -38588,18 +43437,18 @@ var FileSearchStores = class extends BaseModule {
   async importFile(params) {
     var _a2, _b;
     let response;
-    let path3 = "";
+    let path4 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       throw new Error("This method is only supported by the Gemini Developer API.");
     } else {
       const body = importFileParametersToMldev(params);
-      path3 = formatMap("{file_search_store_name}:importFile", body["_url"]);
+      path4 = formatMap("{file_search_store_name}:importFile", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
@@ -39344,8 +44193,8 @@ function mapDefinedEntries(inp, mapper) {
   }
   return acc.length ? acc : null;
 }
-function queryJoin(...args) {
-  return args.filter(Boolean).join("&");
+function queryJoin(...args2) {
+  return args2.filter(Boolean).join("&");
 }
 function queryEncoder(f3) {
   const bulkEncode = function(values, options) {
@@ -39401,30 +44250,30 @@ var HTTPClient = class _HTTPClient {
       throw err;
     }
   }
-  addHook(...args) {
-    if (args[0] === "beforeRequest") {
-      this.requestHooks.push(args[1]);
-    } else if (args[0] === "requestError") {
-      this.requestErrorHooks.push(args[1]);
-    } else if (args[0] === "response") {
-      this.responseHooks.push(args[1]);
+  addHook(...args2) {
+    if (args2[0] === "beforeRequest") {
+      this.requestHooks.push(args2[1]);
+    } else if (args2[0] === "requestError") {
+      this.requestErrorHooks.push(args2[1]);
+    } else if (args2[0] === "response") {
+      this.responseHooks.push(args2[1]);
     } else {
-      throw new Error(`Invalid hook type: ${args[0]}`);
+      throw new Error(`Invalid hook type: ${args2[0]}`);
     }
     return this;
   }
-  removeHook(...args) {
+  removeHook(...args2) {
     let target;
-    if (args[0] === "beforeRequest") {
+    if (args2[0] === "beforeRequest") {
       target = this.requestHooks;
-    } else if (args[0] === "requestError") {
+    } else if (args2[0] === "requestError") {
       target = this.requestErrorHooks;
-    } else if (args[0] === "response") {
+    } else if (args2[0] === "response") {
       target = this.responseHooks;
     } else {
-      throw new Error(`Invalid hook type: ${args[0]}`);
+      throw new Error(`Invalid hook type: ${args2[0]}`);
     }
-    const index = target.findIndex((v) => v === args[1]);
+    const index = target.findIndex((v) => v === args2[1]);
     if (index >= 0) {
       target.splice(index, 1);
     }
@@ -39724,16 +44573,16 @@ var ClientSDK = class {
   }
   _createRequest(context, conf, options) {
     var _a2, _b, _c, _d, _e;
-    const { method, path: path3, query, headers: opHeaders, security } = conf;
+    const { method, path: path4, query, headers: opHeaders, security } = conf;
     const base = (_a2 = conf.baseURL) !== null && _a2 !== void 0 ? _a2 : this._baseURL;
     if (!base) {
       return ERR(new InvalidRequestError("No base URL provided for operation"));
     }
     const baseURL = new URL(base);
     let reqURL;
-    if (path3) {
+    if (path4) {
       baseURL.pathname = baseURL.pathname.replace(/\/+$/, "") + "/";
-      reqURL = new URL(path3, baseURL);
+      reqURL = new URL(path4, baseURL);
       if (!reqURL.search && baseURL.search) {
         reqURL.search = baseURL.search;
       }
@@ -40548,7 +45397,7 @@ async function $do$p(client, body, api_version, options) {
   const pathParams = {
     api_version: encodeSimple("api_version", (_a2 = payload.api_version) !== null && _a2 !== void 0 ? _a2 : client._options.api_version, { explode: false, charEncoding: "percent" })
   };
-  const path3 = pathToFunc("/{api_version}/agents")(pathParams);
+  const path4 = pathToFunc("/{api_version}/agents")(pathParams);
   const headers = new Headers(compactMap({
     "Content-Type": "application/json",
     Accept: "application/json"
@@ -40579,7 +45428,7 @@ async function $do$p(client, body, api_version, options) {
     security: requestSecurity,
     method: "POST",
     baseURL: options === null || options === void 0 ? void 0 : options.server_url,
-    path: path3,
+    path: path4,
     headers,
     body: body$,
     userAgent: client._options.user_agent,
@@ -40623,7 +45472,7 @@ async function $do$o(client, id, api_version, options) {
       charEncoding: "percent"
     })
   };
-  const path3 = pathToFunc("/{api_version}/agents/{id}")(pathParams);
+  const path4 = pathToFunc("/{api_version}/agents/{id}")(pathParams);
   const headers = new Headers(compactMap({
     Accept: "application/json"
   }));
@@ -40653,7 +45502,7 @@ async function $do$o(client, id, api_version, options) {
     security: requestSecurity,
     method: "DELETE",
     baseURL: options === null || options === void 0 ? void 0 : options.server_url,
-    path: path3,
+    path: path4,
     headers,
     body,
     userAgent: client._options.user_agent,
@@ -40697,7 +45546,7 @@ async function $do$n(client, id, api_version, options) {
       charEncoding: "percent"
     })
   };
-  const path3 = pathToFunc("/{api_version}/agents/{id}")(pathParams);
+  const path4 = pathToFunc("/{api_version}/agents/{id}")(pathParams);
   const headers = new Headers(compactMap({
     Accept: "application/json"
   }));
@@ -40727,7 +45576,7 @@ async function $do$n(client, id, api_version, options) {
     security: requestSecurity,
     method: "GET",
     baseURL: options === null || options === void 0 ? void 0 : options.server_url,
-    path: path3,
+    path: path4,
     headers,
     body,
     userAgent: client._options.user_agent,
@@ -40769,7 +45618,7 @@ async function $do$m(client, api_version, page_size, page_token, parent, options
   const pathParams = {
     api_version: encodeSimple("api_version", (_a2 = payload === null || payload === void 0 ? void 0 : payload.api_version) !== null && _a2 !== void 0 ? _a2 : client._options.api_version, { explode: false, charEncoding: "percent" })
   };
-  const path3 = pathToFunc("/{api_version}/agents")(pathParams);
+  const path4 = pathToFunc("/{api_version}/agents")(pathParams);
   const query = encodeFormQuery({
     "page_size": payload === null || payload === void 0 ? void 0 : payload.page_size,
     "page_token": payload === null || payload === void 0 ? void 0 : payload.page_token,
@@ -40804,7 +45653,7 @@ async function $do$m(client, api_version, page_size, page_token, parent, options
     security: requestSecurity,
     method: "GET",
     baseURL: options === null || options === void 0 ? void 0 : options.server_url,
-    path: path3,
+    path: path4,
     headers,
     query,
     body,
@@ -40872,7 +45721,7 @@ async function $do$l(client, body, api_version, options) {
   const pathParams = {
     api_version: encodeSimple("api_version", (_a2 = payload.api_version) !== null && _a2 !== void 0 ? _a2 : client._options.api_version, { explode: false, charEncoding: "percent" })
   };
-  const path3 = pathToFunc("/{api_version}/environments")(pathParams);
+  const path4 = pathToFunc("/{api_version}/environments")(pathParams);
   const headers = new Headers(compactMap({
     "Content-Type": "application/json",
     Accept: "application/json"
@@ -40903,7 +45752,7 @@ async function $do$l(client, body, api_version, options) {
     security: requestSecurity,
     method: "POST",
     baseURL: options === null || options === void 0 ? void 0 : options.server_url,
-    path: path3,
+    path: path4,
     headers,
     body: body$,
     userAgent: client._options.user_agent,
@@ -40947,7 +45796,7 @@ async function $do$k(client, id, api_version, options) {
       charEncoding: "percent"
     })
   };
-  const path3 = pathToFunc("/{api_version}/environments/{id}")(pathParams);
+  const path4 = pathToFunc("/{api_version}/environments/{id}")(pathParams);
   const headers = new Headers(compactMap({
     Accept: "application/json"
   }));
@@ -40977,7 +45826,7 @@ async function $do$k(client, id, api_version, options) {
     security: requestSecurity,
     method: "DELETE",
     baseURL: options === null || options === void 0 ? void 0 : options.server_url,
-    path: path3,
+    path: path4,
     headers,
     body,
     userAgent: client._options.user_agent,
@@ -41021,7 +45870,7 @@ async function $do$j(client, id, api_version, options) {
       charEncoding: "percent"
     })
   };
-  const path3 = pathToFunc("/{api_version}/environments/{id}")(pathParams);
+  const path4 = pathToFunc("/{api_version}/environments/{id}")(pathParams);
   const headers = new Headers(compactMap({
     Accept: "application/json"
   }));
@@ -41051,7 +45900,7 @@ async function $do$j(client, id, api_version, options) {
     security: requestSecurity,
     method: "GET",
     baseURL: options === null || options === void 0 ? void 0 : options.server_url,
-    path: path3,
+    path: path4,
     headers,
     body,
     userAgent: client._options.user_agent,
@@ -41092,7 +45941,7 @@ async function $do$i(client, api_version, page_size, page_token, options) {
   const pathParams = {
     api_version: encodeSimple("api_version", (_a2 = payload === null || payload === void 0 ? void 0 : payload.api_version) !== null && _a2 !== void 0 ? _a2 : client._options.api_version, { explode: false, charEncoding: "percent" })
   };
-  const path3 = pathToFunc("/{api_version}/environments")(pathParams);
+  const path4 = pathToFunc("/{api_version}/environments")(pathParams);
   const query = encodeFormQuery({
     "page_size": payload === null || payload === void 0 ? void 0 : payload.page_size,
     "page_token": payload === null || payload === void 0 ? void 0 : payload.page_token
@@ -41126,7 +45975,7 @@ async function $do$i(client, api_version, page_size, page_token, options) {
     security: requestSecurity,
     method: "GET",
     baseURL: options === null || options === void 0 ? void 0 : options.server_url,
-    path: path3,
+    path: path4,
     headers,
     query,
     body,
@@ -41277,7 +46126,7 @@ async function $do$h(client, id, api_version, options) {
       charEncoding: "percent"
     })
   };
-  const path3 = pathToFunc("/{api_version}/interactions/{id}/cancel")(pathParams);
+  const path4 = pathToFunc("/{api_version}/interactions/{id}/cancel")(pathParams);
   const headers = new Headers(compactMap({
     Accept: "application/json"
   }));
@@ -41307,7 +46156,7 @@ async function $do$h(client, id, api_version, options) {
     security: requestSecurity,
     method: "POST",
     baseURL: options === null || options === void 0 ? void 0 : options.server_url,
-    path: path3,
+    path: path4,
     headers,
     body,
     userAgent: client._options.user_agent,
@@ -41350,7 +46199,7 @@ async function $do$g(client, body, api_version, options) {
   const pathParams = {
     api_version: encodeSimple("api_version", (_a2 = payload.api_version) !== null && _a2 !== void 0 ? _a2 : client._options.api_version, { explode: false, charEncoding: "percent" })
   };
-  const path3 = pathToFunc("/{api_version}/interactions")(pathParams);
+  const path4 = pathToFunc("/{api_version}/interactions")(pathParams);
   const headers = new Headers(compactMap({
     "Content-Type": "application/json",
     Accept: ((_b = input === null || input === void 0 ? void 0 : input.body) === null || _b === void 0 ? void 0 : _b.stream) ? "text/event-stream" : "application/json"
@@ -41381,7 +46230,7 @@ async function $do$g(client, body, api_version, options) {
     security: requestSecurity,
     method: "POST",
     baseURL: options === null || options === void 0 ? void 0 : options.server_url,
-    path: path3,
+    path: path4,
     headers,
     body: body$,
     userAgent: client._options.user_agent,
@@ -41431,7 +46280,7 @@ async function $do$f(client, id, api_version, options) {
       charEncoding: "percent"
     })
   };
-  const path3 = pathToFunc("/{api_version}/interactions/{id}")(pathParams);
+  const path4 = pathToFunc("/{api_version}/interactions/{id}")(pathParams);
   const headers = new Headers(compactMap({
     Accept: "application/json"
   }));
@@ -41461,7 +46310,7 @@ async function $do$f(client, id, api_version, options) {
     security: requestSecurity,
     method: "DELETE",
     baseURL: options === null || options === void 0 ? void 0 : options.server_url,
-    path: path3,
+    path: path4,
     headers,
     body,
     userAgent: client._options.user_agent,
@@ -41511,7 +46360,7 @@ async function $do$e(client, id, stream, last_event_id, include_input, api_versi
       charEncoding: "percent"
     })
   };
-  const path3 = pathToFunc("/{api_version}/interactions/{id}")(pathParams);
+  const path4 = pathToFunc("/{api_version}/interactions/{id}")(pathParams);
   const query = encodeFormQuery({
     "include_input": payload.include_input,
     "last_event_id": payload.last_event_id,
@@ -41546,7 +46395,7 @@ async function $do$e(client, id, stream, last_event_id, include_input, api_versi
     security: requestSecurity,
     method: "GET",
     baseURL: options === null || options === void 0 ? void 0 : options.server_url,
-    path: path3,
+    path: path4,
     headers,
     query,
     body,
@@ -41620,7 +46469,7 @@ async function $do$d(client, body, api_version, options) {
   const pathParams = {
     api_version: encodeSimple("api_version", (_a2 = payload.api_version) !== null && _a2 !== void 0 ? _a2 : client._options.api_version, { explode: false, charEncoding: "percent" })
   };
-  const path3 = pathToFunc("/{api_version}/triggers")(pathParams);
+  const path4 = pathToFunc("/{api_version}/triggers")(pathParams);
   const headers = new Headers(compactMap({
     "Content-Type": "application/json",
     Accept: "application/json"
@@ -41651,7 +46500,7 @@ async function $do$d(client, body, api_version, options) {
     security: requestSecurity,
     method: "POST",
     baseURL: options === null || options === void 0 ? void 0 : options.server_url,
-    path: path3,
+    path: path4,
     headers,
     body: body$,
     userAgent: client._options.user_agent,
@@ -41695,7 +46544,7 @@ async function $do$c(client, id, api_version, options) {
       charEncoding: "percent"
     })
   };
-  const path3 = pathToFunc("/{api_version}/triggers/{id}")(pathParams);
+  const path4 = pathToFunc("/{api_version}/triggers/{id}")(pathParams);
   const headers = new Headers(compactMap({
     Accept: "application/json"
   }));
@@ -41725,7 +46574,7 @@ async function $do$c(client, id, api_version, options) {
     security: requestSecurity,
     method: "DELETE",
     baseURL: options === null || options === void 0 ? void 0 : options.server_url,
-    path: path3,
+    path: path4,
     headers,
     body,
     userAgent: client._options.user_agent,
@@ -41769,7 +46618,7 @@ async function $do$b(client, id, api_version, options) {
       charEncoding: "percent"
     })
   };
-  const path3 = pathToFunc("/{api_version}/triggers/{id}")(pathParams);
+  const path4 = pathToFunc("/{api_version}/triggers/{id}")(pathParams);
   const headers = new Headers(compactMap({
     Accept: "application/json"
   }));
@@ -41799,7 +46648,7 @@ async function $do$b(client, id, api_version, options) {
     security: requestSecurity,
     method: "GET",
     baseURL: options === null || options === void 0 ? void 0 : options.server_url,
-    path: path3,
+    path: path4,
     headers,
     body,
     userAgent: client._options.user_agent,
@@ -41845,7 +46694,7 @@ async function $do$a(client, trigger_id, api_version, page_size, page_token, opt
       charEncoding: "percent"
     })
   };
-  const path3 = pathToFunc("/{api_version}/triggers/{trigger_id}/executions")(pathParams);
+  const path4 = pathToFunc("/{api_version}/triggers/{trigger_id}/executions")(pathParams);
   const query = encodeFormQuery({
     "page_size": payload.page_size,
     "page_token": payload.page_token
@@ -41879,7 +46728,7 @@ async function $do$a(client, trigger_id, api_version, page_size, page_token, opt
     security: requestSecurity,
     method: "GET",
     baseURL: options === null || options === void 0 ? void 0 : options.server_url,
-    path: path3,
+    path: path4,
     headers,
     query,
     body,
@@ -41922,7 +46771,7 @@ async function $do$9(client, api_version, filter, page_size, page_token, options
   const pathParams = {
     api_version: encodeSimple("api_version", (_a2 = payload === null || payload === void 0 ? void 0 : payload.api_version) !== null && _a2 !== void 0 ? _a2 : client._options.api_version, { explode: false, charEncoding: "percent" })
   };
-  const path3 = pathToFunc("/{api_version}/triggers")(pathParams);
+  const path4 = pathToFunc("/{api_version}/triggers")(pathParams);
   const query = encodeFormQuery({
     "filter": payload === null || payload === void 0 ? void 0 : payload.filter,
     "page_size": payload === null || payload === void 0 ? void 0 : payload.page_size,
@@ -41957,7 +46806,7 @@ async function $do$9(client, api_version, filter, page_size, page_token, options
     security: requestSecurity,
     method: "GET",
     baseURL: options === null || options === void 0 ? void 0 : options.server_url,
-    path: path3,
+    path: path4,
     headers,
     query,
     body,
@@ -42002,7 +46851,7 @@ async function $do$8(client, trigger_id, api_version, options) {
       charEncoding: "percent"
     })
   };
-  const path3 = pathToFunc("/{api_version}/triggers/{trigger_id}/executions")(pathParams);
+  const path4 = pathToFunc("/{api_version}/triggers/{trigger_id}/executions")(pathParams);
   const headers = new Headers(compactMap({
     Accept: "application/json"
   }));
@@ -42032,7 +46881,7 @@ async function $do$8(client, trigger_id, api_version, options) {
     security: requestSecurity,
     method: "POST",
     baseURL: options === null || options === void 0 ? void 0 : options.server_url,
-    path: path3,
+    path: path4,
     headers,
     body,
     userAgent: client._options.user_agent,
@@ -42077,7 +46926,7 @@ async function $do$7(client, id, body, api_version, options) {
       charEncoding: "percent"
     })
   };
-  const path3 = pathToFunc("/{api_version}/triggers/{id}")(pathParams);
+  const path4 = pathToFunc("/{api_version}/triggers/{id}")(pathParams);
   const headers = new Headers(compactMap({
     "Content-Type": "application/json",
     Accept: "application/json"
@@ -42108,7 +46957,7 @@ async function $do$7(client, id, body, api_version, options) {
     security: requestSecurity,
     method: "PATCH",
     baseURL: options === null || options === void 0 ? void 0 : options.server_url,
-    path: path3,
+    path: path4,
     headers,
     body: body$,
     userAgent: client._options.user_agent,
@@ -42194,7 +47043,7 @@ async function $do$6(client, body, api_version, options) {
   const pathParams = {
     api_version: encodeSimple("api_version", (_a2 = payload.api_version) !== null && _a2 !== void 0 ? _a2 : client._options.api_version, { explode: false, charEncoding: "percent" })
   };
-  const path3 = pathToFunc("/{api_version}/webhooks")(pathParams);
+  const path4 = pathToFunc("/{api_version}/webhooks")(pathParams);
   const headers = new Headers(compactMap({
     "Content-Type": "application/json",
     Accept: "application/json"
@@ -42225,7 +47074,7 @@ async function $do$6(client, body, api_version, options) {
     security: requestSecurity,
     method: "POST",
     baseURL: options === null || options === void 0 ? void 0 : options.server_url,
-    path: path3,
+    path: path4,
     headers,
     body: body$,
     userAgent: client._options.user_agent,
@@ -42269,7 +47118,7 @@ async function $do$5(client, id, api_version, options) {
       charEncoding: "percent"
     })
   };
-  const path3 = pathToFunc("/{api_version}/webhooks/{id}")(pathParams);
+  const path4 = pathToFunc("/{api_version}/webhooks/{id}")(pathParams);
   const headers = new Headers(compactMap({
     Accept: "application/json"
   }));
@@ -42299,7 +47148,7 @@ async function $do$5(client, id, api_version, options) {
     security: requestSecurity,
     method: "DELETE",
     baseURL: options === null || options === void 0 ? void 0 : options.server_url,
-    path: path3,
+    path: path4,
     headers,
     body,
     userAgent: client._options.user_agent,
@@ -42343,7 +47192,7 @@ async function $do$4(client, id, api_version, options) {
       charEncoding: "percent"
     })
   };
-  const path3 = pathToFunc("/{api_version}/webhooks/{id}")(pathParams);
+  const path4 = pathToFunc("/{api_version}/webhooks/{id}")(pathParams);
   const headers = new Headers(compactMap({
     Accept: "application/json"
   }));
@@ -42373,7 +47222,7 @@ async function $do$4(client, id, api_version, options) {
     security: requestSecurity,
     method: "GET",
     baseURL: options === null || options === void 0 ? void 0 : options.server_url,
-    path: path3,
+    path: path4,
     headers,
     body,
     userAgent: client._options.user_agent,
@@ -42414,7 +47263,7 @@ async function $do$3(client, api_version, page_size, page_token, options) {
   const pathParams = {
     api_version: encodeSimple("api_version", (_a2 = payload === null || payload === void 0 ? void 0 : payload.api_version) !== null && _a2 !== void 0 ? _a2 : client._options.api_version, { explode: false, charEncoding: "percent" })
   };
-  const path3 = pathToFunc("/{api_version}/webhooks")(pathParams);
+  const path4 = pathToFunc("/{api_version}/webhooks")(pathParams);
   const query = encodeFormQuery({
     "page_size": payload === null || payload === void 0 ? void 0 : payload.page_size,
     "page_token": payload === null || payload === void 0 ? void 0 : payload.page_token
@@ -42448,7 +47297,7 @@ async function $do$3(client, api_version, page_size, page_token, options) {
     security: requestSecurity,
     method: "GET",
     baseURL: options === null || options === void 0 ? void 0 : options.server_url,
-    path: path3,
+    path: path4,
     headers,
     query,
     body,
@@ -42494,7 +47343,7 @@ async function $do$2(client, id, api_version, body, options) {
       charEncoding: "percent"
     })
   };
-  const path3 = pathToFunc("/{api_version}/webhooks/{id}:ping")(pathParams);
+  const path4 = pathToFunc("/{api_version}/webhooks/{id}:ping")(pathParams);
   const headers = new Headers(compactMap({
     "Content-Type": "application/json",
     Accept: "application/json"
@@ -42525,7 +47374,7 @@ async function $do$2(client, id, api_version, body, options) {
     security: requestSecurity,
     method: "POST",
     baseURL: options === null || options === void 0 ? void 0 : options.server_url,
-    path: path3,
+    path: path4,
     headers,
     body: body$,
     userAgent: client._options.user_agent,
@@ -42570,7 +47419,7 @@ async function $do$1(client, id, api_version, body, options) {
       charEncoding: "percent"
     })
   };
-  const path3 = pathToFunc("/{api_version}/webhooks/{id}:rotateSigningSecret")(pathParams);
+  const path4 = pathToFunc("/{api_version}/webhooks/{id}:rotateSigningSecret")(pathParams);
   const headers = new Headers(compactMap({
     "Content-Type": "application/json",
     Accept: "application/json"
@@ -42601,7 +47450,7 @@ async function $do$1(client, id, api_version, body, options) {
     security: requestSecurity,
     method: "POST",
     baseURL: options === null || options === void 0 ? void 0 : options.server_url,
-    path: path3,
+    path: path4,
     headers,
     body: body$,
     userAgent: client._options.user_agent,
@@ -42647,7 +47496,7 @@ async function $do(client, id, api_version, update_mask, body, options) {
       charEncoding: "percent"
     })
   };
-  const path3 = pathToFunc("/{api_version}/webhooks/{id}")(pathParams);
+  const path4 = pathToFunc("/{api_version}/webhooks/{id}")(pathParams);
   const query = encodeFormQuery({
     "update_mask": payload.update_mask
   });
@@ -42681,7 +47530,7 @@ async function $do(client, id, api_version, update_mask, body, options) {
     security: requestSecurity,
     method: "PATCH",
     baseURL: options === null || options === void 0 ? void 0 : options.server_url,
-    path: path3,
+    path: path4,
     headers,
     query,
     body: body$,
@@ -43025,9 +47874,9 @@ function wrapStreamErrors(stream) {
       return function wrappedAsyncIterator() {
         const iterator = asyncIterable[Symbol.asyncIterator]();
         return {
-          async next(...args) {
+          async next(...args2) {
             try {
-              return await iterator.next(...args);
+              return await iterator.next(...args2);
             } catch (error) {
               throw wrapSDKError(error);
             }
@@ -44798,16 +49647,16 @@ var Tunings = class extends BaseModule {
   async getInternal(params) {
     var _a2, _b, _c, _d;
     let response;
-    let path3 = "";
+    let path4 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = getTuningJobParametersToVertex(params);
-      path3 = formatMap("{name}", body["_url"]);
+      path4 = formatMap("{name}", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "GET",
@@ -44828,12 +49677,12 @@ var Tunings = class extends BaseModule {
       });
     } else {
       const body = getTuningJobParametersToMldev(params);
-      path3 = formatMap("{name}", body["_url"]);
+      path4 = formatMap("{name}", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "GET",
@@ -44857,16 +49706,16 @@ var Tunings = class extends BaseModule {
   async listInternal(params) {
     var _a2, _b;
     let response;
-    let path3 = "";
+    let path4 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = listTuningJobsParametersToVertex(params);
-      path3 = formatMap("tuningJobs", body["_url"]);
+      path4 = formatMap("tuningJobs", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "GET",
@@ -44905,16 +49754,16 @@ var Tunings = class extends BaseModule {
   async cancel(params) {
     var _a2, _b, _c, _d;
     let response;
-    let path3 = "";
+    let path4 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = cancelTuningJobParametersToVertex(params);
-      path3 = formatMap("{name}:cancel", body["_url"]);
+      path4 = formatMap("{name}:cancel", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
@@ -44937,12 +49786,12 @@ var Tunings = class extends BaseModule {
       });
     } else {
       const body = cancelTuningJobParametersToMldev(params);
-      path3 = formatMap("{name}:cancel", body["_url"]);
+      path4 = formatMap("{name}:cancel", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
@@ -44968,16 +49817,16 @@ var Tunings = class extends BaseModule {
   async tuneInternal(params) {
     var _a2, _b;
     let response;
-    let path3 = "";
+    let path4 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = createTuningJobParametersPrivateToVertex(params, params);
-      path3 = formatMap("tuningJobs", body["_url"]);
+      path4 = formatMap("tuningJobs", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
@@ -45003,18 +49852,18 @@ var Tunings = class extends BaseModule {
   async tuneMldevInternal(params) {
     var _a2, _b;
     let response;
-    let path3 = "";
+    let path4 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       throw new Error("This method is only supported by the Gemini Developer API.");
     } else {
       const body = createTuningJobParametersPrivateToMldev(params);
-      path3 = formatMap("tunedModels", body["_url"]);
+      path4 = formatMap("tunedModels", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
@@ -45038,16 +49887,16 @@ var Tunings = class extends BaseModule {
   async validateReward(params) {
     var _a2, _b;
     let response;
-    let path3 = "";
+    let path4 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = validateRewardParametersToVertex(params);
-      path3 = formatMap("{parent}/tuningJobs:validateReinforcementTuningReward", body["_url"]);
+      path4 = formatMap("{parent}/tuningJobs:validateReinforcementTuningReward", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
@@ -45575,13 +50424,352 @@ var MINI_BANNER = `
 ${source_default.red.bold(">>> [ANGULAR GATEKEEPER] Pre-Commit AI Validation Engine <<<")}
 `;
 
-// src/engine.js
-var appDataDir = process.env.APPDATA ? import_path.default.join(process.env.APPDATA, "FrontendGatekeeper") : import_path.default.join(process.env.HOME || process.env.USERPROFILE || ".", ".frontend-gatekeeper");
-var envPath = import_path.default.join(appDataDir, ".env");
-if (import_fs2.default.existsSync(envPath)) {
-  import_dotenv.default.config({ path: envPath });
+// src/branch-watcher.js
+var import_fs2 = __toESM(require("fs"), 1);
+var import_path = __toESM(require("path"), 1);
+var import_child_process = require("child_process");
+var import_prompts = __toESM(require_prompts3(), 1);
+function runGit(command, cwd = process.cwd(), allowFail = false) {
+  try {
+    return (0, import_child_process.execSync)(command, { cwd, encoding: "utf8", stdio: ["pipe", "pipe", "pipe"] }).trim();
+  } catch (err) {
+    if (!allowFail) {
+      throw err;
+    }
+    return "";
+  }
 }
-import_dotenv.default.config();
+function getWatcherConfigPath(cwd = process.cwd()) {
+  const gitDir = import_path.default.join(cwd, ".git");
+  if (!import_fs2.default.existsSync(gitDir)) return null;
+  return import_path.default.join(gitDir, "gatekeeper-branch-watcher.json");
+}
+function getAlertLogPath(cwd = process.cwd()) {
+  const gitDir = import_path.default.join(cwd, ".git");
+  if (!import_fs2.default.existsSync(gitDir)) return null;
+  return import_path.default.join(gitDir, "gatekeeper-conflict-alert.log");
+}
+function sendWindowsNotification(title, message) {
+  if (process.platform !== "win32") return;
+  const safeTitle = title.replace(/'/g, "''").replace(/"/g, '`"');
+  const safeMessage = message.replace(/'/g, "''").replace(/"/g, '`"');
+  const psScript = `
+[Windows.UI.Notifications.ToastNotificationManager, Windows.UI.Notifications, ContentType = WindowsRuntime] > $null
+$template = [Windows.UI.Notifications.ToastNotificationManager]::GetTemplateContent([Windows.UI.Notifications.ToastTemplateType]::ToastText02)
+$textNodes = $template.GetElementsByTagName("text")
+$textNodes.Item(0).AppendChild($template.CreateTextNode("${safeTitle}")) > $null
+$textNodes.Item(1).AppendChild($template.CreateTextNode("${safeMessage}")) > $null
+$toast = [Windows.UI.Notifications.ToastNotification]::new($template)
+[Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier("Angular Gatekeeper").Show($toast)
+`;
+  try {
+    (0, import_child_process.execSync)(`powershell -NoProfile -Command "${psScript.replace(/\n/g, " ")}"`, {
+      stdio: "pipe",
+      timeout: 5e3
+    });
+  } catch (err) {
+    try {
+      (0, import_child_process.execSync)(`powershell -Command "[console]::beep(800, 300)"`, { stdio: "ignore" });
+    } catch (e2) {
+    }
+  }
+}
+function getRemoteBranches(cwd = process.cwd()) {
+  try {
+    console.log(source_default.gray("  Fetching latest branch list from origin..."));
+    runGit("git fetch --prune origin", cwd, true);
+  } catch (e2) {
+  }
+  const rawBranches = runGit("git branch -r", cwd, true);
+  if (!rawBranches) return [];
+  const branches = rawBranches.split("\n").map((b) => b.trim()).filter((b) => b.startsWith("origin/") && !b.includes("origin/HEAD")).map((b) => b.replace(/^origin\//, "")).filter(Boolean);
+  return [...new Set(branches)].sort();
+}
+function checkBranchConflicts(cwd = process.cwd(), targetBranch = "main") {
+  const currentBranch = runGit("git rev-parse --abbrev-ref HEAD", cwd, true) || "HEAD";
+  try {
+    runGit(`git fetch origin ${targetBranch}`, cwd, true);
+  } catch (e2) {
+  }
+  const behindCountStr = runGit(`git rev-list --count HEAD..origin/${targetBranch}`, cwd, true);
+  const aheadCountStr = runGit(`git rev-list --count origin/${targetBranch}..HEAD`, cwd, true);
+  const behindCount = parseInt(behindCountStr, 10) || 0;
+  const aheadCount = parseInt(aheadCountStr, 10) || 0;
+  let hasConflict = false;
+  let conflictingFiles = [];
+  let mergeTreeOutput = "";
+  try {
+    const res = (0, import_child_process.execSync)(`git merge-tree --write-tree HEAD origin/${targetBranch}`, {
+      cwd,
+      encoding: "utf8",
+      stdio: ["pipe", "pipe", "pipe"]
+    });
+    mergeTreeOutput = res;
+    hasConflict = false;
+  } catch (err) {
+    mergeTreeOutput = (err.stdout || "") + "\n" + (err.stderr || "");
+    hasConflict = true;
+    const lines = mergeTreeOutput.split("\n");
+    for (const line of lines) {
+      if (line.includes("CONFLICT") || line.includes("Auto-merging")) {
+        const match2 = line.match(/CONFLICT \([^)]+\): (?:Merge conflict in )?(.*)/i);
+        if (match2 && match2[1]) {
+          conflictingFiles.push(match2[1].trim());
+        }
+      }
+    }
+  }
+  if (hasConflict && conflictingFiles.length === 0) {
+    const mergeBase = runGit(`git merge-base HEAD origin/${targetBranch}`, cwd, true);
+    if (mergeBase) {
+      const classicOutput = runGit(`git merge-tree ${mergeBase} HEAD origin/${targetBranch}`, cwd, true);
+      const blocks = classicOutput.split("changed in both");
+      if (blocks.length > 1) {
+        for (let i2 = 1; i2 < blocks.length; i2++) {
+          const match2 = blocks[i2].match(/^\s*\n\s*base\s+[0-9a-f]+\s+([^\n]+)/m);
+          if (match2 && match2[1]) {
+            conflictingFiles.push(match2[1].trim());
+          }
+        }
+      }
+    }
+  }
+  conflictingFiles = [...new Set(conflictingFiles)].filter(Boolean);
+  if (conflictingFiles.length > 0) {
+    hasConflict = true;
+  }
+  return {
+    hasConflict,
+    conflictingFiles,
+    behindCount,
+    aheadCount,
+    currentBranch,
+    targetBranch,
+    checkedAt: (/* @__PURE__ */ new Date()).toISOString()
+  };
+}
+async function enableBranchWatcher(cwd = process.cwd()) {
+  console.log("\n" + source_default.cyan.bold("\u2554\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2557"));
+  console.log(source_default.cyan.bold("\u2551       \u{1F33F} AUTOMATIC BRANCH CONFLICT WATCHER SETUP           \u2551"));
+  console.log(source_default.cyan.bold("\u255A\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u255D\n"));
+  const gitDir = import_path.default.join(cwd, ".git");
+  if (!import_fs2.default.existsSync(gitDir)) {
+    console.log(source_default.red("\u2716 Error: Current directory is not a Git repository."));
+    process.exit(1);
+  }
+  const branches = getRemoteBranches(cwd);
+  if (branches.length === 0) {
+    console.log(source_default.red("\u2716 No remote branches found on origin. Ensure origin remote is configured."));
+    process.exit(1);
+  }
+  const currentBranch = runGit("git rev-parse --abbrev-ref HEAD", cwd, true) || "main";
+  console.log(source_default.white(`  Active Local Branch: ${source_default.bold.green(currentBranch)}`));
+  console.log(source_default.white("  Select target branch to monitor conflicts against:\n"));
+  const choices = branches.map((b, i2) => ({
+    title: `${i2 + 1}) ${b} ${b === "main" || b === "master" || b === "dev" || b === "develop" ? source_default.gray("(Default Target)") : ""}`,
+    value: b
+  }));
+  const response = await (0, import_prompts.default)({
+    type: "select",
+    name: "targetBranch",
+    message: "Select target comparison branch:",
+    choices,
+    initial: choices.findIndex((c) => c.value === "main" || c.value === "master" || c.value === "develop") >= 0 ? choices.findIndex((c) => c.value === "main" || c.value === "master" || c.value === "develop") : 0
+  });
+  const targetBranch = response.targetBranch;
+  if (!targetBranch) {
+    console.log(source_default.yellow("\n\u26A0 Setup cancelled. No branch selected."));
+    process.exit(0);
+  }
+  console.log("\n" + source_default.blue(`>>> [Initial Immediate Check] Checking sync with origin/${targetBranch}...`));
+  const checkResult = checkBranchConflicts(cwd, targetBranch);
+  console.log(source_default.gray("\u2500".repeat(60)));
+  if (checkResult.behindCount > 0) {
+    console.log(source_default.yellow.bold(`
+\u26A0 NOTICE: Target branch "origin/${targetBranch}" has ${checkResult.behindCount} new commit(s) on GitHub!`));
+    console.log(source_default.white("  Please pull or rebase the remote changes into your branch to stay updated:"));
+    console.log(source_default.cyan.bold(`  $ git pull origin ${targetBranch}
+`));
+  } else {
+    console.log(source_default.green(`\u2714 No pending incoming commits from origin/${targetBranch}.`));
+  }
+  if (checkResult.hasConflict) {
+    console.log(source_default.red.bold(`
+\u2716 WARNING: Immediate Merge Conflicts Detected with "origin/${targetBranch}"!`));
+    console.log(source_default.red(`  Conflicting file(s):`));
+    checkResult.conflictingFiles.forEach((f3) => console.log(source_default.red(`    \u2022 ${f3}`)));
+    console.log(source_default.yellow(`  Resolve these conflicts to ensure smooth collaboration.
+`));
+  } else {
+    console.log(source_default.green(`\u2714 ZERO merge conflicts detected between "${currentBranch}" and "origin/${targetBranch}".
+`));
+  }
+  console.log(source_default.gray("\u2500".repeat(60)));
+  await disableBranchWatcher(cwd, true);
+  console.log(source_default.blue("\n>>> Launching background 15-minute sync monitor daemon..."));
+  const engineExec = process.execPath;
+  const daemonArgs = ["branch-watch-daemon", cwd, targetBranch];
+  const child = (0, import_child_process.spawn)(engineExec, daemonArgs, {
+    detached: true,
+    stdio: "ignore",
+    cwd
+  });
+  child.unref();
+  const configPath = getWatcherConfigPath(cwd);
+  const configData = {
+    enabled: true,
+    pid: child.pid,
+    repoPath: cwd,
+    currentBranch,
+    targetBranch,
+    intervalMinutes: 15,
+    startedAt: (/* @__PURE__ */ new Date()).toISOString(),
+    lastCheckedAt: checkResult.checkedAt,
+    hasConflict: checkResult.hasConflict,
+    conflictingFiles: checkResult.conflictingFiles,
+    behindCount: checkResult.behindCount
+  };
+  if (configPath) {
+    import_fs2.default.writeFileSync(configPath, JSON.stringify(configData, null, 2), "utf8");
+  }
+  console.log(source_default.green.bold("\n\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550"));
+  console.log(source_default.green.bold("   \u2714 15-MINUTE BACKGROUND BRANCH CONFLICT WATCHER ACTIVATED!   "));
+  console.log(source_default.green.bold("\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550"));
+  console.log(source_default.white(`  \u2022 Monitored Branch:  ${source_default.cyan.bold("origin/" + targetBranch)}`));
+  console.log(source_default.white(`  \u2022 Active Branch:     ${source_default.cyan.bold(currentBranch)}`));
+  console.log(source_default.white(`  \u2022 Check Interval:    ${source_default.cyan("Every 15 Minutes")}`));
+  console.log(source_default.white(`  \u2022 Background PID:    ${source_default.cyan(child.pid)}`));
+  console.log(source_default.magenta("\n  You will receive automatic Windows Desktop Toast alerts"));
+  console.log(source_default.magenta(`  whenever new commits on "${targetBranch}" cause conflicts with your work.`));
+  console.log(source_default.gray("\n  To stop watcher:     a-gatekeeper branch check --disable"));
+  console.log(source_default.gray("  To check status:     a-gatekeeper branch check --status\n"));
+}
+async function disableBranchWatcher(cwd = process.cwd(), silent = false) {
+  const configPath = getWatcherConfigPath(cwd);
+  if (!configPath || !import_fs2.default.existsSync(configPath)) {
+    if (!silent) {
+      console.log(source_default.yellow("\u26A0 No active branch conflict watcher found for this repository."));
+    }
+    return;
+  }
+  try {
+    const config = JSON.parse(import_fs2.default.readFileSync(configPath, "utf8"));
+    if (config.pid) {
+      try {
+        process.kill(config.pid);
+      } catch (e2) {
+      }
+    }
+    import_fs2.default.unlinkSync(configPath);
+    const alertLog = getAlertLogPath(cwd);
+    if (alertLog && import_fs2.default.existsSync(alertLog)) {
+      import_fs2.default.unlinkSync(alertLog);
+    }
+    if (!silent) {
+      console.log(source_default.green("\u2714 Branch conflict watcher DISABLED successfully for this repository."));
+    }
+  } catch (err) {
+    if (!silent) {
+      console.log(source_default.red(`\u2716 Error disabling watcher: ${err.message}`));
+    }
+  }
+}
+async function statusBranchWatcher(cwd = process.cwd()) {
+  const configPath = getWatcherConfigPath(cwd);
+  if (!configPath || !import_fs2.default.existsSync(configPath)) {
+    console.log(source_default.yellow("\n\u26A0 Branch conflict watcher is currently DISABLED for this repository."));
+    console.log(source_default.gray("  To enable, run: a-gatekeeper branch check --enable\n"));
+    return;
+  }
+  let config = {};
+  try {
+    config = JSON.parse(import_fs2.default.readFileSync(configPath, "utf8"));
+  } catch (e2) {
+    console.log(source_default.yellow("\u26A0 Invalid watcher configuration."));
+    return;
+  }
+  let isRunning = false;
+  if (config.pid) {
+    try {
+      process.kill(config.pid, 0);
+      isRunning = true;
+    } catch (e2) {
+      isRunning = false;
+    }
+  }
+  console.log("\n" + source_default.cyan.bold("\u250C\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510"));
+  console.log(source_default.cyan.bold("\u2502 ") + source_default.bold.white("\u{1F33F} BRANCH CONFLICT WATCHER STATUS                          ") + source_default.cyan.bold("\u2502"));
+  console.log(source_default.cyan.bold("\u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518\n"));
+  console.log(source_default.white(`  \u2022 Status:           ${isRunning ? source_default.green.bold("RUNNING (Active)") : source_default.red.bold("STOPPED")}`));
+  console.log(source_default.white(`  \u2022 Background PID:   ${config.pid || "N/A"}`));
+  console.log(source_default.white(`  \u2022 Monitored Target: ${source_default.cyan.bold("origin/" + config.targetBranch)}`));
+  console.log(source_default.white(`  \u2022 Check Interval:   Every ${config.intervalMinutes || 15} minutes`));
+  console.log(source_default.white(`  \u2022 Started At:       ${config.startedAt ? new Date(config.startedAt).toLocaleString() : "N/A"}`));
+  console.log(source_default.white(`  \u2022 Last Checked:     ${config.lastCheckedAt ? new Date(config.lastCheckedAt).toLocaleString() : "N/A"}`));
+  if (config.behindCount > 0) {
+    console.log(source_default.yellow(`
+  \u26A0 Pending Remote Commits: origin/${config.targetBranch} has ${config.behindCount} new commit(s).`));
+    console.log(source_default.gray(`    Run: git pull origin ${config.targetBranch}`));
+  }
+  if (config.hasConflict && config.conflictingFiles && config.conflictingFiles.length > 0) {
+    console.log(source_default.red.bold("\n  \u2716 CONFLICT ALERT! Detected merge conflicts with target branch:"));
+    config.conflictingFiles.forEach((f3) => console.log(source_default.red(`    \u2022 ${f3}`)));
+  } else {
+    console.log(source_default.green("\n  \u2714 ZERO conflicts detected with target branch."));
+  }
+  console.log("");
+}
+async function runDaemonLoop(cwd, targetBranch) {
+  const INTERVAL_MS = 15 * 60 * 1e3;
+  async function checkCycle() {
+    try {
+      const result = checkBranchConflicts(cwd, targetBranch);
+      const configPath = getWatcherConfigPath(cwd);
+      if (configPath && import_fs2.default.existsSync(configPath)) {
+        try {
+          const config = JSON.parse(import_fs2.default.readFileSync(configPath, "utf8"));
+          config.lastCheckedAt = result.checkedAt;
+          config.hasConflict = result.hasConflict;
+          config.conflictingFiles = result.conflictingFiles;
+          config.behindCount = result.behindCount;
+          import_fs2.default.writeFileSync(configPath, JSON.stringify(config, null, 2), "utf8");
+        } catch (e2) {
+        }
+      }
+      if (result.hasConflict && result.conflictingFiles.length > 0) {
+        const fileList = result.conflictingFiles.slice(0, 3).join(", ") + (result.conflictingFiles.length > 3 ? "..." : "");
+        sendWindowsNotification(
+          "\u26A0\uFE0F Angular Gatekeeper: Merge Conflict Detected!",
+          `Branch "${result.currentBranch}" conflicts with origin/${targetBranch} in: ${fileList}`
+        );
+        const alertLogPath = getAlertLogPath(cwd);
+        if (alertLogPath) {
+          const logContent = `[${(/* @__PURE__ */ new Date()).toLocaleString()}] CONFLICT ALERT
+Current Branch: ${result.currentBranch}
+Target Branch: origin/${targetBranch}
+Conflicting Files:
+` + result.conflictingFiles.map((f3) => `  - ${f3}`).join("\n") + `
+
+Please pull or rebase origin/${targetBranch} to resolve.
+
+`;
+          import_fs2.default.appendFileSync(alertLogPath, logContent, "utf8");
+        }
+      }
+    } catch (cycleErr) {
+    }
+  }
+  await checkCycle();
+  setInterval(checkCycle, INTERVAL_MS);
+}
+
+// src/engine.js
+var appDataDir = process.env.APPDATA ? import_path2.default.join(process.env.APPDATA, "FrontendGatekeeper") : import_path2.default.join(process.env.HOME || process.env.USERPROFILE || ".", ".frontend-gatekeeper");
+var envPath = import_path2.default.join(appDataDir, ".env");
+if (import_fs3.default.existsSync(envPath)) {
+  import_dotenv.default.config({ path: envPath, quiet: true });
+}
+import_dotenv.default.config({ quiet: true });
 function logStep(stepNum, title) {
   console.log(`
 ${source_default.red.bold(`[Step ${stepNum}]`)} ${source_default.white.bold(title)}`);
@@ -45596,9 +50784,9 @@ function logWarning(msg) {
 function logError(msg) {
   console.log(`${source_default.red("\u2716")} ${source_default.red.bold(msg)}`);
 }
-function runGit(command, allowFail = false) {
+function runGit2(command, allowFail = false) {
   try {
-    return (0, import_child_process.execSync)(command, { encoding: "utf8", stdio: ["pipe", "pipe", "pipe"] }).trim();
+    return (0, import_child_process2.execSync)(command, { encoding: "utf8", stdio: ["pipe", "pipe", "pipe"] }).trim();
   } catch (err) {
     if (!allowFail) {
       throw err;
@@ -45607,11 +50795,11 @@ function runGit(command, allowFail = false) {
   }
 }
 function getAllFiles(dirPath, arrayOfFiles = []) {
-  if (!import_fs2.default.existsSync(dirPath)) return [];
-  const files = import_fs2.default.readdirSync(dirPath);
+  if (!import_fs3.default.existsSync(dirPath)) return [];
+  const files = import_fs3.default.readdirSync(dirPath);
   files.forEach((file) => {
-    const fullPath = import_path.default.join(dirPath, file);
-    if (import_fs2.default.statSync(fullPath).isDirectory()) {
+    const fullPath = import_path2.default.join(dirPath, file);
+    if (import_fs3.default.statSync(fullPath).isDirectory()) {
       getAllFiles(fullPath, arrayOfFiles);
     } else {
       arrayOfFiles.push(fullPath);
@@ -45620,14 +50808,14 @@ function getAllFiles(dirPath, arrayOfFiles = []) {
   return arrayOfFiles;
 }
 function findBuildOutputDir(distPath) {
-  if (!import_fs2.default.existsSync(distPath)) return null;
-  if (import_fs2.default.existsSync(import_path.default.join(distPath, "index.html"))) {
+  if (!import_fs3.default.existsSync(distPath)) return null;
+  if (import_fs3.default.existsSync(import_path2.default.join(distPath, "index.html"))) {
     return distPath;
   }
   const allFiles = getAllFiles(distPath);
-  const indexHtmlFile = allFiles.find((f3) => import_path.default.basename(f3).toLowerCase() === "index.html");
+  const indexHtmlFile = allFiles.find((f3) => import_path2.default.basename(f3).toLowerCase() === "index.html");
   if (indexHtmlFile) {
-    return import_path.default.dirname(indexHtmlFile);
+    return import_path2.default.dirname(indexHtmlFile);
   }
   return distPath;
 }
@@ -45636,15 +50824,15 @@ async function runGatekeeper() {
   console.log(source_default.gray(`Working Directory: ${process.cwd()}
 `));
   logStep(1, "Angular Project Detection");
-  const angularJsonPath = import_path.default.join(process.cwd(), "angular.json");
-  const packageJsonPath = import_path.default.join(process.cwd(), "package.json");
+  const angularJsonPath = import_path2.default.join(process.cwd(), "angular.json");
+  const packageJsonPath = import_path2.default.join(process.cwd(), "package.json");
   let isAngular = false;
   let projectPkg = {};
-  if (import_fs2.default.existsSync(packageJsonPath)) {
+  if (import_fs3.default.existsSync(packageJsonPath)) {
     try {
-      projectPkg = JSON.parse(import_fs2.default.readFileSync(packageJsonPath, "utf8"));
+      projectPkg = JSON.parse(import_fs3.default.readFileSync(packageJsonPath, "utf8"));
       const deps = { ...projectPkg.dependencies || {}, ...projectPkg.devDependencies || {} };
-      if (deps["@angular/core"] || deps["@angular/cli"] || import_fs2.default.existsSync(angularJsonPath)) {
+      if (deps["@angular/core"] || deps["@angular/cli"] || import_fs3.default.existsSync(angularJsonPath)) {
         isAngular = true;
       }
     } catch (e2) {
@@ -45658,16 +50846,16 @@ async function runGatekeeper() {
   logSuccess("Angular project verified (angular.json / @angular/core detected).");
   logStep(2, "Remote Repository Sync Check");
   try {
-    const currentBranch = runGit("git rev-parse --abbrev-ref HEAD", true) || "main";
+    const currentBranch = runGit2("git rev-parse --abbrev-ref HEAD", true) || "main";
     console.log(source_default.blue(`  Current active branch: ${source_default.bold(currentBranch)}`));
     let fetched = false;
     try {
-      runGit("git fetch origin", true);
+      runGit2("git fetch origin", true);
       fetched = true;
     } catch (e2) {
     }
     if (fetched) {
-      const unpulledCountStr = runGit(`git rev-list --count HEAD..origin/${currentBranch}`, true);
+      const unpulledCountStr = runGit2(`git rev-list --count HEAD..origin/${currentBranch}`, true);
       const unpulledCount = parseInt(unpulledCountStr, 10);
       if (!isNaN(unpulledCount) && unpulledCount > 0) {
         logWarning(`Note: Your branch is behind origin/${currentBranch} by ${unpulledCount} commit(s). Remember to rebase before pushing.`);
@@ -45682,32 +50870,32 @@ async function runGatekeeper() {
   }
   logStep(3, "Critical Angular Architecture & Source Validation");
   const requiredItems = [
-    { name: "angular.json", path: import_path.default.join(process.cwd(), "angular.json"), type: "file" },
-    { name: "package.json", path: import_path.default.join(process.cwd(), "package.json"), type: "file" },
-    { name: "src/ directory", path: import_path.default.join(process.cwd(), "src"), type: "dir" },
-    { name: "src/app/ directory", path: import_path.default.join(process.cwd(), "src", "app"), type: "dir" }
+    { name: "angular.json", path: import_path2.default.join(process.cwd(), "angular.json"), type: "file" },
+    { name: "package.json", path: import_path2.default.join(process.cwd(), "package.json"), type: "file" },
+    { name: "src/ directory", path: import_path2.default.join(process.cwd(), "src"), type: "dir" },
+    { name: "src/app/ directory", path: import_path2.default.join(process.cwd(), "src", "app"), type: "dir" }
   ];
   let missingItems = [];
   for (const item of requiredItems) {
     if (item.type === "file") {
-      if (!import_fs2.default.existsSync(item.path)) {
+      if (!import_fs3.default.existsSync(item.path)) {
         missingItems.push(item.name);
       }
     } else if (item.type === "dir") {
-      if (!import_fs2.default.existsSync(item.path) || !import_fs2.default.statSync(item.path).isDirectory()) {
+      if (!import_fs3.default.existsSync(item.path) || !import_fs3.default.statSync(item.path).isDirectory()) {
         missingItems.push(item.name);
       }
     }
   }
-  const tsconfigExists = import_fs2.default.existsSync(import_path.default.join(process.cwd(), "tsconfig.json")) || import_fs2.default.existsSync(import_path.default.join(process.cwd(), "tsconfig.app.json"));
+  const tsconfigExists = import_fs3.default.existsSync(import_path2.default.join(process.cwd(), "tsconfig.json")) || import_fs3.default.existsSync(import_path2.default.join(process.cwd(), "tsconfig.app.json"));
   if (!tsconfigExists) {
     missingItems.push("tsconfig.json (or tsconfig.app.json)");
   }
-  const indexHtmlExists = import_fs2.default.existsSync(import_path.default.join(process.cwd(), "src", "index.html")) || import_fs2.default.existsSync(import_path.default.join(process.cwd(), "src", "index.csr.html")) || import_fs2.default.existsSync(import_path.default.join(process.cwd(), "index.html"));
+  const indexHtmlExists = import_fs3.default.existsSync(import_path2.default.join(process.cwd(), "src", "index.html")) || import_fs3.default.existsSync(import_path2.default.join(process.cwd(), "src", "index.csr.html")) || import_fs3.default.existsSync(import_path2.default.join(process.cwd(), "index.html"));
   if (!indexHtmlExists) {
     missingItems.push("src/index.html (Application Main Entry Point)");
   }
-  const mainTsExists = import_fs2.default.existsSync(import_path.default.join(process.cwd(), "src", "main.ts"));
+  const mainTsExists = import_fs3.default.existsSync(import_path2.default.join(process.cwd(), "src", "main.ts"));
   if (!mainTsExists) {
     missingItems.push("src/main.ts (Application Bootstrap Entry Point)");
   }
@@ -45722,7 +50910,7 @@ async function runGatekeeper() {
   if (scripts["lint"]) {
     console.log(source_default.blue("  Running Angular Linter (npm run lint)..."));
     try {
-      (0, import_child_process.execSync)("npm run lint", { stdio: "inherit", cwd: process.cwd() });
+      (0, import_child_process2.execSync)("npm run lint", { stdio: "inherit", cwd: process.cwd() });
       logSuccess("Angular linter passed.");
     } catch (err) {
       logError("Angular linter reported errors!");
@@ -45734,7 +50922,7 @@ async function runGatekeeper() {
     const typeScript = scripts["type-check"] ? "type-check" : "typecheck";
     console.log(source_default.blue(`  Running TypeScript Check (npm run ${typeScript})...`));
     try {
-      (0, import_child_process.execSync)(`npm run ${typeScript}`, { stdio: "inherit", cwd: process.cwd() });
+      (0, import_child_process2.execSync)(`npm run ${typeScript}`, { stdio: "inherit", cwd: process.cwd() });
       logSuccess("TypeScript checks passed.");
     } catch (err) {
       logError("TypeScript type checking failed!");
@@ -45746,7 +50934,7 @@ async function runGatekeeper() {
     const testScript = scripts["test:ci"] ? "test:ci" : "test-ci";
     console.log(source_default.blue(`  Running CI Tests (npm run ${testScript})...`));
     try {
-      (0, import_child_process.execSync)(`npm run ${testScript}`, { stdio: "inherit", cwd: process.cwd() });
+      (0, import_child_process2.execSync)(`npm run ${testScript}`, { stdio: "inherit", cwd: process.cwd() });
       logSuccess("Automated CI tests passed.");
     } catch (err) {
       logError("Automated CI tests failed!");
@@ -45761,7 +50949,7 @@ async function runGatekeeper() {
   }
   console.log(source_default.gray(`  Executing: ${buildCommand}`));
   try {
-    (0, import_child_process.execSync)(buildCommand, { stdio: "inherit", cwd: process.cwd() });
+    (0, import_child_process2.execSync)(buildCommand, { stdio: "inherit", cwd: process.cwd() });
     logSuccess("Angular compilation & build completed successfully with ZERO errors.");
   } catch (buildErr) {
     logError("Angular Build FAILED! Compilation or TypeScript errors detected.");
@@ -45772,41 +50960,41 @@ async function runGatekeeper() {
     process.exit(1);
   }
   logStep(5, "Production Build Artifacts Validation");
-  const distPath = import_path.default.join(process.cwd(), "dist");
+  const distPath = import_path2.default.join(process.cwd(), "dist");
   const outputDir = findBuildOutputDir(distPath);
-  if (!outputDir || !import_fs2.default.existsSync(outputDir)) {
+  if (!outputDir || !import_fs3.default.existsSync(outputDir)) {
     logError("Build output directory (dist/) was not generated or is missing!");
     console.log(source_default.red("  Commit rejected: Ensure ng build produces valid output.\n"));
     process.exit(1);
   }
   console.log(source_default.gray(`  Inspecting build distribution output at: ${outputDir}`));
-  const outputFiles = getAllFiles(outputDir).map((f3) => import_path.default.relative(outputDir, f3).replace(/\\/g, "/"));
-  const hasIndexHtml = outputFiles.some((f3) => import_path.default.basename(f3).toLowerCase() === "index.html");
+  const outputFiles = getAllFiles(outputDir).map((f3) => import_path2.default.relative(outputDir, f3).replace(/\\/g, "/"));
+  const hasIndexHtml = outputFiles.some((f3) => import_path2.default.basename(f3).toLowerCase() === "index.html");
   if (!hasIndexHtml) {
     logError("Critical build artifact missing: index.html was not generated in distribution output!");
     console.log(source_default.red("  Commit rejected: index.html is required for IIS/web servers to load the application.\n"));
     process.exit(1);
   }
   const jsBundles = outputFiles.filter((f3) => f3.endsWith(".js"));
-  const hasMainJs = jsBundles.some((f3) => /^main(\.[a-zA-Z0-9]+)?\.js$/i.test(import_path.default.basename(f3)) || import_path.default.basename(f3).toLowerCase().startsWith("main"));
-  const hasPolyfillsJs = jsBundles.some((f3) => /^polyfills(\.[a-zA-Z0-9]+)?\.js$/i.test(import_path.default.basename(f3)) || import_path.default.basename(f3).toLowerCase().startsWith("polyfills"));
-  const hasRuntimeJs = jsBundles.some((f3) => /^runtime(\.[a-zA-Z0-9]+)?\.js$/i.test(import_path.default.basename(f3)) || import_path.default.basename(f3).toLowerCase().startsWith("runtime") || jsBundles.length >= 1);
+  const hasMainJs = jsBundles.some((f3) => /^main(\.[a-zA-Z0-9]+)?\.js$/i.test(import_path2.default.basename(f3)) || import_path2.default.basename(f3).toLowerCase().startsWith("main"));
+  const hasPolyfillsJs = jsBundles.some((f3) => /^polyfills(\.[a-zA-Z0-9]+)?\.js$/i.test(import_path2.default.basename(f3)) || import_path2.default.basename(f3).toLowerCase().startsWith("polyfills"));
+  const hasRuntimeJs = jsBundles.some((f3) => /^runtime(\.[a-zA-Z0-9]+)?\.js$/i.test(import_path2.default.basename(f3)) || import_path2.default.basename(f3).toLowerCase().startsWith("runtime") || jsBundles.length >= 1);
   if (jsBundles.length === 0) {
     logError("Critical build artifact missing: No compiled JavaScript bundles found in output!");
     console.log(source_default.red("  Commit rejected: Application logic files (main.js, polyfills.js, runtime.js) are missing.\n"));
     process.exit(1);
   }
   const cssFiles = outputFiles.filter((f3) => f3.endsWith(".css"));
-  const hasStylesCss = cssFiles.some((f3) => import_path.default.basename(f3).toLowerCase().startsWith("styles") || cssFiles.length > 0);
-  const srcAssetsPath = import_path.default.join(process.cwd(), "src", "assets");
-  const publicPath = import_path.default.join(process.cwd(), "public");
-  const hasSourceAssets = import_fs2.default.existsSync(srcAssetsPath) && import_fs2.default.readdirSync(srcAssetsPath).length > 0 || import_fs2.default.existsSync(publicPath) && import_fs2.default.readdirSync(publicPath).length > 0;
+  const hasStylesCss = cssFiles.some((f3) => import_path2.default.basename(f3).toLowerCase().startsWith("styles") || cssFiles.length > 0);
+  const srcAssetsPath = import_path2.default.join(process.cwd(), "src", "assets");
+  const publicPath = import_path2.default.join(process.cwd(), "public");
+  const hasSourceAssets = import_fs3.default.existsSync(srcAssetsPath) && import_fs3.default.readdirSync(srcAssetsPath).length > 0 || import_fs3.default.existsSync(publicPath) && import_fs3.default.readdirSync(publicPath).length > 0;
   const hasDistAssets = outputFiles.some((f3) => f3.startsWith("assets/") || f3.startsWith("media/"));
   console.log(source_default.white("  Distribution Artifact Checklist:"));
   console.log(`    ${source_default.green("\u2714")} index.html (Main Entry Point)`);
-  console.log(`    ${source_default.green("\u2714")} Compiled JavaScript Bundles (${jsBundles.length} files: ${jsBundles.slice(0, 3).map((f3) => import_path.default.basename(f3)).join(", ")}${jsBundles.length > 3 ? "..." : ""})`);
+  console.log(`    ${source_default.green("\u2714")} Compiled JavaScript Bundles (${jsBundles.length} files: ${jsBundles.slice(0, 3).map((f3) => import_path2.default.basename(f3)).join(", ")}${jsBundles.length > 3 ? "..." : ""})`);
   if (hasStylesCss) {
-    console.log(`    ${source_default.green("\u2714")} Global Styles (${cssFiles.map((f3) => import_path.default.basename(f3)).join(", ")})`);
+    console.log(`    ${source_default.green("\u2714")} Global Styles (${cssFiles.map((f3) => import_path2.default.basename(f3)).join(", ")})`);
   }
   if (hasSourceAssets) {
     if (hasDistAssets) {
@@ -45817,9 +51005,9 @@ async function runGatekeeper() {
   }
   logSuccess("Production distribution artifacts validated successfully.");
   logStep(6, "Automated Angular Build Versioning");
-  const srcDir = import_path.default.join(process.cwd(), "src");
-  if (import_fs2.default.existsSync(srcDir) && import_fs2.default.statSync(srcDir).isDirectory()) {
-    const buildMetaPath = import_path.default.join(srcDir, "build-metadata.json");
+  const srcDir = import_path2.default.join(process.cwd(), "src");
+  if (import_fs3.default.existsSync(srcDir) && import_fs3.default.statSync(srcDir).isDirectory()) {
+    const buildMetaPath = import_path2.default.join(srcDir, "build-metadata.json");
     let buildData = {
       buildNumber: 0,
       version: projectPkg.version || "1.0.0",
@@ -45827,20 +51015,20 @@ async function runGatekeeper() {
       commitHash: "working-tree",
       builtAt: (/* @__PURE__ */ new Date()).toISOString()
     };
-    if (import_fs2.default.existsSync(buildMetaPath)) {
+    if (import_fs3.default.existsSync(buildMetaPath)) {
       try {
-        buildData = { ...buildData, ...JSON.parse(import_fs2.default.readFileSync(buildMetaPath, "utf8")) };
+        buildData = { ...buildData, ...JSON.parse(import_fs3.default.readFileSync(buildMetaPath, "utf8")) };
       } catch (e2) {
       }
     }
     buildData.buildNumber = (Number(buildData.buildNumber) || 0) + 1;
     buildData.version = projectPkg.version || buildData.version;
-    buildData.branch = runGit("git rev-parse --abbrev-ref HEAD", true) || "main";
-    buildData.commitHash = runGit("git rev-parse --short HEAD", true) || "uncommitted";
+    buildData.branch = runGit2("git rev-parse --abbrev-ref HEAD", true) || "main";
+    buildData.commitHash = runGit2("git rev-parse --short HEAD", true) || "uncommitted";
     buildData.builtAt = (/* @__PURE__ */ new Date()).toISOString();
-    import_fs2.default.writeFileSync(buildMetaPath, JSON.stringify(buildData, null, 2), "utf8");
+    import_fs3.default.writeFileSync(buildMetaPath, JSON.stringify(buildData, null, 2), "utf8");
     try {
-      runGit("git add src/build-metadata.json", true);
+      runGit2("git add src/build-metadata.json", true);
       logSuccess(`Build metadata updated & staged in current commit: Build #${buildData.buildNumber} (${buildData.commitHash}) on "${buildData.branch}"`);
     } catch (addErr) {
       logSuccess(`Build metadata updated: Build #${buildData.buildNumber} (${buildData.commitHash})`);
@@ -45849,8 +51037,8 @@ async function runGatekeeper() {
     console.log(source_default.gray("  Skipped: src directory not found."));
   }
   logStep(7, "Angular AI Knowledge Base Regression Audit (Gemini 2.5 Flash)");
-  const resolvedIssuesPath = import_path.default.join(process.cwd(), "resolved_issues.md");
-  if (!import_fs2.default.existsSync(resolvedIssuesPath)) {
+  const resolvedIssuesPath = import_path2.default.join(process.cwd(), "resolved_issues.md");
+  if (!import_fs3.default.existsSync(resolvedIssuesPath)) {
     console.log(source_default.gray("  No resolved_issues.md found at repository root. AI audit skipped."));
   } else {
     const apiKey = process.env.GEMINI_API_KEY;
@@ -45858,20 +51046,20 @@ async function runGatekeeper() {
       logWarning("resolved_issues.md detected, but GEMINI_API_KEY is not set in environment or config.");
       console.log(source_default.gray("  To enable AI audits, run FrontendGatekeeperSetup.exe or set GEMINI_API_KEY."));
     } else {
-      const knowledgeBase = import_fs2.default.readFileSync(resolvedIssuesPath, "utf8");
+      const knowledgeBase = import_fs3.default.readFileSync(resolvedIssuesPath, "utf8");
       console.log(source_default.blue("  Reading git diff for current Angular changes..."));
-      let diffOutput = runGit("git diff --cached", true);
+      let diffOutput = runGit2("git diff --cached", true);
       if (!diffOutput || diffOutput.trim() === "") {
-        diffOutput = runGit("git diff HEAD~1", true);
+        diffOutput = runGit2("git diff HEAD~1", true);
       }
       if (!diffOutput || diffOutput.trim() === "") {
-        diffOutput = runGit("git diff origin/main...HEAD", true);
+        diffOutput = runGit2("git diff origin/main...HEAD", true);
       }
       if (!diffOutput || diffOutput.trim() === "") {
-        diffOutput = runGit("git diff origin/master...HEAD", true);
+        diffOutput = runGit2("git diff origin/master...HEAD", true);
       }
       if (!diffOutput || diffOutput.trim() === "") {
-        diffOutput = runGit("git diff HEAD", true);
+        diffOutput = runGit2("git diff HEAD", true);
       }
       if (!diffOutput || diffOutput.trim() === "") {
         console.log(source_default.gray("  No diff detected against baseline. AI audit passed."));
@@ -45936,7 +51124,41 @@ Ensure your response clearly includes either "VERDICT: PASSED" or "VERDICT: FAIL
   console.log(source_default.green.bold("\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\n"));
   process.exit(0);
 }
-runGatekeeper().catch((err) => {
+var args = process.argv.slice(2);
+var firstArg = (args[0] || "").toLowerCase();
+var secondArg = (args[1] || "").toLowerCase();
+var thirdArg = (args[2] || "").toLowerCase();
+async function main() {
+  if (firstArg === "branch-watch-daemon") {
+    const repoPath = args[1] || process.cwd();
+    const targetBranch = args[2] || "main";
+    await runDaemonLoop(repoPath, targetBranch);
+    return;
+  }
+  if (firstArg === "branch-check" || firstArg === "branch" || firstArg === "branch" && secondArg === "check") {
+    const action = firstArg === "branch" && secondArg === "check" ? thirdArg : secondArg;
+    if (action === "--enable" || action === "enable" || action === "-e") {
+      await enableBranchWatcher(process.cwd());
+      return;
+    } else if (action === "--disable" || action === "disable" || action === "-d") {
+      await disableBranchWatcher(process.cwd());
+      return;
+    } else if (action === "--status" || action === "status" || action === "-s" || !action) {
+      await statusBranchWatcher(process.cwd());
+      return;
+    } else {
+      console.log(source_default.yellow(`
+Unknown branch command option: "${action}"`));
+      console.log(source_default.white("Usage:"));
+      console.log(source_default.cyan("  a-gatekeeper branch check --enable     ") + source_default.gray("\u2192 Select branch & start 15-min conflict monitor"));
+      console.log(source_default.cyan("  a-gatekeeper branch check --disable    ") + source_default.gray("\u2192 Stop conflict monitor"));
+      console.log(source_default.cyan("  a-gatekeeper branch check --status     ") + source_default.gray("\u2192 View monitor status & conflicts\n"));
+      return;
+    }
+  }
+  await runGatekeeper();
+}
+main().catch((err) => {
   console.error(source_default.red.bold(`
 Unhandled Gatekeeper Error: ${err.message}`));
   console.error(err);

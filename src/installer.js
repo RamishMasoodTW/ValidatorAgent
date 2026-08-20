@@ -197,14 +197,29 @@ fi
 setlocal
 
 set HOOKS_PATH=${normalizedHooksPath}
+if defined APPDATA (
+  set "ENGINE_EXEC=%APPDATA%\\FrontendGatekeeper\\engine.exe"
+) else (
+  set "ENGINE_EXEC=%USERPROFILE%\\AppData\\Roaming\\FrontendGatekeeper\\engine.exe"
+)
 
 if "%~1"=="" goto help
 if /I "%~1"=="enable" goto enable
 if /I "%~1"=="disable" goto disable
 if /I "%~1"=="status" goto status
 if /I "%~1"=="bypass" goto bypass
+if /I "%~1"=="branch" goto branch
+if /I "%~1"=="branch-check" goto branch
 if /I "%~1"=="help" goto help
 goto help
+
+:branch
+if exist "%ENGINE_EXEC%" (
+    "%ENGINE_EXEC%" %*
+) else (
+    echo [a-gatekeeper] Error: engine.exe not found at %ENGINE_EXEC%
+)
+goto end
 
 :enable
 git config --global core.hooksPath "%HOOKS_PATH%"
@@ -252,12 +267,16 @@ echo   ========================================
 echo.
 echo   Usage:  a-gatekeeper [command]
 echo.
-echo   Commands:
-echo     enable    Enable gatekeeper globally (validates on every commit)
-echo     disable   Disable gatekeeper globally (normal git behavior)
-echo     status    Check if gatekeeper is currently enabled or disabled
-echo     bypass    Show how to skip gatekeeper for a single commit
-echo     help      Show this help message
+echo   Commit Quality Commands:
+echo     enable                   Enable commit gatekeeper globally
+echo     disable                  Disable commit gatekeeper globally
+echo     status                   Check commit gatekeeper status
+echo     bypass                   Show single-commit bypass command
+echo.
+echo   Branch Conflict Monitor Commands:
+echo     branch check --enable    Select target branch ^& start 15-min background conflict watcher
+echo     branch check --disable   Stop background branch conflict watcher
+echo     branch check --status    View background conflict monitor status ^& alerts
 echo.
 goto end
 
@@ -268,7 +287,20 @@ endlocal
   const cliBashContent = `#!/usr/bin/env sh
 HOOKS_PATH="${normalizedHooksPath}"
 
+if [ -n "$APPDATA" ]; then
+  ENGINE_EXEC="$APPDATA/FrontendGatekeeper/engine.exe"
+else
+  ENGINE_EXEC="$USERPROFILE/AppData/Roaming/FrontendGatekeeper/engine.exe"
+fi
+
 case "$1" in
+  branch|branch-check)
+    if [ -f "$ENGINE_EXEC" ]; then
+      "$ENGINE_EXEC" "$@"
+    else
+      echo "[a-gatekeeper] Error: engine.exe not found at $ENGINE_EXEC"
+    fi
+    ;;
   enable)
     git config --global core.hooksPath "$HOOKS_PATH"
     echo ""
@@ -311,12 +343,16 @@ case "$1" in
     echo ""
     echo "  Usage:  a-gatekeeper [command]"
     echo ""
-    echo "  Commands:"
-    echo "    enable    Enable gatekeeper globally (validates on every commit)"
-    echo "    disable   Disable gatekeeper globally (normal git behavior)"
-    echo "    status    Check if gatekeeper is currently enabled or disabled"
-    echo "    bypass    Show how to skip gatekeeper for a single commit"
-    echo "    help      Show this help message"
+    echo "  Commit Quality Commands:"
+    echo "    enable                   Enable commit gatekeeper globally"
+    echo "    disable                  Disable commit gatekeeper globally"
+    echo "    status                   Check commit gatekeeper status"
+    echo "    bypass                   Show single-commit bypass command"
+    echo ""
+    echo "  Branch Conflict Monitor Commands:"
+    echo "    branch check --enable    Select target branch & start 15-min background conflict watcher"
+    echo "    branch check --disable   Stop background branch conflict watcher"
+    echo "    branch check --status    View background conflict monitor status & alerts"
     echo ""
     ;;
 esac
@@ -396,11 +432,15 @@ esac
   console.log(chalk.yellow.bold('│ ') + chalk.bold.white('🎮 EASY TERMINAL COMMANDS                                  ') + chalk.yellow.bold('│'));
   console.log(chalk.yellow.bold('└─────────────────────────────────────────────────────────────┘'));
 
-  console.log(chalk.green.bold('\n  a-gatekeeper enable    ') + chalk.white('→ Enable gatekeeper on all commits'));
-  console.log(chalk.red.bold('  a-gatekeeper disable   ') + chalk.white('→ Disable gatekeeper (normal git)'));
-  console.log(chalk.cyan.bold('  a-gatekeeper status    ') + chalk.white('→ Check if gatekeeper is on or off'));
-  console.log(chalk.magenta.bold('  a-gatekeeper bypass    ') + chalk.white('→ Show how to skip for one commit'));
-  console.log(chalk.yellow.bold('  a-gatekeeper help      ') + chalk.white('→ Show all commands'));
+  console.log(chalk.white.bold('\n  Commit Quality Gatekeeper:'));
+  console.log(chalk.green.bold('    a-gatekeeper enable          ') + chalk.white('→ Enable gatekeeper on all commits'));
+  console.log(chalk.red.bold('    a-gatekeeper disable         ') + chalk.white('→ Disable gatekeeper (normal git)'));
+  console.log(chalk.cyan.bold('    a-gatekeeper status          ') + chalk.white('→ Check commit gatekeeper status'));
+
+  console.log(chalk.white.bold('\n  🌿 15-Minute Background Branch Conflict Monitor:'));
+  console.log(chalk.green.bold('    a-gatekeeper branch check --enable   ') + chalk.white('→ Select target branch & start watcher'));
+  console.log(chalk.red.bold('    a-gatekeeper branch check --disable  ') + chalk.white('→ Stop background watcher'));
+  console.log(chalk.cyan.bold('    a-gatekeeper branch check --status   ') + chalk.white('→ View monitor status & conflicts'));
 
   console.log('\n' + chalk.gray('  (Open a NEW terminal after installation for the command to work.)'));
   console.log(chalk.gray('─'.repeat(63)));

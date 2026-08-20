@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 import fs from 'fs';
 import path from 'path';
 import { execSync } from 'child_process';
@@ -6,6 +5,12 @@ import dotenv from 'dotenv';
 import chalk from 'chalk';
 import { GoogleGenAI } from '@google/genai';
 import { MINI_BANNER } from './ascii-art.js';
+import {
+  enableBranchWatcher,
+  disableBranchWatcher,
+  statusBranchWatcher,
+  runDaemonLoop
+} from './branch-watcher.js';
 
 // Resolve configuration directory (%APPDATA%/FrontendGatekeeper on Windows)
 const appDataDir = process.env.APPDATA 
@@ -14,9 +19,9 @@ const appDataDir = process.env.APPDATA
 
 const envPath = path.join(appDataDir, '.env');
 if (fs.existsSync(envPath)) {
-  dotenv.config({ path: envPath });
+  dotenv.config({ path: envPath, quiet: true });
 }
-dotenv.config(); // Also check local repo .env
+dotenv.config({ quiet: true }); // Also check local repo .env
 
 function logStep(stepNum, title) {
   console.log(`\n${chalk.red.bold(`[Step ${stepNum}]`)} ${chalk.white.bold(title)}`);
@@ -478,8 +483,58 @@ Ensure your response clearly includes either "VERDICT: PASSED" or "VERDICT: FAIL
   process.exit(0);
 }
 
-runGatekeeper().catch(err => {
+// =========================================================================
+// CLI COMMAND ROUTER
+// =========================================================================
+const args = process.argv.slice(2);
+const firstArg = (args[0] || '').toLowerCase();
+const secondArg = (args[1] || '').toLowerCase();
+const thirdArg = (args[2] || '').toLowerCase();
+
+async function main() {
+  // 1. Background Daemon loop (internal execution)
+  if (firstArg === 'branch-watch-daemon') {
+    const repoPath = args[1] || process.cwd();
+    const targetBranch = args[2] || 'main';
+    await runDaemonLoop(repoPath, targetBranch);
+    return;
+  }
+
+  // 2. Branch conflict watcher commands:
+  // a-gatekeeper branch check --enable / a-gatekeeper branch --enable
+  if (
+    firstArg === 'branch-check' ||
+    firstArg === 'branch' ||
+    (firstArg === 'branch' && secondArg === 'check')
+  ) {
+    const action = (firstArg === 'branch' && secondArg === 'check') ? thirdArg : secondArg;
+
+    if (action === '--enable' || action === 'enable' || action === '-e') {
+      await enableBranchWatcher(process.cwd());
+      return;
+    } else if (action === '--disable' || action === 'disable' || action === '-d') {
+      await disableBranchWatcher(process.cwd());
+      return;
+    } else if (action === '--status' || action === 'status' || action === '-s' || !action) {
+      await statusBranchWatcher(process.cwd());
+      return;
+    } else {
+      console.log(chalk.yellow(`\nUnknown branch command option: "${action}"`));
+      console.log(chalk.white('Usage:'));
+      console.log(chalk.cyan('  a-gatekeeper branch check --enable     ') + chalk.gray('→ Select branch & start 15-min conflict monitor'));
+      console.log(chalk.cyan('  a-gatekeeper branch check --disable    ') + chalk.gray('→ Stop conflict monitor'));
+      console.log(chalk.cyan('  a-gatekeeper branch check --status     ') + chalk.gray('→ View monitor status & conflicts\n'));
+      return;
+    }
+  }
+
+  // 3. Default: Git Pre-Commit Validation
+  await runGatekeeper();
+}
+
+main().catch(err => {
   console.error(chalk.red.bold(`\nUnhandled Gatekeeper Error: ${err.message}`));
   console.error(err);
   process.exit(1);
 });
+
