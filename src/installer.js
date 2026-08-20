@@ -7,8 +7,8 @@ import prompts from 'prompts';
 import readline from 'readline';
 import { BANNER } from './ascii-art.js';
 
-const appDataRoot = process.env.APPDATA 
-  ? process.env.APPDATA 
+const appDataRoot = process.env.APPDATA
+  ? process.env.APPDATA
   : path.join(process.env.USERPROFILE || process.env.HOME || '.', 'AppData', 'Roaming');
 
 const targetDir = path.join(appDataRoot, 'FrontendGatekeeper');
@@ -72,26 +72,26 @@ async function runInstaller() {
   console.log(chalk.white('  This installer configures a global Git pre-commit hook for all your Angular repositories,'));
   console.log(chalk.white('  enforcing strict quality, Angular build checks, and Gemini 2.5 Flash AI regression audits.\n'));
 
-  // 1. Prompt for Gemini API Key
+  // 1. Prompt for Gemini API Key (Optional)
   console.log(chalk.yellow('┌─────────────────────────────────────────────────────────────┐'));
-  console.log(chalk.yellow('│ ') + chalk.bold.white('Gemini AI Studio Configuration') + chalk.yellow('                              │'));
+  console.log(chalk.yellow('│ ') + chalk.bold.white('Gemini AI API Configuration (Optional)') + chalk.yellow('                    │'));
   console.log(chalk.yellow('└─────────────────────────────────────────────────────────────┘'));
-  
+
   const response = await prompts({
     type: 'password',
     name: 'apiKey',
-    message: 'Enter your Google AI Studio (Gemini) API Key:',
-    validate: value => value && value.trim().length > 0 ? true : 'API Key is required to enable AI Knowledge Base audits.'
+    message: 'Enter your Google AI (Gemini) API Key (Press Enter to skip):'
   });
 
   const apiKey = response.apiKey ? response.apiKey.trim() : '';
   if (!apiKey) {
-    console.log(chalk.red('\n✖ Setup cancelled: Valid Gemini API Key was not provided.'));
-    await waitPrompt();
-    process.exit(1);
+    console.log(chalk.gray('\nℹ No API Key provided: AI Knowledge Base regression audits will be skipped.'));
+    console.log(chalk.gray('  All other validations (TypeScript, Architecture, Security, Branch Watcher) will work normally.\n'));
+  } else {
+    console.log(chalk.green('\n✔ Gemini AI Key configured successfully.'));
   }
 
-  console.log('\n' + chalk.blue('Starting installation process...'));
+  console.log(chalk.blue('Starting installation process...'));
 
   // 2. Define Installation Directories
   console.log(chalk.gray(`\n• Target Directory: ${targetDir}`));
@@ -109,9 +109,15 @@ async function runInstaller() {
   // 3. Save Configuration (.env)
   const envFilePath = path.join(targetDir, '.env');
   try {
-    const envContent = `# Frontend Gatekeeper Environment Configuration\nGEMINI_API_KEY=${apiKey}\n`;
+    const envContent = apiKey
+      ? `# Frontend Gatekeeper Environment Configuration\nGEMINI_API_KEY=${apiKey}\n`
+      : `# Frontend Gatekeeper Environment Configuration\n# GEMINI_API_KEY=\n`;
     fs.writeFileSync(envFilePath, envContent, 'utf8');
-    console.log(chalk.green('✔ AI credentials saved to configuration file.'));
+    if (apiKey) {
+      console.log(chalk.green('✔ AI credentials saved to configuration file.'));
+    } else {
+      console.log(chalk.green('✔ Configuration file initialized.'));
+    }
   } catch (err) {
     console.log(chalk.red(`✖ Failed to save configuration: ${err.message}`));
     await waitPrompt();
@@ -120,7 +126,7 @@ async function runInstaller() {
 
   // 4. Locate and Copy engine.exe
   const targetEnginePath = path.join(targetDir, 'engine.exe');
-  
+
   const candidateEnginePaths = [
     path.join(path.dirname(process.execPath), 'engine.exe'),
     path.join(process.cwd(), 'dist', 'engine.exe'),

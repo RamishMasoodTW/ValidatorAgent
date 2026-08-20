@@ -5460,21 +5460,21 @@ async function runInstaller() {
   console.log(source_default.white("  This installer configures a global Git pre-commit hook for all your Angular repositories,"));
   console.log(source_default.white("  enforcing strict quality, Angular build checks, and Gemini 2.5 Flash AI regression audits.\n"));
   console.log(source_default.yellow("\u250C\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510"));
-  console.log(source_default.yellow("\u2502 ") + source_default.bold.white("Gemini AI Studio Configuration") + source_default.yellow("                              \u2502"));
+  console.log(source_default.yellow("\u2502 ") + source_default.bold.white("Gemini AI API Configuration (Optional)") + source_default.yellow("                    \u2502"));
   console.log(source_default.yellow("\u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518"));
   const response = await (0, import_prompts.default)({
     type: "password",
     name: "apiKey",
-    message: "Enter your Google AI Studio (Gemini) API Key:",
-    validate: (value) => value && value.trim().length > 0 ? true : "API Key is required to enable AI Knowledge Base audits."
+    message: "Enter your Google AI (Gemini) API Key (Press Enter to skip):"
   });
   const apiKey = response.apiKey ? response.apiKey.trim() : "";
   if (!apiKey) {
-    console.log(source_default.red("\n\u2716 Setup cancelled: Valid Gemini API Key was not provided."));
-    await waitPrompt();
-    process.exit(1);
+    console.log(source_default.gray("\n\u2139 No API Key provided: AI Knowledge Base regression audits will be skipped."));
+    console.log(source_default.gray("  All other validations (TypeScript, Architecture, Security, Branch Watcher) will work normally.\n"));
+  } else {
+    console.log(source_default.green("\n\u2714 Gemini AI Key configured successfully."));
   }
-  console.log("\n" + source_default.blue("Starting installation process..."));
+  console.log(source_default.blue("Starting installation process..."));
   console.log(source_default.gray(`
 \u2022 Target Directory: ${targetDir}`));
   console.log(source_default.gray(`\u2022 Hooks Directory:  ${hooksDir}`));
@@ -5488,11 +5488,17 @@ async function runInstaller() {
   }
   const envFilePath = import_path.default.join(targetDir, ".env");
   try {
-    const envContent = `# Frontend Gatekeeper Environment Configuration
+    const envContent = apiKey ? `# Frontend Gatekeeper Environment Configuration
 GEMINI_API_KEY=${apiKey}
+` : `# Frontend Gatekeeper Environment Configuration
+# GEMINI_API_KEY=
 `;
     import_fs.default.writeFileSync(envFilePath, envContent, "utf8");
-    console.log(source_default.green("\u2714 AI credentials saved to configuration file."));
+    if (apiKey) {
+      console.log(source_default.green("\u2714 AI credentials saved to configuration file."));
+    } else {
+      console.log(source_default.green("\u2714 Configuration file initialized."));
+    }
   } catch (err) {
     console.log(source_default.red(`\u2716 Failed to save configuration: ${err.message}`));
     await waitPrompt();
