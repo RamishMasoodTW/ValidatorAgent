@@ -43,9 +43,9 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
 // node_modules/dotenv/lib/main.js
 var require_main = __commonJS({
   "node_modules/dotenv/lib/main.js"(exports2, module2) {
-    var fs7 = require("fs");
-    var path6 = require("path");
-    var os2 = require("os");
+    var fs8 = require("fs");
+    var path7 = require("path");
+    var os3 = require("os");
     var crypto2 = require("crypto");
     var TIPS = [
       "\u25C8 encrypted .env [www.dotenvx.com]",
@@ -175,7 +175,7 @@ var require_main = __commonJS({
       if (options && options.path && options.path.length > 0) {
         if (Array.isArray(options.path)) {
           for (const filepath of options.path) {
-            if (fs7.existsSync(filepath)) {
+            if (fs8.existsSync(filepath)) {
               possibleVaultPath = filepath.endsWith(".vault") ? filepath : `${filepath}.vault`;
             }
           }
@@ -183,15 +183,15 @@ var require_main = __commonJS({
           possibleVaultPath = options.path.endsWith(".vault") ? options.path : `${options.path}.vault`;
         }
       } else {
-        possibleVaultPath = path6.resolve(process.cwd(), ".env.vault");
+        possibleVaultPath = path7.resolve(process.cwd(), ".env.vault");
       }
-      if (fs7.existsSync(possibleVaultPath)) {
+      if (fs8.existsSync(possibleVaultPath)) {
         return possibleVaultPath;
       }
       return null;
     }
     function _resolveHome(envPath2) {
-      return envPath2[0] === "~" ? path6.join(os2.homedir(), envPath2.slice(1)) : envPath2;
+      return envPath2[0] === "~" ? path7.join(os3.homedir(), envPath2.slice(1)) : envPath2;
     }
     function _configVault(options) {
       const debug = parseBoolean(process.env.DOTENV_CONFIG_DEBUG || options && options.debug);
@@ -208,7 +208,7 @@ var require_main = __commonJS({
       return { parsed };
     }
     function configDotenv(options) {
-      const dotenvPath = path6.resolve(process.cwd(), ".env");
+      const dotenvPath = path7.resolve(process.cwd(), ".env");
       let encoding = "utf8";
       let processEnv = process.env;
       if (options && options.processEnv != null) {
@@ -236,13 +236,13 @@ var require_main = __commonJS({
       }
       let lastError;
       const parsedAll = {};
-      for (const path7 of optionPaths) {
+      for (const path8 of optionPaths) {
         try {
-          const parsed = DotenvModule.parse(fs7.readFileSync(path7, { encoding }));
+          const parsed = DotenvModule.parse(fs8.readFileSync(path8, { encoding }));
           DotenvModule.populate(parsedAll, parsed, options);
         } catch (e2) {
           if (debug) {
-            _debug(`failed to load ${path7} ${e2.message}`);
+            _debug(`failed to load ${path8} ${e2.message}`);
           }
           lastError = e2;
         }
@@ -255,7 +255,7 @@ var require_main = __commonJS({
         const shortPaths = [];
         for (const filePath of optionPaths) {
           try {
-            const relative = path6.relative(process.cwd(), filePath);
+            const relative = path7.relative(process.cwd(), filePath);
             shortPaths.push(relative);
           } catch (e2) {
             if (debug) {
@@ -7160,22 +7160,22 @@ var init_from = __esm({
     init_file();
     init_fetch_blob();
     ({ stat } = import_node_fs.promises);
-    blobFromSync = (path6, type) => fromBlob((0, import_node_fs.statSync)(path6), path6, type);
-    blobFrom = (path6, type) => stat(path6).then((stat3) => fromBlob(stat3, path6, type));
-    fileFrom = (path6, type) => stat(path6).then((stat3) => fromFile(stat3, path6, type));
-    fileFromSync = (path6, type) => fromFile((0, import_node_fs.statSync)(path6), path6, type);
-    fromBlob = (stat3, path6, type = "") => new fetch_blob_default([new BlobDataItem({
-      path: path6,
+    blobFromSync = (path7, type) => fromBlob((0, import_node_fs.statSync)(path7), path7, type);
+    blobFrom = (path7, type) => stat(path7).then((stat3) => fromBlob(stat3, path7, type));
+    fileFrom = (path7, type) => stat(path7).then((stat3) => fromFile(stat3, path7, type));
+    fileFromSync = (path7, type) => fromFile((0, import_node_fs.statSync)(path7), path7, type);
+    fromBlob = (stat3, path7, type = "") => new fetch_blob_default([new BlobDataItem({
+      path: path7,
       size: stat3.size,
       lastModified: stat3.mtimeMs,
       start: 0
     })], { type });
-    fromFile = (stat3, path6, type = "") => new file_default([new BlobDataItem({
-      path: path6,
+    fromFile = (stat3, path7, type = "") => new file_default([new BlobDataItem({
+      path: path7,
       size: stat3.size,
       lastModified: stat3.mtimeMs,
       start: 0
-    })], (0, import_node_path.basename)(path6), { type, lastModified: stat3.mtimeMs });
+    })], (0, import_node_path.basename)(path7), { type, lastModified: stat3.mtimeMs });
     BlobDataItem = class _BlobDataItem {
       #path;
       #start;
@@ -12354,9 +12354,9 @@ var require_util2 = __commonJS({
     exports2.removeUndefinedValuesInObject = removeUndefinedValuesInObject;
     exports2.isValidFile = isValidFile;
     exports2.getWellKnownCertificateConfigFileLocation = getWellKnownCertificateConfigFileLocation;
-    var fs7 = require("fs");
-    var os2 = require("os");
-    var path6 = require("path");
+    var fs8 = require("fs");
+    var os3 = require("os");
+    var path7 = require("path");
     var WELL_KNOWN_CERTIFICATE_CONFIG_FILE = "certificate_config.json";
     var CLOUDSDK_CONFIG_DIRECTORY = "gcloud";
     function snakeToCamel(str) {
@@ -12442,18 +12442,18 @@ var require_util2 = __commonJS({
     }
     async function isValidFile(filePath) {
       try {
-        const stats = await fs7.promises.lstat(filePath);
+        const stats = await fs8.promises.lstat(filePath);
         return stats.isFile();
       } catch (e2) {
         return false;
       }
     }
     function getWellKnownCertificateConfigFileLocation() {
-      const configDir = process.env.CLOUDSDK_CONFIG || (_isWindows() ? path6.join(process.env.APPDATA || "", CLOUDSDK_CONFIG_DIRECTORY) : path6.join(process.env.HOME || "", ".config", CLOUDSDK_CONFIG_DIRECTORY));
-      return path6.join(configDir, WELL_KNOWN_CERTIFICATE_CONFIG_FILE);
+      const configDir = process.env.CLOUDSDK_CONFIG || (_isWindows() ? path7.join(process.env.APPDATA || "", CLOUDSDK_CONFIG_DIRECTORY) : path7.join(process.env.HOME || "", ".config", CLOUDSDK_CONFIG_DIRECTORY));
+      return path7.join(configDir, WELL_KNOWN_CERTIFICATE_CONFIG_FILE);
     }
     function _isWindows() {
-      return os2.platform().startsWith("win");
+      return os3.platform().startsWith("win");
     }
   }
 });
@@ -14396,11 +14396,11 @@ var require_getCredentials = __commonJS({
     "use strict";
     Object.defineProperty(exports2, "__esModule", { value: true });
     exports2.getCredentials = getCredentials;
-    var path6 = require("path");
-    var fs7 = require("fs");
+    var path7 = require("path");
+    var fs8 = require("fs");
     var util_1 = require("util");
     var errorWithCode_1 = require_errorWithCode();
-    var readFile = fs7.readFile ? (0, util_1.promisify)(fs7.readFile) : async () => {
+    var readFile = fs8.readFile ? (0, util_1.promisify)(fs8.readFile) : async () => {
       throw new errorWithCode_1.ErrorWithCode("use key rather than keyFile.", "MISSING_CREDENTIALS");
     };
     var ExtensionFiles;
@@ -14468,7 +14468,7 @@ var require_getCredentials = __commonJS({
        * @returns An instance of a class that implements ICredentialsProvider.
        */
       static create(keyFilePath) {
-        const keyFileExtension = path6.extname(keyFilePath);
+        const keyFileExtension = path7.extname(keyFilePath);
         switch (keyFileExtension) {
           case ExtensionFiles.JSON:
             return new JsonCredentialsProvider(keyFilePath);
@@ -16077,12 +16077,12 @@ var require_filesubjecttokensupplier = __commonJS({
     Object.defineProperty(exports2, "__esModule", { value: true });
     exports2.FileSubjectTokenSupplier = void 0;
     var util_1 = require("util");
-    var fs7 = require("fs");
-    var readFile = (0, util_1.promisify)(fs7.readFile ?? (() => {
+    var fs8 = require("fs");
+    var readFile = (0, util_1.promisify)(fs8.readFile ?? (() => {
     }));
-    var realpath = (0, util_1.promisify)(fs7.realpath ?? (() => {
+    var realpath = (0, util_1.promisify)(fs8.realpath ?? (() => {
     }));
-    var lstat = (0, util_1.promisify)(fs7.lstat ?? (() => {
+    var lstat = (0, util_1.promisify)(fs8.lstat ?? (() => {
     }));
     var FileSubjectTokenSupplier = class {
       filePath;
@@ -16200,7 +16200,7 @@ var require_certificatesubjecttokensupplier = __commonJS({
     Object.defineProperty(exports2, "__esModule", { value: true });
     exports2.CertificateSubjectTokenSupplier = exports2.InvalidConfigurationError = exports2.CertificateSourceUnavailableError = exports2.CERTIFICATE_CONFIGURATION_ENV_VARIABLE = void 0;
     var util_1 = require_util2();
-    var fs7 = require("fs");
+    var fs8 = require("fs");
     var crypto_1 = require("crypto");
     var https2 = require("https");
     exports2.CERTIFICATE_CONFIGURATION_ENV_VARIABLE = "GOOGLE_API_CERTIFICATE_CONFIG";
@@ -16294,7 +16294,7 @@ var require_certificatesubjecttokensupplier = __commonJS({
         const configPath = this.certificateConfigPath;
         let fileContents;
         try {
-          fileContents = await fs7.promises.readFile(configPath, "utf8");
+          fileContents = await fs8.promises.readFile(configPath, "utf8");
         } catch (err) {
           throw new CertificateSourceUnavailableError(`Failed to read certificate config file at: ${configPath}`);
         }
@@ -16319,14 +16319,14 @@ var require_certificatesubjecttokensupplier = __commonJS({
       async #getKeyAndCert(certPath, keyPath) {
         let cert, key;
         try {
-          cert = await fs7.promises.readFile(certPath);
+          cert = await fs8.promises.readFile(certPath);
           new crypto_1.X509Certificate(cert);
         } catch (err) {
           const message = err instanceof Error ? err.message : String(err);
           throw new CertificateSourceUnavailableError(`Failed to read certificate file at ${certPath}: ${message}`);
         }
         try {
-          key = await fs7.promises.readFile(keyPath);
+          key = await fs8.promises.readFile(keyPath);
           (0, crypto_1.createPrivateKey)(key);
         } catch (err) {
           const message = err instanceof Error ? err.message : String(err);
@@ -16345,7 +16345,7 @@ var require_certificatesubjecttokensupplier = __commonJS({
           return JSON.stringify([leafCert.raw.toString("base64")]);
         }
         try {
-          const chainPems = await fs7.promises.readFile(this.trustChainPath, "utf8");
+          const chainPems = await fs8.promises.readFile(this.trustChainPath, "utf8");
           const pemBlocks = chainPems.match(/-----BEGIN CERTIFICATE-----[^-]+-----END CERTIFICATE-----/g) ?? [];
           const chainCerts = pemBlocks.map((pem, index) => {
             try {
@@ -17047,7 +17047,7 @@ var require_pluggable_auth_handler = __commonJS({
     exports2.PluggableAuthHandler = exports2.ExecutableError = void 0;
     var executable_response_1 = require_executable_response();
     var childProcess = require("child_process");
-    var fs7 = require("fs");
+    var fs8 = require("fs");
     var ExecutableError = class extends Error {
       /**
        * The exit code returned by the executable.
@@ -17132,14 +17132,14 @@ var require_pluggable_auth_handler = __commonJS({
         }
         let filePath;
         try {
-          filePath = await fs7.promises.realpath(this.outputFile);
+          filePath = await fs8.promises.realpath(this.outputFile);
         } catch {
           return void 0;
         }
-        if (!(await fs7.promises.lstat(filePath)).isFile()) {
+        if (!(await fs8.promises.lstat(filePath)).isFile()) {
           return void 0;
         }
-        const responseString = await fs7.promises.readFile(filePath, {
+        const responseString = await fs8.promises.readFile(filePath, {
           encoding: "utf8"
         });
         if (responseString === "") {
@@ -17550,7 +17550,7 @@ var require_gdchclient = __commonJS({
     Object.defineProperty(exports2, "__esModule", { value: true });
     exports2.GdchClient = exports2.GDCH_SERVICE_ACCOUNT_TYPE = void 0;
     var crypto2 = require("crypto");
-    var fs7 = require("fs");
+    var fs8 = require("fs");
     var https2 = require("https");
     var oauth2client_1 = require_oauth2client();
     var DEFAULT_LIFETIME_IN_SECONDS = 3600;
@@ -17773,7 +17773,7 @@ var require_gdchclient = __commonJS({
         const currentPath = this.caCertPath;
         this.caAgentPromise = (async () => {
           try {
-            const ca = await fs7.promises.readFile(currentPath);
+            const ca = await fs8.promises.readFile(currentPath);
             return new https2.Agent({ ca });
           } catch (err) {
             if (this.cachedCaCertPath === currentPath) {
@@ -17833,11 +17833,11 @@ var require_googleauth = __commonJS({
     Object.defineProperty(exports2, "__esModule", { value: true });
     exports2.GoogleAuth = exports2.GoogleAuthExceptionMessages = void 0;
     var child_process_1 = require("child_process");
-    var fs7 = require("fs");
+    var fs8 = require("fs");
     var gaxios_1 = require_src2();
     var gcpMetadata = require_src4();
-    var os2 = require("os");
-    var path6 = require("path");
+    var os3 = require("os");
+    var path7 = require("path");
     var crypto_1 = require_crypto3();
     var computeclient_1 = require_computeclient();
     var idtokenclient_1 = require_idtokenclient();
@@ -18122,20 +18122,20 @@ var require_googleauth = __commonJS({
         if (!configDir) {
           if (this._isWindows()) {
             if (process.env["APPDATA"]) {
-              configDir = path6.join(process.env["APPDATA"], "gcloud");
+              configDir = path7.join(process.env["APPDATA"], "gcloud");
             }
           } else {
             const home = process.env["HOME"];
             if (home) {
-              configDir = path6.join(home, ".config", "gcloud");
+              configDir = path7.join(home, ".config", "gcloud");
             }
           }
         }
         if (!configDir) {
           return null;
         }
-        const location = path6.join(configDir, "application_default_credentials.json");
-        if (!fs7.existsSync(location)) {
+        const location = path7.join(configDir, "application_default_credentials.json");
+        if (!fs8.existsSync(location)) {
           return null;
         }
         const client = await this._getApplicationCredentialsFromFilePath(location, options);
@@ -18152,8 +18152,8 @@ var require_googleauth = __commonJS({
           throw new Error("The file path is invalid.");
         }
         try {
-          filePath = fs7.realpathSync(filePath);
-          if (!fs7.lstatSync(filePath).isFile()) {
+          filePath = fs8.realpathSync(filePath);
+          if (!fs8.lstatSync(filePath).isFile()) {
             throw new Error();
           }
         } catch (err) {
@@ -18162,7 +18162,7 @@ var require_googleauth = __commonJS({
           }
           throw err;
         }
-        const readStream = fs7.createReadStream(filePath);
+        const readStream = fs8.createReadStream(filePath);
         return this.fromStream(readStream, options);
       }
       /**
@@ -18345,7 +18345,7 @@ var require_googleauth = __commonJS({
        * @api private
        */
       _isWindows() {
-        const sys = os2.platform();
+        const sys = os3.platform();
         if (sys && sys.length >= 3) {
           if (sys.substring(0, 3).toLowerCase() === "win") {
             return true;
@@ -18489,8 +18489,8 @@ var require_googleauth = __commonJS({
         if (this.jsonContent) {
           return this._cacheClientFromJSON(this.jsonContent, this.clientOptions);
         } else if (this.keyFilename) {
-          const filePath = path6.resolve(this.keyFilename);
-          const stream = fs7.createReadStream(filePath);
+          const filePath = path7.resolve(this.keyFilename);
+          const stream = fs8.createReadStream(filePath);
           return await this.fromStreamAsync(stream, this.clientOptions);
         } else if (this.apiKey) {
           const client = await this.fromAPIKey(this.apiKey, this.clientOptions);
@@ -27557,8 +27557,8 @@ var require_prompts3 = __commonJS({
 });
 
 // src/engine.js
-var import_fs5 = __toESM(require("fs"), 1);
-var import_path4 = __toESM(require("path"), 1);
+var import_fs6 = __toESM(require("fs"), 1);
+var import_path5 = __toESM(require("path"), 1);
 var import_dotenv = __toESM(require_main(), 1);
 
 // node_modules/chalk/source/vendor/ansi-styles/index.js
@@ -32055,7 +32055,7 @@ var Batches = class extends BaseModule {
       params
     );
     const urlParams = body["_url"];
-    const path6 = formatMap("{model}:batchGenerateContent", urlParams);
+    const path7 = formatMap("{model}:batchGenerateContent", urlParams);
     const batch = body["batch"];
     const inputConfig = batch["inputConfig"];
     const requestsWrapper = inputConfig["requests"];
@@ -32076,7 +32076,7 @@ var Batches = class extends BaseModule {
     delete body["config"];
     delete body["_url"];
     delete body["_query"];
-    return { path: path6, body };
+    return { path: path7, body };
   }
   // Helper function to get the first GCS URI
   getGcsUri(src) {
@@ -32132,16 +32132,16 @@ var Batches = class extends BaseModule {
   async createInternal(params) {
     var _a2, _b, _c, _d;
     let response;
-    let path6 = "";
+    let path7 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = createBatchJobParametersToVertex(this.apiClient, params);
-      path6 = formatMap("batchPredictionJobs", body["_url"]);
+      path7 = formatMap("batchPredictionJobs", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path6,
+        path: path7,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
@@ -32156,12 +32156,12 @@ var Batches = class extends BaseModule {
       });
     } else {
       const body = createBatchJobParametersToMldev(this.apiClient, params);
-      path6 = formatMap("{model}:batchGenerateContent", body["_url"]);
+      path7 = formatMap("{model}:batchGenerateContent", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path6,
+        path: path7,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
@@ -32186,18 +32186,18 @@ var Batches = class extends BaseModule {
   async createEmbeddingsInternal(params) {
     var _a2, _b;
     let response;
-    let path6 = "";
+    let path7 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       throw new Error("This method is only supported by the Gemini Developer API.");
     } else {
       const body = createEmbeddingsBatchJobParametersToMldev(this.apiClient, params);
-      path6 = formatMap("{model}:asyncBatchEmbedContent", body["_url"]);
+      path7 = formatMap("{model}:asyncBatchEmbedContent", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path6,
+        path: path7,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
@@ -32226,16 +32226,16 @@ var Batches = class extends BaseModule {
   async get(params) {
     var _a2, _b, _c, _d;
     let response;
-    let path6 = "";
+    let path7 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = getBatchJobParametersToVertex(this.apiClient, params);
-      path6 = formatMap("batchPredictionJobs/{name}", body["_url"]);
+      path7 = formatMap("batchPredictionJobs/{name}", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path6,
+        path: path7,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "GET",
@@ -32250,12 +32250,12 @@ var Batches = class extends BaseModule {
       });
     } else {
       const body = getBatchJobParametersToMldev(this.apiClient, params);
-      path6 = formatMap("batches/{name}", body["_url"]);
+      path7 = formatMap("batches/{name}", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path6,
+        path: path7,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "GET",
@@ -32283,16 +32283,16 @@ var Batches = class extends BaseModule {
    */
   async cancel(params) {
     var _a2, _b, _c, _d;
-    let path6 = "";
+    let path7 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = cancelBatchJobParametersToVertex(this.apiClient, params);
-      path6 = formatMap("batchPredictionJobs/{name}:cancel", body["_url"]);
+      path7 = formatMap("batchPredictionJobs/{name}:cancel", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       await this.apiClient.request({
-        path: path6,
+        path: path7,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
@@ -32301,12 +32301,12 @@ var Batches = class extends BaseModule {
       });
     } else {
       const body = cancelBatchJobParametersToMldev(this.apiClient, params);
-      path6 = formatMap("batches/{name}:cancel", body["_url"]);
+      path7 = formatMap("batches/{name}:cancel", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       await this.apiClient.request({
-        path: path6,
+        path: path7,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
@@ -32318,16 +32318,16 @@ var Batches = class extends BaseModule {
   async listInternal(params) {
     var _a2, _b, _c, _d;
     let response;
-    let path6 = "";
+    let path7 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = listBatchJobsParametersToVertex(params);
-      path6 = formatMap("batchPredictionJobs", body["_url"]);
+      path7 = formatMap("batchPredictionJobs", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path6,
+        path: path7,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "GET",
@@ -32350,12 +32350,12 @@ var Batches = class extends BaseModule {
       });
     } else {
       const body = listBatchJobsParametersToMldev(params);
-      path6 = formatMap("batches", body["_url"]);
+      path7 = formatMap("batches", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path6,
+        path: path7,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "GET",
@@ -32392,16 +32392,16 @@ var Batches = class extends BaseModule {
   async delete(params) {
     var _a2, _b, _c, _d;
     let response;
-    let path6 = "";
+    let path7 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = deleteBatchJobParametersToVertex(this.apiClient, params);
-      path6 = formatMap("batchPredictionJobs/{name}", body["_url"]);
+      path7 = formatMap("batchPredictionJobs/{name}", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path6,
+        path: path7,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "DELETE",
@@ -32422,12 +32422,12 @@ var Batches = class extends BaseModule {
       });
     } else {
       const body = deleteBatchJobParametersToMldev(this.apiClient, params);
-      path6 = formatMap("batches/{name}", body["_url"]);
+      path7 = formatMap("batches/{name}", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path6,
+        path: path7,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "DELETE",
@@ -33373,16 +33373,16 @@ var Caches = class extends BaseModule {
   async create(params) {
     var _a2, _b, _c, _d;
     let response;
-    let path6 = "";
+    let path7 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = createCachedContentParametersToVertex(this.apiClient, params);
-      path6 = formatMap("cachedContents", body["_url"]);
+      path7 = formatMap("cachedContents", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path6,
+        path: path7,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
@@ -33396,12 +33396,12 @@ var Caches = class extends BaseModule {
       });
     } else {
       const body = createCachedContentParametersToMldev(this.apiClient, params);
-      path6 = formatMap("cachedContents", body["_url"]);
+      path7 = formatMap("cachedContents", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path6,
+        path: path7,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
@@ -33429,16 +33429,16 @@ var Caches = class extends BaseModule {
   async get(params) {
     var _a2, _b, _c, _d;
     let response;
-    let path6 = "";
+    let path7 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = getCachedContentParametersToVertex(this.apiClient, params);
-      path6 = formatMap("{name}", body["_url"]);
+      path7 = formatMap("{name}", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path6,
+        path: path7,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "GET",
@@ -33452,12 +33452,12 @@ var Caches = class extends BaseModule {
       });
     } else {
       const body = getCachedContentParametersToMldev(this.apiClient, params);
-      path6 = formatMap("{name}", body["_url"]);
+      path7 = formatMap("{name}", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path6,
+        path: path7,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "GET",
@@ -33485,16 +33485,16 @@ var Caches = class extends BaseModule {
   async delete(params) {
     var _a2, _b, _c, _d;
     let response;
-    let path6 = "";
+    let path7 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = deleteCachedContentParametersToVertex(this.apiClient, params);
-      path6 = formatMap("{name}", body["_url"]);
+      path7 = formatMap("{name}", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path6,
+        path: path7,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "DELETE",
@@ -33517,12 +33517,12 @@ var Caches = class extends BaseModule {
       });
     } else {
       const body = deleteCachedContentParametersToMldev(this.apiClient, params);
-      path6 = formatMap("{name}", body["_url"]);
+      path7 = formatMap("{name}", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path6,
+        path: path7,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "DELETE",
@@ -33562,16 +33562,16 @@ var Caches = class extends BaseModule {
   async update(params) {
     var _a2, _b, _c, _d;
     let response;
-    let path6 = "";
+    let path7 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = updateCachedContentParametersToVertex(this.apiClient, params);
-      path6 = formatMap("{name}", body["_url"]);
+      path7 = formatMap("{name}", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path6,
+        path: path7,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "PATCH",
@@ -33585,12 +33585,12 @@ var Caches = class extends BaseModule {
       });
     } else {
       const body = updateCachedContentParametersToMldev(this.apiClient, params);
-      path6 = formatMap("{name}", body["_url"]);
+      path7 = formatMap("{name}", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path6,
+        path: path7,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "PATCH",
@@ -33607,16 +33607,16 @@ var Caches = class extends BaseModule {
   async listInternal(params) {
     var _a2, _b, _c, _d;
     let response;
-    let path6 = "";
+    let path7 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = listCachedContentsParametersToVertex(params);
-      path6 = formatMap("cachedContents", body["_url"]);
+      path7 = formatMap("cachedContents", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path6,
+        path: path7,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "GET",
@@ -33639,12 +33639,12 @@ var Caches = class extends BaseModule {
       });
     } else {
       const body = listCachedContentsParametersToMldev(params);
-      path6 = formatMap("cachedContents", body["_url"]);
+      path7 = formatMap("cachedContents", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path6,
+        path: path7,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "GET",
@@ -34240,18 +34240,18 @@ var Files = class extends BaseModule {
   async listInternal(params) {
     var _a2, _b;
     let response;
-    let path6 = "";
+    let path7 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       throw new Error("This method is only supported by the Gemini Developer API.");
     } else {
       const body = listFilesParametersToMldev(params);
-      path6 = formatMap("files", body["_url"]);
+      path7 = formatMap("files", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path6,
+        path: path7,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "GET",
@@ -34277,18 +34277,18 @@ var Files = class extends BaseModule {
   async createInternal(params) {
     var _a2, _b;
     let response;
-    let path6 = "";
+    let path7 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       throw new Error("This method is only supported by the Gemini Developer API.");
     } else {
       const body = createFileParametersToMldev(params);
-      path6 = formatMap("upload/v1beta/files", body["_url"]);
+      path7 = formatMap("upload/v1beta/files", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path6,
+        path: path7,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
@@ -34323,18 +34323,18 @@ var Files = class extends BaseModule {
   async get(params) {
     var _a2, _b;
     let response;
-    let path6 = "";
+    let path7 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       throw new Error("This method is only supported by the Gemini Developer API.");
     } else {
       const body = getFileParametersToMldev(params);
-      path6 = formatMap("files/{file}", body["_url"]);
+      path7 = formatMap("files/{file}", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path6,
+        path: path7,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "GET",
@@ -34364,18 +34364,18 @@ var Files = class extends BaseModule {
   async delete(params) {
     var _a2, _b;
     let response;
-    let path6 = "";
+    let path7 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       throw new Error("This method is only supported by the Gemini Developer API.");
     } else {
       const body = deleteFileParametersToMldev(params);
-      path6 = formatMap("files/{file}", body["_url"]);
+      path7 = formatMap("files/{file}", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path6,
+        path: path7,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "DELETE",
@@ -34401,18 +34401,18 @@ var Files = class extends BaseModule {
   async registerFilesInternal(params) {
     var _a2, _b;
     let response;
-    let path6 = "";
+    let path7 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       throw new Error("This method is only supported by the Gemini Developer API.");
     } else {
       const body = internalRegisterFilesParametersToMldev(params);
-      path6 = formatMap("files:register", body["_url"]);
+      path7 = formatMap("files:register", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path6,
+        path: path7,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
@@ -39964,13 +39964,13 @@ var ApiClient = class {
       throw new Error("HTTP options are not correctly set.");
     }
   }
-  constructUrl(path6, httpOptions, prependProjectLocation) {
+  constructUrl(path7, httpOptions, prependProjectLocation) {
     const urlElement = [this.getRequestUrlInternal(httpOptions)];
     if (prependProjectLocation) {
       urlElement.push(this.getBaseResourcePath());
     }
-    if (path6 !== "") {
-      urlElement.push(path6);
+    if (path7 !== "") {
+      urlElement.push(path7);
     }
     const url = new URL(`${urlElement.join("/")}`);
     return url;
@@ -40263,8 +40263,8 @@ var ApiClient = class {
       file: fileToUpload
     };
     const fileName = this.getFileName(file);
-    const path6 = formatMap("upload/v1beta/files", body["_url"]);
-    const uploadUrl = await this.fetchUploadUrl(path6, fileToUpload.sizeBytes, fileToUpload.mimeType, fileName, body, config === null || config === void 0 ? void 0 : config.httpOptions);
+    const path7 = formatMap("upload/v1beta/files", body["_url"]);
+    const uploadUrl = await this.fetchUploadUrl(path7, fileToUpload.sizeBytes, fileToUpload.mimeType, fileName, body, config === null || config === void 0 ? void 0 : config.httpOptions);
     return uploader.upload(file, uploadUrl, this);
   }
   /**
@@ -40288,13 +40288,13 @@ var ApiClient = class {
     if (mimeType === void 0 || mimeType === "") {
       throw new Error("Can not determine mimeType. Please provide mimeType in the config.");
     }
-    const path6 = `upload/v1beta/${fileSearchStoreName}:uploadToFileSearchStore`;
+    const path7 = `upload/v1beta/${fileSearchStoreName}:uploadToFileSearchStore`;
     const fileName = this.getFileName(file);
     const body = {};
     if (config != null) {
       uploadToFileSearchStoreConfigToMldev(config, body);
     }
-    const uploadUrl = await this.fetchUploadUrl(path6, sizeBytes, mimeType, fileName, body, config === null || config === void 0 ? void 0 : config.httpOptions);
+    const uploadUrl = await this.fetchUploadUrl(path7, sizeBytes, mimeType, fileName, body, config === null || config === void 0 ? void 0 : config.httpOptions);
     return uploader.uploadToFileSearchStore(file, uploadUrl, this);
   }
   /**
@@ -40307,7 +40307,7 @@ var ApiClient = class {
     const downloader = this.clientOptions.downloader;
     await downloader.download(params, this);
   }
-  async fetchUploadUrl(path6, sizeBytes, mimeType, fileName, body, configHttpOptions) {
+  async fetchUploadUrl(path7, sizeBytes, mimeType, fileName, body, configHttpOptions) {
     var _a2;
     let httpOptions = {};
     if (configHttpOptions) {
@@ -40320,7 +40320,7 @@ var ApiClient = class {
       };
     }
     const httpResponse = await this.request({
-      path: path6,
+      path: path7,
       body: JSON.stringify(body),
       httpMethod: "POST",
       httpOptions
@@ -41553,16 +41553,16 @@ var Models = class _Models extends BaseModule {
   async generateContentInternal(params) {
     var _a2, _b, _c, _d;
     let response;
-    let path6 = "";
+    let path7 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = generateContentParametersToVertex(this.apiClient, params);
-      path6 = formatMap("{model}:generateContent", body["_url"]);
+      path7 = formatMap("{model}:generateContent", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path6,
+        path: path7,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
@@ -41585,12 +41585,12 @@ var Models = class _Models extends BaseModule {
       });
     } else {
       const body = generateContentParametersToMldev(this.apiClient, params);
-      path6 = formatMap("{model}:generateContent", body["_url"]);
+      path7 = formatMap("{model}:generateContent", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path6,
+        path: path7,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
@@ -41616,17 +41616,17 @@ var Models = class _Models extends BaseModule {
   async generateContentStreamInternal(params) {
     var _a2, _b, _c, _d;
     let response;
-    let path6 = "";
+    let path7 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = generateContentParametersToVertex(this.apiClient, params);
-      path6 = formatMap("{model}:streamGenerateContent?alt=sse", body["_url"]);
+      path7 = formatMap("{model}:streamGenerateContent?alt=sse", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       const apiClient = this.apiClient;
       response = apiClient.requestStream({
-        path: path6,
+        path: path7,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
@@ -41662,13 +41662,13 @@ var Models = class _Models extends BaseModule {
       });
     } else {
       const body = generateContentParametersToMldev(this.apiClient, params);
-      path6 = formatMap("{model}:streamGenerateContent?alt=sse", body["_url"]);
+      path7 = formatMap("{model}:streamGenerateContent?alt=sse", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       const apiClient = this.apiClient;
       response = apiClient.requestStream({
-        path: path6,
+        path: path7,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
@@ -41728,17 +41728,17 @@ var Models = class _Models extends BaseModule {
   async embedContentInternal(params) {
     var _a2, _b, _c, _d;
     let response;
-    let path6 = "";
+    let path7 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = embedContentParametersPrivateToVertex(this.apiClient, params, params);
       const endpointUrl = tIsVertexEmbedContentModel(params.model) ? "{model}:embedContent" : "{model}:predict";
-      path6 = formatMap(endpointUrl, body["_url"]);
+      path7 = formatMap(endpointUrl, body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path6,
+        path: path7,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
@@ -41761,12 +41761,12 @@ var Models = class _Models extends BaseModule {
       });
     } else {
       const body = embedContentParametersPrivateToMldev(this.apiClient, params);
-      path6 = formatMap("{model}:batchEmbedContents", body["_url"]);
+      path7 = formatMap("{model}:batchEmbedContents", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path6,
+        path: path7,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
@@ -41795,16 +41795,16 @@ var Models = class _Models extends BaseModule {
   async generateImagesInternal(params) {
     var _a2, _b, _c, _d;
     let response;
-    let path6 = "";
+    let path7 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = generateImagesParametersToVertex(this.apiClient, params);
-      path6 = formatMap("{model}:predict", body["_url"]);
+      path7 = formatMap("{model}:predict", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path6,
+        path: path7,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
@@ -41827,12 +41827,12 @@ var Models = class _Models extends BaseModule {
       });
     } else {
       const body = generateImagesParametersToMldev(this.apiClient, params);
-      path6 = formatMap("{model}:predict", body["_url"]);
+      path7 = formatMap("{model}:predict", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path6,
+        path: path7,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
@@ -41861,16 +41861,16 @@ var Models = class _Models extends BaseModule {
   async editImageInternal(params) {
     var _a2, _b;
     let response;
-    let path6 = "";
+    let path7 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = editImageParametersInternalToVertex(this.apiClient, params);
-      path6 = formatMap("{model}:predict", body["_url"]);
+      path7 = formatMap("{model}:predict", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path6,
+        path: path7,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
@@ -41901,16 +41901,16 @@ var Models = class _Models extends BaseModule {
   async upscaleImageInternal(params) {
     var _a2, _b;
     let response;
-    let path6 = "";
+    let path7 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = upscaleImageAPIParametersInternalToVertex(this.apiClient, params);
-      path6 = formatMap("{model}:predict", body["_url"]);
+      path7 = formatMap("{model}:predict", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path6,
+        path: path7,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
@@ -41962,16 +41962,16 @@ var Models = class _Models extends BaseModule {
   async recontextImage(params) {
     var _a2, _b;
     let response;
-    let path6 = "";
+    let path7 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = recontextImageParametersToVertex(this.apiClient, params);
-      path6 = formatMap("{model}:predict", body["_url"]);
+      path7 = formatMap("{model}:predict", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path6,
+        path: path7,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
@@ -42013,16 +42013,16 @@ var Models = class _Models extends BaseModule {
   async segmentImage(params) {
     var _a2, _b;
     let response;
-    let path6 = "";
+    let path7 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = segmentImageParametersToVertex(this.apiClient, params);
-      path6 = formatMap("{model}:predict", body["_url"]);
+      path7 = formatMap("{model}:predict", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path6,
+        path: path7,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
@@ -42052,16 +42052,16 @@ var Models = class _Models extends BaseModule {
   async get(params) {
     var _a2, _b, _c, _d;
     let response;
-    let path6 = "";
+    let path7 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = getModelParametersToVertex(this.apiClient, params);
-      path6 = formatMap("{name}", body["_url"]);
+      path7 = formatMap("{name}", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path6,
+        path: path7,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "GET",
@@ -42076,12 +42076,12 @@ var Models = class _Models extends BaseModule {
       });
     } else {
       const body = getModelParametersToMldev(this.apiClient, params);
-      path6 = formatMap("{name}", body["_url"]);
+      path7 = formatMap("{name}", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path6,
+        path: path7,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "GET",
@@ -42099,16 +42099,16 @@ var Models = class _Models extends BaseModule {
   async listInternal(params) {
     var _a2, _b, _c, _d;
     let response;
-    let path6 = "";
+    let path7 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = listModelsParametersToVertex(this.apiClient, params);
-      path6 = formatMap("{models_url}", body["_url"]);
+      path7 = formatMap("{models_url}", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path6,
+        path: path7,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "GET",
@@ -42131,12 +42131,12 @@ var Models = class _Models extends BaseModule {
       });
     } else {
       const body = listModelsParametersToMldev(this.apiClient, params);
-      path6 = formatMap("{models_url}", body["_url"]);
+      path7 = formatMap("{models_url}", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path6,
+        path: path7,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "GET",
@@ -42179,16 +42179,16 @@ var Models = class _Models extends BaseModule {
   async update(params) {
     var _a2, _b, _c, _d;
     let response;
-    let path6 = "";
+    let path7 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = updateModelParametersToVertex(this.apiClient, params);
-      path6 = formatMap("{model}", body["_url"]);
+      path7 = formatMap("{model}", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path6,
+        path: path7,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "PATCH",
@@ -42203,12 +42203,12 @@ var Models = class _Models extends BaseModule {
       });
     } else {
       const body = updateModelParametersToMldev(this.apiClient, params);
-      path6 = formatMap("{name}", body["_url"]);
+      path7 = formatMap("{name}", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path6,
+        path: path7,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "PATCH",
@@ -42237,16 +42237,16 @@ var Models = class _Models extends BaseModule {
   async delete(params) {
     var _a2, _b, _c, _d;
     let response;
-    let path6 = "";
+    let path7 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = deleteModelParametersToVertex(this.apiClient, params);
-      path6 = formatMap("{name}", body["_url"]);
+      path7 = formatMap("{name}", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path6,
+        path: path7,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "DELETE",
@@ -42269,12 +42269,12 @@ var Models = class _Models extends BaseModule {
       });
     } else {
       const body = deleteModelParametersToMldev(this.apiClient, params);
-      path6 = formatMap("{name}", body["_url"]);
+      path7 = formatMap("{name}", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path6,
+        path: path7,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "DELETE",
@@ -42316,16 +42316,16 @@ var Models = class _Models extends BaseModule {
   async countTokens(params) {
     var _a2, _b, _c, _d;
     let response;
-    let path6 = "";
+    let path7 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = countTokensParametersToVertex(this.apiClient, params);
-      path6 = formatMap("{model}:countTokens", body["_url"]);
+      path7 = formatMap("{model}:countTokens", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path6,
+        path: path7,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
@@ -42348,12 +42348,12 @@ var Models = class _Models extends BaseModule {
       });
     } else {
       const body = countTokensParametersToMldev(this.apiClient, params);
-      path6 = formatMap("{model}:countTokens", body["_url"]);
+      path7 = formatMap("{model}:countTokens", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path6,
+        path: path7,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
@@ -42397,16 +42397,16 @@ var Models = class _Models extends BaseModule {
   async computeTokens(params) {
     var _a2, _b;
     let response;
-    let path6 = "";
+    let path7 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = computeTokensParametersToVertex(this.apiClient, params);
-      path6 = formatMap("{model}:computeTokens", body["_url"]);
+      path7 = formatMap("{model}:computeTokens", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path6,
+        path: path7,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
@@ -42437,16 +42437,16 @@ var Models = class _Models extends BaseModule {
   async generateVideosInternal(params) {
     var _a2, _b, _c, _d;
     let response;
-    let path6 = "";
+    let path7 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = generateVideosParametersToVertex(this.apiClient, params);
-      path6 = formatMap("{model}:predictLongRunning", body["_url"]);
+      path7 = formatMap("{model}:predictLongRunning", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path6,
+        path: path7,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
@@ -42463,12 +42463,12 @@ var Models = class _Models extends BaseModule {
       });
     } else {
       const body = generateVideosParametersToMldev(this.apiClient, params);
-      path6 = formatMap("{model}:predictLongRunning", body["_url"]);
+      path7 = formatMap("{model}:predictLongRunning", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path6,
+        path: path7,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
@@ -42573,16 +42573,16 @@ var Operations = class extends BaseModule {
   async getVideosOperationInternal(params) {
     var _a2, _b, _c, _d;
     let response;
-    let path6 = "";
+    let path7 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = getOperationParametersToVertex(params);
-      path6 = formatMap("{operationName}", body["_url"]);
+      path7 = formatMap("{operationName}", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path6,
+        path: path7,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "GET",
@@ -42594,12 +42594,12 @@ var Operations = class extends BaseModule {
       return response;
     } else {
       const body = getOperationParametersToMldev(params);
-      path6 = formatMap("{operationName}", body["_url"]);
+      path7 = formatMap("{operationName}", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path6,
+        path: path7,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "GET",
@@ -42614,16 +42614,16 @@ var Operations = class extends BaseModule {
   async fetchPredictVideosOperationInternal(params) {
     var _a2, _b;
     let response;
-    let path6 = "";
+    let path7 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = fetchPredictOperationParametersToVertex(params);
-      path6 = formatMap("{resourceName}:fetchPredictOperation", body["_url"]);
+      path7 = formatMap("{resourceName}:fetchPredictOperation", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path6,
+        path: path7,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
@@ -43300,20 +43300,20 @@ var Tokens = class extends BaseModule {
   async create(params) {
     var _a2, _b;
     let response;
-    let path6 = "";
+    let path7 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       throw new Error("The client.tokens.create method is only supported by the Gemini Developer API.");
     } else {
       const body = createAuthTokenParametersToMldev(this.apiClient, params);
-      path6 = formatMap("auth_tokens", body["_url"]);
+      path7 = formatMap("auth_tokens", body["_url"]);
       queryParams = body["_query"];
       delete body["config"];
       delete body["_url"];
       delete body["_query"];
       const transformedBody = convertBidiSetupToTokenSetup(body, params.config);
       response = this.apiClient.request({
-        path: path6,
+        path: path7,
         queryParams,
         body: JSON.stringify(transformedBody),
         httpMethod: "POST",
@@ -43423,18 +43423,18 @@ var Documents = class extends BaseModule {
   async get(params) {
     var _a2, _b;
     let response;
-    let path6 = "";
+    let path7 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       throw new Error("This method is only supported by the Gemini Developer API.");
     } else {
       const body = getDocumentParametersToMldev(params);
-      path6 = formatMap("{name}", body["_url"]);
+      path7 = formatMap("{name}", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path6,
+        path: path7,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "GET",
@@ -43455,18 +43455,18 @@ var Documents = class extends BaseModule {
    */
   async delete(params) {
     var _a2, _b;
-    let path6 = "";
+    let path7 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       throw new Error("This method is only supported by the Gemini Developer API.");
     } else {
       const body = deleteDocumentParametersToMldev(params);
-      path6 = formatMap("{name}", body["_url"]);
+      path7 = formatMap("{name}", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       await this.apiClient.request({
-        path: path6,
+        path: path7,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "DELETE",
@@ -43478,18 +43478,18 @@ var Documents = class extends BaseModule {
   async listInternal(params) {
     var _a2, _b;
     let response;
-    let path6 = "";
+    let path7 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       throw new Error("This method is only supported by the Gemini Developer API.");
     } else {
       const body = listDocumentsParametersToMldev(params);
-      path6 = formatMap("{parent}/documents", body["_url"]);
+      path7 = formatMap("{parent}/documents", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path6,
+        path: path7,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "GET",
@@ -43606,18 +43606,18 @@ var FileSearchStores = class extends BaseModule {
   async create(params) {
     var _a2, _b;
     let response;
-    let path6 = "";
+    let path7 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       throw new Error("This method is only supported by the Gemini Developer API.");
     } else {
       const body = createFileSearchStoreParametersToMldev(this.apiClient, params);
-      path6 = formatMap("fileSearchStores", body["_url"]);
+      path7 = formatMap("fileSearchStores", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path6,
+        path: path7,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
@@ -43640,18 +43640,18 @@ var FileSearchStores = class extends BaseModule {
   async get(params) {
     var _a2, _b;
     let response;
-    let path6 = "";
+    let path7 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       throw new Error("This method is only supported by the Gemini Developer API.");
     } else {
       const body = getFileSearchStoreParametersToMldev(params);
-      path6 = formatMap("{name}", body["_url"]);
+      path7 = formatMap("{name}", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path6,
+        path: path7,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "GET",
@@ -43672,18 +43672,18 @@ var FileSearchStores = class extends BaseModule {
    */
   async delete(params) {
     var _a2, _b;
-    let path6 = "";
+    let path7 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       throw new Error("This method is only supported by the Gemini Developer API.");
     } else {
       const body = deleteFileSearchStoreParametersToMldev(params);
-      path6 = formatMap("{name}", body["_url"]);
+      path7 = formatMap("{name}", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       await this.apiClient.request({
-        path: path6,
+        path: path7,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "DELETE",
@@ -43695,18 +43695,18 @@ var FileSearchStores = class extends BaseModule {
   async listInternal(params) {
     var _a2, _b;
     let response;
-    let path6 = "";
+    let path7 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       throw new Error("This method is only supported by the Gemini Developer API.");
     } else {
       const body = listFileSearchStoresParametersToMldev(params);
-      path6 = formatMap("fileSearchStores", body["_url"]);
+      path7 = formatMap("fileSearchStores", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path6,
+        path: path7,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "GET",
@@ -43726,18 +43726,18 @@ var FileSearchStores = class extends BaseModule {
   async uploadToFileSearchStoreInternal(params) {
     var _a2, _b;
     let response;
-    let path6 = "";
+    let path7 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       throw new Error("This method is only supported by the Gemini Developer API.");
     } else {
       const body = uploadToFileSearchStoreParametersToMldev(params);
-      path6 = formatMap("upload/v1beta/{file_search_store_name}:uploadToFileSearchStore", body["_url"]);
+      path7 = formatMap("upload/v1beta/{file_search_store_name}:uploadToFileSearchStore", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path6,
+        path: path7,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
@@ -43765,18 +43765,18 @@ var FileSearchStores = class extends BaseModule {
   async importFile(params) {
     var _a2, _b;
     let response;
-    let path6 = "";
+    let path7 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       throw new Error("This method is only supported by the Gemini Developer API.");
     } else {
       const body = importFileParametersToMldev(params);
-      path6 = formatMap("{file_search_store_name}:importFile", body["_url"]);
+      path7 = formatMap("{file_search_store_name}:importFile", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path6,
+        path: path7,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
@@ -44901,16 +44901,16 @@ var ClientSDK = class {
   }
   _createRequest(context, conf, options) {
     var _a2, _b, _c, _d, _e;
-    const { method, path: path6, query, headers: opHeaders, security } = conf;
+    const { method, path: path7, query, headers: opHeaders, security } = conf;
     const base = (_a2 = conf.baseURL) !== null && _a2 !== void 0 ? _a2 : this._baseURL;
     if (!base) {
       return ERR(new InvalidRequestError("No base URL provided for operation"));
     }
     const baseURL = new URL(base);
     let reqURL;
-    if (path6) {
+    if (path7) {
       baseURL.pathname = baseURL.pathname.replace(/\/+$/, "") + "/";
-      reqURL = new URL(path6, baseURL);
+      reqURL = new URL(path7, baseURL);
       if (!reqURL.search && baseURL.search) {
         reqURL.search = baseURL.search;
       }
@@ -45725,7 +45725,7 @@ async function $do$p(client, body, api_version, options) {
   const pathParams = {
     api_version: encodeSimple("api_version", (_a2 = payload.api_version) !== null && _a2 !== void 0 ? _a2 : client._options.api_version, { explode: false, charEncoding: "percent" })
   };
-  const path6 = pathToFunc("/{api_version}/agents")(pathParams);
+  const path7 = pathToFunc("/{api_version}/agents")(pathParams);
   const headers = new Headers(compactMap({
     "Content-Type": "application/json",
     Accept: "application/json"
@@ -45756,7 +45756,7 @@ async function $do$p(client, body, api_version, options) {
     security: requestSecurity,
     method: "POST",
     baseURL: options === null || options === void 0 ? void 0 : options.server_url,
-    path: path6,
+    path: path7,
     headers,
     body: body$,
     userAgent: client._options.user_agent,
@@ -45800,7 +45800,7 @@ async function $do$o(client, id, api_version, options) {
       charEncoding: "percent"
     })
   };
-  const path6 = pathToFunc("/{api_version}/agents/{id}")(pathParams);
+  const path7 = pathToFunc("/{api_version}/agents/{id}")(pathParams);
   const headers = new Headers(compactMap({
     Accept: "application/json"
   }));
@@ -45830,7 +45830,7 @@ async function $do$o(client, id, api_version, options) {
     security: requestSecurity,
     method: "DELETE",
     baseURL: options === null || options === void 0 ? void 0 : options.server_url,
-    path: path6,
+    path: path7,
     headers,
     body,
     userAgent: client._options.user_agent,
@@ -45874,7 +45874,7 @@ async function $do$n(client, id, api_version, options) {
       charEncoding: "percent"
     })
   };
-  const path6 = pathToFunc("/{api_version}/agents/{id}")(pathParams);
+  const path7 = pathToFunc("/{api_version}/agents/{id}")(pathParams);
   const headers = new Headers(compactMap({
     Accept: "application/json"
   }));
@@ -45904,7 +45904,7 @@ async function $do$n(client, id, api_version, options) {
     security: requestSecurity,
     method: "GET",
     baseURL: options === null || options === void 0 ? void 0 : options.server_url,
-    path: path6,
+    path: path7,
     headers,
     body,
     userAgent: client._options.user_agent,
@@ -45946,7 +45946,7 @@ async function $do$m(client, api_version, page_size, page_token, parent, options
   const pathParams = {
     api_version: encodeSimple("api_version", (_a2 = payload === null || payload === void 0 ? void 0 : payload.api_version) !== null && _a2 !== void 0 ? _a2 : client._options.api_version, { explode: false, charEncoding: "percent" })
   };
-  const path6 = pathToFunc("/{api_version}/agents")(pathParams);
+  const path7 = pathToFunc("/{api_version}/agents")(pathParams);
   const query = encodeFormQuery({
     "page_size": payload === null || payload === void 0 ? void 0 : payload.page_size,
     "page_token": payload === null || payload === void 0 ? void 0 : payload.page_token,
@@ -45981,7 +45981,7 @@ async function $do$m(client, api_version, page_size, page_token, parent, options
     security: requestSecurity,
     method: "GET",
     baseURL: options === null || options === void 0 ? void 0 : options.server_url,
-    path: path6,
+    path: path7,
     headers,
     query,
     body,
@@ -46049,7 +46049,7 @@ async function $do$l(client, body, api_version, options) {
   const pathParams = {
     api_version: encodeSimple("api_version", (_a2 = payload.api_version) !== null && _a2 !== void 0 ? _a2 : client._options.api_version, { explode: false, charEncoding: "percent" })
   };
-  const path6 = pathToFunc("/{api_version}/environments")(pathParams);
+  const path7 = pathToFunc("/{api_version}/environments")(pathParams);
   const headers = new Headers(compactMap({
     "Content-Type": "application/json",
     Accept: "application/json"
@@ -46080,7 +46080,7 @@ async function $do$l(client, body, api_version, options) {
     security: requestSecurity,
     method: "POST",
     baseURL: options === null || options === void 0 ? void 0 : options.server_url,
-    path: path6,
+    path: path7,
     headers,
     body: body$,
     userAgent: client._options.user_agent,
@@ -46124,7 +46124,7 @@ async function $do$k(client, id, api_version, options) {
       charEncoding: "percent"
     })
   };
-  const path6 = pathToFunc("/{api_version}/environments/{id}")(pathParams);
+  const path7 = pathToFunc("/{api_version}/environments/{id}")(pathParams);
   const headers = new Headers(compactMap({
     Accept: "application/json"
   }));
@@ -46154,7 +46154,7 @@ async function $do$k(client, id, api_version, options) {
     security: requestSecurity,
     method: "DELETE",
     baseURL: options === null || options === void 0 ? void 0 : options.server_url,
-    path: path6,
+    path: path7,
     headers,
     body,
     userAgent: client._options.user_agent,
@@ -46198,7 +46198,7 @@ async function $do$j(client, id, api_version, options) {
       charEncoding: "percent"
     })
   };
-  const path6 = pathToFunc("/{api_version}/environments/{id}")(pathParams);
+  const path7 = pathToFunc("/{api_version}/environments/{id}")(pathParams);
   const headers = new Headers(compactMap({
     Accept: "application/json"
   }));
@@ -46228,7 +46228,7 @@ async function $do$j(client, id, api_version, options) {
     security: requestSecurity,
     method: "GET",
     baseURL: options === null || options === void 0 ? void 0 : options.server_url,
-    path: path6,
+    path: path7,
     headers,
     body,
     userAgent: client._options.user_agent,
@@ -46269,7 +46269,7 @@ async function $do$i(client, api_version, page_size, page_token, options) {
   const pathParams = {
     api_version: encodeSimple("api_version", (_a2 = payload === null || payload === void 0 ? void 0 : payload.api_version) !== null && _a2 !== void 0 ? _a2 : client._options.api_version, { explode: false, charEncoding: "percent" })
   };
-  const path6 = pathToFunc("/{api_version}/environments")(pathParams);
+  const path7 = pathToFunc("/{api_version}/environments")(pathParams);
   const query = encodeFormQuery({
     "page_size": payload === null || payload === void 0 ? void 0 : payload.page_size,
     "page_token": payload === null || payload === void 0 ? void 0 : payload.page_token
@@ -46303,7 +46303,7 @@ async function $do$i(client, api_version, page_size, page_token, options) {
     security: requestSecurity,
     method: "GET",
     baseURL: options === null || options === void 0 ? void 0 : options.server_url,
-    path: path6,
+    path: path7,
     headers,
     query,
     body,
@@ -46454,7 +46454,7 @@ async function $do$h(client, id, api_version, options) {
       charEncoding: "percent"
     })
   };
-  const path6 = pathToFunc("/{api_version}/interactions/{id}/cancel")(pathParams);
+  const path7 = pathToFunc("/{api_version}/interactions/{id}/cancel")(pathParams);
   const headers = new Headers(compactMap({
     Accept: "application/json"
   }));
@@ -46484,7 +46484,7 @@ async function $do$h(client, id, api_version, options) {
     security: requestSecurity,
     method: "POST",
     baseURL: options === null || options === void 0 ? void 0 : options.server_url,
-    path: path6,
+    path: path7,
     headers,
     body,
     userAgent: client._options.user_agent,
@@ -46527,7 +46527,7 @@ async function $do$g(client, body, api_version, options) {
   const pathParams = {
     api_version: encodeSimple("api_version", (_a2 = payload.api_version) !== null && _a2 !== void 0 ? _a2 : client._options.api_version, { explode: false, charEncoding: "percent" })
   };
-  const path6 = pathToFunc("/{api_version}/interactions")(pathParams);
+  const path7 = pathToFunc("/{api_version}/interactions")(pathParams);
   const headers = new Headers(compactMap({
     "Content-Type": "application/json",
     Accept: ((_b = input === null || input === void 0 ? void 0 : input.body) === null || _b === void 0 ? void 0 : _b.stream) ? "text/event-stream" : "application/json"
@@ -46558,7 +46558,7 @@ async function $do$g(client, body, api_version, options) {
     security: requestSecurity,
     method: "POST",
     baseURL: options === null || options === void 0 ? void 0 : options.server_url,
-    path: path6,
+    path: path7,
     headers,
     body: body$,
     userAgent: client._options.user_agent,
@@ -46608,7 +46608,7 @@ async function $do$f(client, id, api_version, options) {
       charEncoding: "percent"
     })
   };
-  const path6 = pathToFunc("/{api_version}/interactions/{id}")(pathParams);
+  const path7 = pathToFunc("/{api_version}/interactions/{id}")(pathParams);
   const headers = new Headers(compactMap({
     Accept: "application/json"
   }));
@@ -46638,7 +46638,7 @@ async function $do$f(client, id, api_version, options) {
     security: requestSecurity,
     method: "DELETE",
     baseURL: options === null || options === void 0 ? void 0 : options.server_url,
-    path: path6,
+    path: path7,
     headers,
     body,
     userAgent: client._options.user_agent,
@@ -46688,7 +46688,7 @@ async function $do$e(client, id, stream, last_event_id, include_input, api_versi
       charEncoding: "percent"
     })
   };
-  const path6 = pathToFunc("/{api_version}/interactions/{id}")(pathParams);
+  const path7 = pathToFunc("/{api_version}/interactions/{id}")(pathParams);
   const query = encodeFormQuery({
     "include_input": payload.include_input,
     "last_event_id": payload.last_event_id,
@@ -46723,7 +46723,7 @@ async function $do$e(client, id, stream, last_event_id, include_input, api_versi
     security: requestSecurity,
     method: "GET",
     baseURL: options === null || options === void 0 ? void 0 : options.server_url,
-    path: path6,
+    path: path7,
     headers,
     query,
     body,
@@ -46797,7 +46797,7 @@ async function $do$d(client, body, api_version, options) {
   const pathParams = {
     api_version: encodeSimple("api_version", (_a2 = payload.api_version) !== null && _a2 !== void 0 ? _a2 : client._options.api_version, { explode: false, charEncoding: "percent" })
   };
-  const path6 = pathToFunc("/{api_version}/triggers")(pathParams);
+  const path7 = pathToFunc("/{api_version}/triggers")(pathParams);
   const headers = new Headers(compactMap({
     "Content-Type": "application/json",
     Accept: "application/json"
@@ -46828,7 +46828,7 @@ async function $do$d(client, body, api_version, options) {
     security: requestSecurity,
     method: "POST",
     baseURL: options === null || options === void 0 ? void 0 : options.server_url,
-    path: path6,
+    path: path7,
     headers,
     body: body$,
     userAgent: client._options.user_agent,
@@ -46872,7 +46872,7 @@ async function $do$c(client, id, api_version, options) {
       charEncoding: "percent"
     })
   };
-  const path6 = pathToFunc("/{api_version}/triggers/{id}")(pathParams);
+  const path7 = pathToFunc("/{api_version}/triggers/{id}")(pathParams);
   const headers = new Headers(compactMap({
     Accept: "application/json"
   }));
@@ -46902,7 +46902,7 @@ async function $do$c(client, id, api_version, options) {
     security: requestSecurity,
     method: "DELETE",
     baseURL: options === null || options === void 0 ? void 0 : options.server_url,
-    path: path6,
+    path: path7,
     headers,
     body,
     userAgent: client._options.user_agent,
@@ -46946,7 +46946,7 @@ async function $do$b(client, id, api_version, options) {
       charEncoding: "percent"
     })
   };
-  const path6 = pathToFunc("/{api_version}/triggers/{id}")(pathParams);
+  const path7 = pathToFunc("/{api_version}/triggers/{id}")(pathParams);
   const headers = new Headers(compactMap({
     Accept: "application/json"
   }));
@@ -46976,7 +46976,7 @@ async function $do$b(client, id, api_version, options) {
     security: requestSecurity,
     method: "GET",
     baseURL: options === null || options === void 0 ? void 0 : options.server_url,
-    path: path6,
+    path: path7,
     headers,
     body,
     userAgent: client._options.user_agent,
@@ -47022,7 +47022,7 @@ async function $do$a(client, trigger_id, api_version, page_size, page_token, opt
       charEncoding: "percent"
     })
   };
-  const path6 = pathToFunc("/{api_version}/triggers/{trigger_id}/executions")(pathParams);
+  const path7 = pathToFunc("/{api_version}/triggers/{trigger_id}/executions")(pathParams);
   const query = encodeFormQuery({
     "page_size": payload.page_size,
     "page_token": payload.page_token
@@ -47056,7 +47056,7 @@ async function $do$a(client, trigger_id, api_version, page_size, page_token, opt
     security: requestSecurity,
     method: "GET",
     baseURL: options === null || options === void 0 ? void 0 : options.server_url,
-    path: path6,
+    path: path7,
     headers,
     query,
     body,
@@ -47099,7 +47099,7 @@ async function $do$9(client, api_version, filter, page_size, page_token, options
   const pathParams = {
     api_version: encodeSimple("api_version", (_a2 = payload === null || payload === void 0 ? void 0 : payload.api_version) !== null && _a2 !== void 0 ? _a2 : client._options.api_version, { explode: false, charEncoding: "percent" })
   };
-  const path6 = pathToFunc("/{api_version}/triggers")(pathParams);
+  const path7 = pathToFunc("/{api_version}/triggers")(pathParams);
   const query = encodeFormQuery({
     "filter": payload === null || payload === void 0 ? void 0 : payload.filter,
     "page_size": payload === null || payload === void 0 ? void 0 : payload.page_size,
@@ -47134,7 +47134,7 @@ async function $do$9(client, api_version, filter, page_size, page_token, options
     security: requestSecurity,
     method: "GET",
     baseURL: options === null || options === void 0 ? void 0 : options.server_url,
-    path: path6,
+    path: path7,
     headers,
     query,
     body,
@@ -47179,7 +47179,7 @@ async function $do$8(client, trigger_id, api_version, options) {
       charEncoding: "percent"
     })
   };
-  const path6 = pathToFunc("/{api_version}/triggers/{trigger_id}/executions")(pathParams);
+  const path7 = pathToFunc("/{api_version}/triggers/{trigger_id}/executions")(pathParams);
   const headers = new Headers(compactMap({
     Accept: "application/json"
   }));
@@ -47209,7 +47209,7 @@ async function $do$8(client, trigger_id, api_version, options) {
     security: requestSecurity,
     method: "POST",
     baseURL: options === null || options === void 0 ? void 0 : options.server_url,
-    path: path6,
+    path: path7,
     headers,
     body,
     userAgent: client._options.user_agent,
@@ -47254,7 +47254,7 @@ async function $do$7(client, id, body, api_version, options) {
       charEncoding: "percent"
     })
   };
-  const path6 = pathToFunc("/{api_version}/triggers/{id}")(pathParams);
+  const path7 = pathToFunc("/{api_version}/triggers/{id}")(pathParams);
   const headers = new Headers(compactMap({
     "Content-Type": "application/json",
     Accept: "application/json"
@@ -47285,7 +47285,7 @@ async function $do$7(client, id, body, api_version, options) {
     security: requestSecurity,
     method: "PATCH",
     baseURL: options === null || options === void 0 ? void 0 : options.server_url,
-    path: path6,
+    path: path7,
     headers,
     body: body$,
     userAgent: client._options.user_agent,
@@ -47371,7 +47371,7 @@ async function $do$6(client, body, api_version, options) {
   const pathParams = {
     api_version: encodeSimple("api_version", (_a2 = payload.api_version) !== null && _a2 !== void 0 ? _a2 : client._options.api_version, { explode: false, charEncoding: "percent" })
   };
-  const path6 = pathToFunc("/{api_version}/webhooks")(pathParams);
+  const path7 = pathToFunc("/{api_version}/webhooks")(pathParams);
   const headers = new Headers(compactMap({
     "Content-Type": "application/json",
     Accept: "application/json"
@@ -47402,7 +47402,7 @@ async function $do$6(client, body, api_version, options) {
     security: requestSecurity,
     method: "POST",
     baseURL: options === null || options === void 0 ? void 0 : options.server_url,
-    path: path6,
+    path: path7,
     headers,
     body: body$,
     userAgent: client._options.user_agent,
@@ -47446,7 +47446,7 @@ async function $do$5(client, id, api_version, options) {
       charEncoding: "percent"
     })
   };
-  const path6 = pathToFunc("/{api_version}/webhooks/{id}")(pathParams);
+  const path7 = pathToFunc("/{api_version}/webhooks/{id}")(pathParams);
   const headers = new Headers(compactMap({
     Accept: "application/json"
   }));
@@ -47476,7 +47476,7 @@ async function $do$5(client, id, api_version, options) {
     security: requestSecurity,
     method: "DELETE",
     baseURL: options === null || options === void 0 ? void 0 : options.server_url,
-    path: path6,
+    path: path7,
     headers,
     body,
     userAgent: client._options.user_agent,
@@ -47520,7 +47520,7 @@ async function $do$4(client, id, api_version, options) {
       charEncoding: "percent"
     })
   };
-  const path6 = pathToFunc("/{api_version}/webhooks/{id}")(pathParams);
+  const path7 = pathToFunc("/{api_version}/webhooks/{id}")(pathParams);
   const headers = new Headers(compactMap({
     Accept: "application/json"
   }));
@@ -47550,7 +47550,7 @@ async function $do$4(client, id, api_version, options) {
     security: requestSecurity,
     method: "GET",
     baseURL: options === null || options === void 0 ? void 0 : options.server_url,
-    path: path6,
+    path: path7,
     headers,
     body,
     userAgent: client._options.user_agent,
@@ -47591,7 +47591,7 @@ async function $do$3(client, api_version, page_size, page_token, options) {
   const pathParams = {
     api_version: encodeSimple("api_version", (_a2 = payload === null || payload === void 0 ? void 0 : payload.api_version) !== null && _a2 !== void 0 ? _a2 : client._options.api_version, { explode: false, charEncoding: "percent" })
   };
-  const path6 = pathToFunc("/{api_version}/webhooks")(pathParams);
+  const path7 = pathToFunc("/{api_version}/webhooks")(pathParams);
   const query = encodeFormQuery({
     "page_size": payload === null || payload === void 0 ? void 0 : payload.page_size,
     "page_token": payload === null || payload === void 0 ? void 0 : payload.page_token
@@ -47625,7 +47625,7 @@ async function $do$3(client, api_version, page_size, page_token, options) {
     security: requestSecurity,
     method: "GET",
     baseURL: options === null || options === void 0 ? void 0 : options.server_url,
-    path: path6,
+    path: path7,
     headers,
     query,
     body,
@@ -47671,7 +47671,7 @@ async function $do$2(client, id, api_version, body, options) {
       charEncoding: "percent"
     })
   };
-  const path6 = pathToFunc("/{api_version}/webhooks/{id}:ping")(pathParams);
+  const path7 = pathToFunc("/{api_version}/webhooks/{id}:ping")(pathParams);
   const headers = new Headers(compactMap({
     "Content-Type": "application/json",
     Accept: "application/json"
@@ -47702,7 +47702,7 @@ async function $do$2(client, id, api_version, body, options) {
     security: requestSecurity,
     method: "POST",
     baseURL: options === null || options === void 0 ? void 0 : options.server_url,
-    path: path6,
+    path: path7,
     headers,
     body: body$,
     userAgent: client._options.user_agent,
@@ -47747,7 +47747,7 @@ async function $do$1(client, id, api_version, body, options) {
       charEncoding: "percent"
     })
   };
-  const path6 = pathToFunc("/{api_version}/webhooks/{id}:rotateSigningSecret")(pathParams);
+  const path7 = pathToFunc("/{api_version}/webhooks/{id}:rotateSigningSecret")(pathParams);
   const headers = new Headers(compactMap({
     "Content-Type": "application/json",
     Accept: "application/json"
@@ -47778,7 +47778,7 @@ async function $do$1(client, id, api_version, body, options) {
     security: requestSecurity,
     method: "POST",
     baseURL: options === null || options === void 0 ? void 0 : options.server_url,
-    path: path6,
+    path: path7,
     headers,
     body: body$,
     userAgent: client._options.user_agent,
@@ -47824,7 +47824,7 @@ async function $do(client, id, api_version, update_mask, body, options) {
       charEncoding: "percent"
     })
   };
-  const path6 = pathToFunc("/{api_version}/webhooks/{id}")(pathParams);
+  const path7 = pathToFunc("/{api_version}/webhooks/{id}")(pathParams);
   const query = encodeFormQuery({
     "update_mask": payload.update_mask
   });
@@ -47858,7 +47858,7 @@ async function $do(client, id, api_version, update_mask, body, options) {
     security: requestSecurity,
     method: "PATCH",
     baseURL: options === null || options === void 0 ? void 0 : options.server_url,
-    path: path6,
+    path: path7,
     headers,
     query,
     body: body$,
@@ -49975,16 +49975,16 @@ var Tunings = class extends BaseModule {
   async getInternal(params) {
     var _a2, _b, _c, _d;
     let response;
-    let path6 = "";
+    let path7 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = getTuningJobParametersToVertex(params);
-      path6 = formatMap("{name}", body["_url"]);
+      path7 = formatMap("{name}", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path6,
+        path: path7,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "GET",
@@ -50005,12 +50005,12 @@ var Tunings = class extends BaseModule {
       });
     } else {
       const body = getTuningJobParametersToMldev(params);
-      path6 = formatMap("{name}", body["_url"]);
+      path7 = formatMap("{name}", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path6,
+        path: path7,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "GET",
@@ -50034,16 +50034,16 @@ var Tunings = class extends BaseModule {
   async listInternal(params) {
     var _a2, _b;
     let response;
-    let path6 = "";
+    let path7 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = listTuningJobsParametersToVertex(params);
-      path6 = formatMap("tuningJobs", body["_url"]);
+      path7 = formatMap("tuningJobs", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path6,
+        path: path7,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "GET",
@@ -50082,16 +50082,16 @@ var Tunings = class extends BaseModule {
   async cancel(params) {
     var _a2, _b, _c, _d;
     let response;
-    let path6 = "";
+    let path7 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = cancelTuningJobParametersToVertex(params);
-      path6 = formatMap("{name}:cancel", body["_url"]);
+      path7 = formatMap("{name}:cancel", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path6,
+        path: path7,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
@@ -50114,12 +50114,12 @@ var Tunings = class extends BaseModule {
       });
     } else {
       const body = cancelTuningJobParametersToMldev(params);
-      path6 = formatMap("{name}:cancel", body["_url"]);
+      path7 = formatMap("{name}:cancel", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path6,
+        path: path7,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
@@ -50145,16 +50145,16 @@ var Tunings = class extends BaseModule {
   async tuneInternal(params) {
     var _a2, _b;
     let response;
-    let path6 = "";
+    let path7 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = createTuningJobParametersPrivateToVertex(params, params);
-      path6 = formatMap("tuningJobs", body["_url"]);
+      path7 = formatMap("tuningJobs", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path6,
+        path: path7,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
@@ -50180,18 +50180,18 @@ var Tunings = class extends BaseModule {
   async tuneMldevInternal(params) {
     var _a2, _b;
     let response;
-    let path6 = "";
+    let path7 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       throw new Error("This method is only supported by the Gemini Developer API.");
     } else {
       const body = createTuningJobParametersPrivateToMldev(params);
-      path6 = formatMap("tunedModels", body["_url"]);
+      path7 = formatMap("tunedModels", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path6,
+        path: path7,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
@@ -50215,16 +50215,16 @@ var Tunings = class extends BaseModule {
   async validateReward(params) {
     var _a2, _b;
     let response;
-    let path6 = "";
+    let path7 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = validateRewardParametersToVertex(params);
-      path6 = formatMap("{parent}/tuningJobs:validateReinforcementTuningReward", body["_url"]);
+      path7 = formatMap("{parent}/tuningJobs:validateReinforcementTuningReward", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path6,
+        path: path7,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
@@ -50759,54 +50759,62 @@ ${diffOutput.slice(0, 25e3)}
    - Provide a concise list of specific violations with line numbers or code snippets from the diff, explaining why it violates the rule and how to fix it in Angular.
 4. If the diff is clean and adheres to all documented best practices:
    - Output: "VERDICT: PASSED"
-   - Provide a 1-2 sentence positive summary.
+   - Provide a concise, professional summary and Junior Developer mentorship tips if relevant.
 
 Ensure your response clearly includes either "VERDICT: PASSED" or "VERDICT: FAILED" in capital letters.
 `;
 }
 async function runAiKnowledgeBaseAudit(apiKey, cwd = process.cwd()) {
-  logStep(7, "Angular AI Knowledge Base Regression Audit (Gemini 2.5 Flash)");
+  logStep(8, "Angular AI Knowledge Base Regression Audit (Gemini 3.6 Flash)");
   const resolvedIssuesPath = import_path2.default.join(cwd, "resolved_issues.md");
   if (!import_fs3.default.existsSync(resolvedIssuesPath)) {
     console.log(source_default.gray("  No resolved_issues.md found at repository root. AI audit skipped."));
-    return;
+    return { passed: true, skipped: true, report: "No resolved_issues.md found at repository root. AI audit skipped." };
   }
   if (!apiKey) {
     logWarning("resolved_issues.md detected, but GEMINI_API_KEY is not set in environment or config.");
     console.log(source_default.gray("  To enable AI audits, run AngularGatekeeperSetup.exe or set GEMINI_API_KEY."));
-    return;
+    return { passed: true, skipped: true, report: "GEMINI_API_KEY not configured. AI audit skipped." };
   }
   const knowledgeBase = import_fs3.default.readFileSync(resolvedIssuesPath, "utf8");
   console.log(source_default.blue("  Reading git diff for current Angular changes..."));
   const diffOutput = getDiff(cwd);
   if (!diffOutput || diffOutput.trim() === "") {
     console.log(source_default.gray("  No diff detected against baseline. AI audit passed."));
-    return;
+    return { passed: true, skipped: true, report: "No active git diff detected against baseline." };
   }
-  console.log(source_default.cyan("  Consulting Gemini 2.5 Flash to audit Angular code against known issues..."));
-  try {
-    const ai = new GoogleGenAI2({ apiKey });
-    const prompt = buildGeminiAuditPrompt(knowledgeBase, diffOutput);
-    const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
-      contents: prompt
-    });
-    const resultText = response.text || "";
-    console.log("\n" + source_default.gray("\u2500".repeat(60)));
-    console.log(source_default.bold("AI Audit Report:"));
-    console.log(resultText);
-    console.log(source_default.gray("\u2500".repeat(60)) + "\n");
-    if (resultText.includes("VERDICT: FAILED")) {
-      logError("AI Gatekeeper detected regressions or violations of resolved_issues.md!");
-      console.log(source_default.red("  Commit/Push rejected: Please address the AI audit findings above.\n"));
-      process.exit(1);
-    } else {
-      logSuccess("AI Knowledge Base audit PASSED. No known regressions detected.");
+  console.log(source_default.cyan("  Consulting Gemini 3.6 Flash to audit Angular code against known issues..."));
+  const candidateModels = ["gemini-3.6-flash", "gemini-3.5-flash", "gemini-flash-latest"];
+  let lastError = null;
+  for (const modelName of candidateModels) {
+    try {
+      const ai = new GoogleGenAI2({ apiKey });
+      const prompt = buildGeminiAuditPrompt(knowledgeBase, diffOutput);
+      const response = await ai.models.generateContent({
+        model: modelName,
+        contents: prompt
+      });
+      const resultText = response.text || "";
+      console.log("\n" + source_default.gray("\u2500".repeat(60)));
+      console.log(source_default.bold(`AI Audit Report [${modelName}]:`));
+      console.log(resultText);
+      console.log(source_default.gray("\u2500".repeat(60)) + "\n");
+      if (resultText.includes("VERDICT: FAILED")) {
+        logError("AI Gatekeeper detected regressions or violations of resolved_issues.md!");
+        console.log(source_default.red("  Commit/Push rejected: Please address the AI audit findings above.\n"));
+        return { passed: false, skipped: false, report: resultText };
+      } else {
+        logSuccess(`AI Knowledge Base audit PASSED using ${modelName}. No known regressions detected.`);
+        return { passed: true, skipped: false, report: resultText };
+      }
+    } catch (apiErr) {
+      lastError = apiErr;
+      continue;
     }
-  } catch (apiErr) {
-    logError(`AI Audit call error: ${apiErr.message || apiErr}`);
-    console.log(source_default.yellow("  Allowing commit/push with warning due to AI service error."));
   }
+  logError(`AI Audit call error: ${lastError?.message || lastError}`);
+  console.log(source_default.yellow("  Allowing commit/push with warning due to AI service error."));
+  return { passed: true, skipped: true, report: `AI Service Warning: ${lastError?.message || lastError}` };
 }
 
 // src/branch-watcher.js
@@ -51276,10 +51284,384 @@ Please pull or rebase origin/${targetBranch} to resolve.
   setInterval(checkCycle, INTERVAL_MS);
 }
 
+// src/progress-window.js
+var import_fs5 = __toESM(require("fs"), 1);
+var import_os = __toESM(require("os"), 1);
+var import_path4 = __toESM(require("path"), 1);
+var import_child_process4 = require("child_process");
+var PROGRESS_FILE = import_path4.default.join(import_os.default.tmpdir(), "gk-progress.json");
+var PS_SCRIPT = import_path4.default.join(import_os.default.tmpdir(), "gk-progress-window.ps1");
+var VBS_SCRIPT = import_path4.default.join(import_os.default.tmpdir(), "gk-progress-launcher.vbs");
+var STEPS = [
+  { id: 1, label: "1. Angular Project Detection" },
+  { id: 2, label: "2. Remote Repository Sync Check" },
+  { id: 3, label: "3. Critical Architecture & Entry Points" },
+  { id: 4, label: "4. Angular Build & TypeScript Compilation" },
+  { id: 5, label: "5. Production Distribution Artifacts" },
+  { id: 6, label: "6. Automated Build Versioning" },
+  { id: 7, label: "7. Security & Secret Leak Scanning" },
+  { id: 8, label: "8. AI Knowledge Base Audit (Gemini 3.6)" }
+];
+var _windowEnabled = false;
+function writeProgressFile(data) {
+  try {
+    const jsonStr = JSON.stringify(data, null, 2);
+    import_fs5.default.writeFileSync(PROGRESS_FILE, "\uFEFF" + jsonStr, "utf8");
+  } catch (_) {
+  }
+}
+function readProgressFile() {
+  try {
+    if (import_fs5.default.existsSync(PROGRESS_FILE)) {
+      let raw = import_fs5.default.readFileSync(PROGRESS_FILE, "utf8");
+      if (raw.charCodeAt(0) === 65279) {
+        raw = raw.slice(1);
+      }
+      return JSON.parse(raw);
+    }
+  } catch (_) {
+  }
+  return null;
+}
+function generatePsScript() {
+  return `
+Add-Type -AssemblyName PresentationFramework, PresentationCore, WindowsBase, System.Windows.Forms
+
+# \u2500\u2500 Detect Dark/Light Theme \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+$isDark = $false
+try {
+    $regVal = Get-ItemPropertyValue -Path 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize' -Name 'AppsUseLightTheme' -ErrorAction SilentlyContinue
+    $isDark = ($regVal -eq 0)
+} catch {}
+
+$bg       = if ($isDark) { '#181825' } else { '#FFFFFF' }
+$fg       = if ($isDark) { '#CDD6F4' } else { '#1E293B' }
+$hdrBg    = if ($isDark) { '#11111B' } else { '#F8FAFC' }
+$cardBg   = if ($isDark) { '#24273A' } else { '#F1F5F9' }
+$border   = if ($isDark) { '#45475A' } else { '#E2E8F0' }
+$aiBoxBg  = if ($isDark) { '#1E1E2E' } else { '#F8FAFC' }
+$aiBoxBdr = if ($isDark) { '#313244' } else { '#CBD5E1' }
+
+$passBg = if ($isDark) { '#132A1C' } else { '#F0FDF4' }
+$errBg  = if ($isDark) { '#2D1515' } else { '#FEF2F2' }
+
+$brushConverter = [System.Windows.Media.BrushConverter]::new()
+$passBrush      = $brushConverter.ConvertFrom($passBg)
+$errBrush       = $brushConverter.ConvertFrom($errBg)
+$cardBrush      = $brushConverter.ConvertFrom($cardBg)
+$greenBadgeBg   = $brushConverter.ConvertFrom('#15803D')
+$redBadgeBg     = $brushConverter.ConvertFrom('#B91C1C')
+$grayBadgeBg    = $brushConverter.ConvertFrom('#64748B')
+$blueBadgeBg    = $brushConverter.ConvertFrom('#0284C7')
+$greenFg        = $brushConverter.ConvertFrom('#22C55E')
+$redFg          = $brushConverter.ConvertFrom('#EF4444')
+$blueFg         = $brushConverter.ConvertFrom('#38BDF8')
+$grayFg         = $brushConverter.ConvertFrom('#94A3B8')
+$mainFg         = $brushConverter.ConvertFrom($fg)
+
+$PROGRESS_FILE = "$env:TEMP\\gk-progress.json"
+
+[xml]$xaml = @"
+<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Angular Gatekeeper - Live Commit Validation"
+        Width="580" Height="580"
+        WindowStartupLocation="CenterScreen"
+        Topmost="True"
+        ResizeMode="NoResize"
+        ShowInTaskbar="True"
+        Background="$bg">
+  <Grid>
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="*"/>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="Auto"/>
+    </Grid.RowDefinitions>
+
+    <!-- Header -->
+    <Border Grid.Row="0" Background="$hdrBg" Padding="18,14" BorderBrush="$border" BorderThickness="0,0,0,1">
+      <StackPanel>
+        <TextBlock Text="Angular Gatekeeper - Commit Verification" FontSize="16" FontWeight="Bold" Foreground="$fg"/>
+        <TextBlock Text="Validating code quality, build integrity &amp; architecture in real-time..." FontSize="11" Foreground="#94A3B8" Margin="0,3,0,0"/>
+      </StackPanel>
+    </Border>
+
+    <!-- Steps List -->
+    <ScrollViewer Grid.Row="1" Margin="14,8" VerticalScrollBarVisibility="Auto">
+      <StackPanel x:Name="StepsPanel"/>
+    </ScrollViewer>
+
+    <!-- AI Architect Report Card (Dynamically shown) -->
+    <Border Grid.Row="2" x:Name="AiReportBorder" Margin="14,0,14,8" Padding="12" Background="$aiBoxBg" BorderBrush="$aiBoxBdr" BorderThickness="1" CornerRadius="6" Visibility="Collapsed">
+      <StackPanel>
+        <TextBlock Text="AI Knowledge Base Audit &amp; Insights:" FontWeight="Bold" FontSize="12" Foreground="$blueFg" Margin="0,0,0,6"/>
+        <ScrollViewer MaxHeight="130" VerticalScrollBarVisibility="Auto">
+          <TextBox x:Name="AiReportText" IsReadOnly="True" TextWrapping="Wrap" Background="Transparent" BorderThickness="0" Foreground="$fg" FontSize="11" FontFamily="Consolas, Segoe UI"/>
+        </ScrollViewer>
+      </StackPanel>
+    </Border>
+
+    <!-- Footer -->
+    <Border Grid.Row="3" Background="$hdrBg" Padding="16,12" BorderBrush="$border" BorderThickness="0,1,0,0">
+      <Grid>
+        <TextBlock x:Name="StatusText" Text="Running pre-commit validations..." FontSize="12" FontWeight="SemiBold" Foreground="$fg" VerticalAlignment="Center"/>
+        <Button x:Name="CloseBtn" Content="Close" HorizontalAlignment="Right" Width="80" Height="28" Cursor="Hand" Background="#3B82F6" Foreground="White" BorderThickness="0">
+          <Button.Resources>
+            <Style TargetType="Border">
+              <Setter Property="CornerRadius" Value="4"/>
+            </Style>
+          </Button.Resources>
+        </Button>
+      </Grid>
+    </Border>
+  </Grid>
+</Window>
+"@
+
+$reader = [System.Xml.XmlNodeReader]::new($xaml)
+$window = [System.Windows.Markup.XamlReader]::Load($reader)
+
+$panel          = $window.FindName('StepsPanel')
+$statusTb       = $window.FindName('StatusText')
+$closeBtn       = $window.FindName('CloseBtn')
+$aiReportBorder = $window.FindName('AiReportBorder')
+$aiReportTb     = $window.FindName('AiReportText')
+
+$closeBtn.Add_Click({
+    $window.Close()
+})
+
+$stepLabels = @(
+  '1. Angular Project Detection',
+  '2. Remote Repository Sync Check',
+  '3. Critical Architecture & Entry Points',
+  '4. Angular Build & TypeScript Compilation',
+  '5. Production Distribution Artifacts',
+  '6. Automated Build Versioning',
+  '7. Security & Secret Leak Scanning',
+  '8. AI Knowledge Base Audit (Gemini 3.6)'
+)
+
+$rowBorders = @{}
+$rowIcons   = @{}
+$rowTexts   = @{}
+$rowBadges  = @{}
+
+for ($i = 0; $i -lt $stepLabels.Count; $i++) {
+    $stepNum = $i + 1
+
+    $row = New-Object System.Windows.Controls.Border
+    $row.CornerRadius      = New-Object System.Windows.CornerRadius(6)
+    $row.Padding           = New-Object System.Windows.Thickness(12, 6, 12, 6)
+    $row.Margin            = New-Object System.Windows.Thickness(0, 2, 0, 2)
+    $row.Background        = $cardBrush
+
+    $grid = New-Object System.Windows.Controls.Grid
+    $col1 = New-Object System.Windows.Controls.ColumnDefinition; $col1.Width = New-Object System.Windows.GridLength(28)
+    $col2 = New-Object System.Windows.Controls.ColumnDefinition; $col2.Width = New-Object System.Windows.GridLength(1, [System.Windows.GridUnitType]::Star)
+    $col3 = New-Object System.Windows.Controls.ColumnDefinition; $col3.Width = New-Object System.Windows.GridLength(0, [System.Windows.GridUnitType]::Auto)
+    $grid.ColumnDefinitions.Add($col1)
+    $grid.ColumnDefinitions.Add($col2)
+    $grid.ColumnDefinitions.Add($col3)
+
+    $icon = New-Object System.Windows.Controls.TextBlock
+    $icon.Text       = '[ ]'
+    $icon.FontSize   = 11
+    $icon.FontWeight = [System.Windows.FontWeights]::Bold
+    $icon.Foreground = $grayFg
+    $icon.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+    [System.Windows.Controls.Grid]::SetColumn($icon, 0)
+
+    $lbl = New-Object System.Windows.Controls.TextBlock
+    $lbl.Text       = $stepLabels[$i]
+    $lbl.FontSize   = 12
+    $lbl.Foreground = $grayFg
+    $lbl.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+    [System.Windows.Controls.Grid]::SetColumn($lbl, 1)
+
+    $badge = New-Object System.Windows.Controls.Border
+    $badge.CornerRadius = New-Object System.Windows.CornerRadius(4)
+    $badge.Padding      = New-Object System.Windows.Thickness(6, 2, 6, 2)
+    $badge.Visibility   = [System.Windows.Visibility]::Collapsed
+    $badgeTb = New-Object System.Windows.Controls.TextBlock
+    $badgeTb.FontSize   = 10
+    $badgeTb.FontWeight = [System.Windows.FontWeights]::Bold
+    $badgeTb.Foreground = [System.Windows.Media.Brushes]::White
+    $badge.Child = $badgeTb
+    [System.Windows.Controls.Grid]::SetColumn($badge, 2)
+
+    $grid.Children.Add($icon)  | Out-Null
+    $grid.Children.Add($lbl)   | Out-Null
+    $grid.Children.Add($badge) | Out-Null
+    $row.Child = $grid
+    $panel.Children.Add($row)  | Out-Null
+
+    $rowBorders[$stepNum] = $row
+    $rowIcons[$stepNum]   = $icon
+    $rowTexts[$stepNum]   = $lbl
+    $rowBadges[$stepNum]  = @{ border = $badge; text = $badgeTb }
+}
+
+$timer = New-Object System.Windows.Threading.DispatcherTimer
+$timer.Interval = [TimeSpan]::FromMilliseconds(250)
+$autoCloseSeconds = 0
+
+$timer.Add_Tick({
+    if (-not (Test-Path $PROGRESS_FILE)) { return }
+    try {
+        $raw = Get-Content $PROGRESS_FILE -Raw
+        $json = $raw | ConvertFrom-Json
+    } catch { return }
+
+    $steps = $json.steps
+    $done  = $json.done
+    $hasError = $false
+
+    foreach ($s in $steps.PSObject.Properties) {
+        $num   = [int]$s.Name
+        $state = $s.Value
+        if (-not $rowIcons.ContainsKey($num)) { continue }
+
+        $icon  = $rowIcons[$num]
+        $lbl   = $rowTexts[$num]
+        $row   = $rowBorders[$num]
+        $badge = $rowBadges[$num]
+
+        switch ($state.status) {
+            'pending' {
+                $icon.Text       = '[ ]'
+                $icon.Foreground = $grayFg
+                $lbl.Foreground  = $grayFg
+                $badge.border.Visibility = [System.Windows.Visibility]::Collapsed
+                $row.Background  = $cardBrush
+            }
+            'running' {
+                $icon.Text       = '>>'
+                $icon.Foreground = $blueFg
+                $lbl.Foreground  = $mainFg
+                $badge.border.Visibility = [System.Windows.Visibility]::Collapsed
+                $row.Background  = $cardBrush
+            }
+            'pass' {
+                $icon.Text       = 'OK'
+                $icon.Foreground = $greenFg
+                $lbl.Foreground  = $mainFg
+                $badge.border.Background = $greenBadgeBg
+                $badge.text.Text = 'PASS'
+                $badge.border.Visibility = [System.Windows.Visibility]::Visible
+                $row.Background  = $passBrush
+            }
+            'error' {
+                $icon.Text       = 'ERR'
+                $icon.Foreground = $redFg
+                $lbl.Foreground  = $redFg
+                $badge.border.Background = $redBadgeBg
+                $badge.text.Text = 'FAILED'
+                $badge.border.Visibility = [System.Windows.Visibility]::Visible
+                $row.Background  = $errBrush
+                $hasError = $true
+            }
+            'skip' {
+                $icon.Text       = '--'
+                $icon.Foreground = $grayFg
+                $lbl.Foreground  = $grayFg
+                $badge.border.Background = $grayBadgeBg
+                $badge.text.Text = 'SKIP'
+                $badge.border.Visibility = [System.Windows.Visibility]::Visible
+                $row.Background  = $cardBrush
+            }
+        }
+    }
+
+    # Show AI report if available
+    if ($json.aiReport -and $json.aiReport.Trim() -ne '') {
+        $aiReportTb.Text = $json.aiReport
+        $aiReportBorder.Visibility = [System.Windows.Visibility]::Visible
+    }
+
+    if ($done -eq $true) {
+        $timer.Stop()
+        if ($hasError) {
+            $statusTb.Text = 'Validation failed! Commit rejected. Click Close to dismiss.'
+            $statusTb.Foreground = $redFg
+            $closeBtn.Background = $redFg
+        } else {
+            $statusTb.Text = 'All validations passed! Click Close to dismiss.'
+            $statusTb.Foreground = $greenFg
+            $closeBtn.Background = $greenFg
+        }
+    }
+})
+
+$timer.Start()
+$window.ShowDialog() | Out-Null
+`;
+}
+function launchWindowProcess() {
+  try {
+    const psContent = "\uFEFF" + generatePsScript();
+    import_fs5.default.writeFileSync(PS_SCRIPT, psContent, "utf8");
+    const vbsContent = `
+Set WshShell = CreateObject("WScript.Shell")
+WshShell.Run "powershell.exe -NoProfile -ExecutionPolicy Bypass -File """ & "${PS_SCRIPT.replace(/\\/g, "\\\\")}" & """", 0, False
+`;
+    import_fs5.default.writeFileSync(VBS_SCRIPT, vbsContent, "utf8");
+    (0, import_child_process4.spawn)("wscript.exe", [VBS_SCRIPT], { detached: true, stdio: "ignore" }).unref();
+  } catch (_) {
+  }
+}
+function initProgressWindow() {
+  _windowEnabled = process.env.SHOW_PROGRESS === "true";
+  if (!_windowEnabled) return;
+  const data = {
+    done: false,
+    hasError: false,
+    aiReport: "",
+    steps: {}
+  };
+  for (const s2 of STEPS) {
+    data.steps[s2.id] = { status: "pending", label: s2.label };
+  }
+  writeProgressFile(data);
+  launchWindowProcess();
+}
+function startStep(stepId) {
+  if (!_windowEnabled) return;
+  const data = readProgressFile();
+  if (!data) return;
+  if (data.steps[stepId]) data.steps[stepId].status = "running";
+  writeProgressFile(data);
+}
+function updateStep(stepId, status, report = "") {
+  if (!_windowEnabled) return;
+  const data = readProgressFile();
+  if (!data) return;
+  if (data.steps[stepId]) data.steps[stepId].status = status;
+  if (status === "error") {
+    data.hasError = true;
+  }
+  if (report) {
+    data.aiReport = report;
+  }
+  writeProgressFile(data);
+}
+function finalizeProgress(passed, finalReport = "") {
+  if (!_windowEnabled) return;
+  const data = readProgressFile();
+  if (!data) return;
+  data.done = true;
+  data.hasError = !passed;
+  if (finalReport) {
+    data.aiReport = finalReport;
+  }
+  writeProgressFile(data);
+}
+
 // src/engine.js
-var appDataDir = process.env.APPDATA ? import_path4.default.join(process.env.APPDATA, "FrontendGatekeeper") : import_path4.default.join(process.env.HOME || process.env.USERPROFILE || ".", ".frontend-gatekeeper");
-var envPath = import_path4.default.join(appDataDir, ".env");
-if (import_fs5.default.existsSync(envPath)) {
+var appDataDir = process.env.APPDATA ? import_path5.default.join(process.env.APPDATA, "FrontendGatekeeper") : import_path5.default.join(process.env.HOME || process.env.USERPROFILE || ".", ".frontend-gatekeeper");
+var envPath = import_path5.default.join(appDataDir, ".env");
+if (import_fs6.default.existsSync(envPath)) {
   import_dotenv.default.config({ path: envPath, quiet: true });
 }
 import_dotenv.default.config({ quiet: true });
@@ -51289,6 +51671,10 @@ async function runGatekeeper() {
 `));
   const cwd = process.cwd();
   const { isAngular, projectPkg } = checkAngularProject(cwd);
+  initProgressWindow();
+  startStep(1);
+  updateStep(1, "pass");
+  startStep(2);
   logStep(2, "Remote Repository Sync Check");
   try {
     const currentBranch = getCurrentBranch(cwd);
@@ -51310,17 +51696,81 @@ async function runGatekeeper() {
     } else {
       console.log(source_default.gray("  Remote sync check skipped (working locally)."));
     }
+    updateStep(2, "pass");
   } catch (err) {
     logWarning(`Sync check notice: ${err.message || err}. Continuing...`);
+    updateStep(2, "pass");
   }
-  checkCriticalArchitecture(cwd);
-  runTypeScriptAndLintChecks(cwd, projectPkg);
-  validateCompiledArtifacts(cwd);
-  updateBuildMetadata(cwd, projectPkg);
-  const diffOutput = getDiff(cwd);
-  scanSecurityRules(diffOutput);
+  startStep(3);
+  try {
+    checkCriticalArchitecture(cwd);
+    updateStep(3, "pass");
+  } catch (err) {
+    updateStep(3, "error");
+    finalizeProgress(false);
+    throw err;
+  }
+  startStep(4);
+  try {
+    runTypeScriptAndLintChecks(cwd, projectPkg);
+    updateStep(4, "pass");
+  } catch (err) {
+    updateStep(4, "error");
+    finalizeProgress(false);
+    throw err;
+  }
+  startStep(5);
+  try {
+    validateCompiledArtifacts(cwd);
+    updateStep(5, "pass");
+  } catch (err) {
+    updateStep(5, "error");
+    finalizeProgress(false);
+    throw err;
+  }
+  startStep(6);
+  try {
+    updateBuildMetadata(cwd, projectPkg);
+    updateStep(6, "pass");
+  } catch (err) {
+    updateStep(6, "error");
+    finalizeProgress(false);
+    throw err;
+  }
+  startStep(7);
+  try {
+    const diffOutput = getDiff(cwd);
+    scanSecurityRules(diffOutput);
+    updateStep(7, "pass");
+  } catch (err) {
+    updateStep(7, "error");
+    finalizeProgress(false);
+    throw err;
+  }
+  startStep(8);
   const apiKey = process.env.GEMINI_API_KEY;
-  await runAiKnowledgeBaseAudit(apiKey, cwd);
+  let aiReport = "";
+  try {
+    const auditRes = await runAiKnowledgeBaseAudit(apiKey, cwd);
+    if (auditRes) {
+      aiReport = auditRes.report || "";
+      if (!auditRes.passed) {
+        updateStep(8, "error", aiReport);
+        finalizeProgress(false, aiReport);
+        process.exit(1);
+      } else {
+        const status = auditRes.skipped ? "skip" : "pass";
+        updateStep(8, status, aiReport);
+      }
+    } else {
+      updateStep(8, apiKey ? "pass" : "skip");
+    }
+  } catch (err) {
+    updateStep(8, "error", err.message);
+    finalizeProgress(false, err.message);
+    throw err;
+  }
+  finalizeProgress(true, aiReport);
   console.log("\n" + source_default.green.bold("\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550"));
   console.log(source_default.green.bold(" \u2714 ALL ANGULAR GATEKEEPER PRE-COMMIT VALIDATIONS PASSED!       "));
   console.log(source_default.green.bold("\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\n"));

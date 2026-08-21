@@ -5537,7 +5537,7 @@ async function runInstaller() {
   console.log(BANNER);
   console.log(source_default.red.bold("  Welcome to the Angular Git Quality & AI Gatekeeper Setup Wizard!\n"));
   console.log(source_default.white("  This installer configures a global Git pre-commit hook for all your Angular repositories,"));
-  console.log(source_default.white("  enforcing strict quality, Angular build checks, and Gemini 2.5 Flash AI regression audits.\n"));
+  console.log(source_default.white("  enforcing strict quality, Angular build checks, and Gemini 3.6 Flash AI regression audits.\n"));
   console.log(source_default.yellow("\u250C\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510"));
   console.log(source_default.yellow("\u2502 ") + source_default.bold.white("Gemini AI API Configuration (Optional)") + source_default.yellow("                    \u2502"));
   console.log(source_default.yellow("\u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518"));
@@ -5553,7 +5553,25 @@ async function runInstaller() {
   } else {
     console.log(source_default.green("\n\u2714 Gemini AI Key configured successfully."));
   }
-  console.log(source_default.blue("Starting installation process..."));
+  console.log(source_default.yellow("\n\u250C\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510"));
+  console.log(source_default.yellow("\u2502 ") + source_default.bold.white("Live Commit Progress Window (Optional)") + source_default.yellow("                    \u2502"));
+  console.log(source_default.yellow("\u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518"));
+  console.log(source_default.gray("  Show a floating window with live step progress during every git commit."));
+  console.log(source_default.gray("  The window closes automatically when all checks pass."));
+  console.log(source_default.gray("  If an error is found, the window re-opens even if you closed it.\n"));
+  const progressResponse = await (0, import_prompts.default)({
+    type: "confirm",
+    name: "showProgress",
+    message: "Enable Live Commit Progress Window?",
+    initial: true
+  });
+  const showProgress = progressResponse.showProgress !== false;
+  if (showProgress) {
+    console.log(source_default.green("\n\u2714 Live progress window will be shown during each commit."));
+  } else {
+    console.log(source_default.gray("\n\u2139 Progress window disabled. Engine will run silently in the background."));
+  }
+  console.log(source_default.blue("\nStarting installation process..."));
   console.log(source_default.gray(`
 \u2022 Target Directory: ${targetDir}`));
   console.log(source_default.gray(`\u2022 Hooks Directory:  ${hooksDir}`));
@@ -5567,10 +5585,11 @@ async function runInstaller() {
   }
   const envFilePath = import_path.default.join(targetDir, ".env");
   try {
-    const envContent = apiKey ? `# Frontend Gatekeeper Environment Configuration
-GEMINI_API_KEY=${apiKey}
-` : `# Frontend Gatekeeper Environment Configuration
-# GEMINI_API_KEY=
+    let envContent = "# Angular Gatekeeper Environment Configuration\n";
+    envContent += apiKey ? `GEMINI_API_KEY=${apiKey}
+` : `# GEMINI_API_KEY=
+`;
+    envContent += `SHOW_PROGRESS=${showProgress ? "true" : "false"}
 `;
     import_fs.default.writeFileSync(envFilePath, envContent, "utf8");
     if (apiKey) {
@@ -5810,9 +5829,11 @@ esac
 `;
   const cliCmdPath = import_path.default.join(targetDir, "a-gatekeeper.cmd");
   const cliBashPath = import_path.default.join(targetDir, "a-gatekeeper");
+  const cliCmdNormalized = cliCmdContent.replace(/\r\n/g, "\n").replace(/\n/g, "\r\n");
+  const cliBashNormalized = cliBashContent.replace(/\r\n/g, "\n");
   try {
-    import_fs.default.writeFileSync(cliCmdPath, cliCmdContent, "utf8");
-    import_fs.default.writeFileSync(cliBashPath, cliBashContent, { encoding: "utf8", mode: 511 });
+    import_fs.default.writeFileSync(cliCmdPath, cliCmdNormalized, "utf8");
+    import_fs.default.writeFileSync(cliBashPath, cliBashNormalized, { encoding: "utf8", mode: 511 });
     console.log(source_default.green(`\u2714 CLI tools created in: ${targetDir}`));
   } catch (e) {
     console.log(source_default.yellow(`\u26A0 Could not create CLI scripts: ${e.message}`));
@@ -5820,8 +5841,8 @@ esac
   const appDataNpmDir = import_path.default.join(appDataRoot, "npm");
   if (import_fs.default.existsSync(appDataNpmDir)) {
     try {
-      import_fs.default.writeFileSync(import_path.default.join(appDataNpmDir, "a-gatekeeper.cmd"), cliCmdContent, "utf8");
-      import_fs.default.writeFileSync(import_path.default.join(appDataNpmDir, "a-gatekeeper"), cliBashContent, { encoding: "utf8", mode: 511 });
+      import_fs.default.writeFileSync(import_path.default.join(appDataNpmDir, "a-gatekeeper.cmd"), cliCmdNormalized, "utf8");
+      import_fs.default.writeFileSync(import_path.default.join(appDataNpmDir, "a-gatekeeper"), cliBashNormalized, { encoding: "utf8", mode: 511 });
       console.log(source_default.green(`\u2714 CLI tools installed into global npm PATH (${appDataNpmDir}) for instant access.`));
     } catch (npmErr) {
     }

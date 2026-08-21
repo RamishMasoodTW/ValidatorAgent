@@ -34,28 +34,28 @@ ${diffOutput.slice(0, 25000)}
    - Provide a concise list of specific violations with line numbers or code snippets from the diff, explaining why it violates the rule and how to fix it in Angular.
 4. If the diff is clean and adheres to all documented best practices:
    - Output: "VERDICT: PASSED"
-   - Provide a 1-2 sentence positive summary.
+   - Provide a concise, professional summary and Junior Developer mentorship tips if relevant.
 
 Ensure your response clearly includes either "VERDICT: PASSED" or "VERDICT: FAILED" in capital letters.
 `;
 }
 
 /**
- * Step 7: AI Knowledge Base Audit (Gemini 2.5 Flash)
+ * Step 8: AI Knowledge Base Audit (Gemini 3.6 Flash)
  */
 export async function runAiKnowledgeBaseAudit(apiKey, cwd = process.cwd()) {
-  logStep(7, 'Angular AI Knowledge Base Regression Audit (Gemini 2.5 Flash)');
+  logStep(8, 'Angular AI Knowledge Base Regression Audit (Gemini 3.6 Flash)');
   const resolvedIssuesPath = path.join(cwd, 'resolved_issues.md');
 
   if (!fs.existsSync(resolvedIssuesPath)) {
     console.log(chalk.gray('  No resolved_issues.md found at repository root. AI audit skipped.'));
-    return;
+    return { passed: true, skipped: true, report: 'No resolved_issues.md found at repository root. AI audit skipped.' };
   }
 
   if (!apiKey) {
     logWarning('resolved_issues.md detected, but GEMINI_API_KEY is not set in environment or config.');
     console.log(chalk.gray('  To enable AI audits, run AngularGatekeeperSetup.exe or set GEMINI_API_KEY.'));
-    return;
+    return { passed: true, skipped: true, report: 'GEMINI_API_KEY not configured. AI audit skipped.' };
   }
 
   const knowledgeBase = fs.readFileSync(resolvedIssuesPath, 'utf8');
@@ -65,34 +65,46 @@ export async function runAiKnowledgeBaseAudit(apiKey, cwd = process.cwd()) {
 
   if (!diffOutput || diffOutput.trim() === '') {
     console.log(chalk.gray('  No diff detected against baseline. AI audit passed.'));
-    return;
+    return { passed: true, skipped: true, report: 'No active git diff detected against baseline.' };
   }
 
-  console.log(chalk.cyan('  Consulting Gemini 2.5 Flash to audit Angular code against known issues...'));
-  try {
-    const ai = new GoogleGenAI({ apiKey });
-    const prompt = buildGeminiAuditPrompt(knowledgeBase, diffOutput);
+  console.log(chalk.cyan('  Consulting Gemini 3.6 Flash to audit Angular code against known issues...'));
+  
+  const candidateModels = ['gemini-3.6-flash', 'gemini-3.5-flash', 'gemini-flash-latest'];
+  let lastError = null;
 
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: prompt
-    });
+  for (const modelName of candidateModels) {
+    try {
+      const ai = new GoogleGenAI({ apiKey });
+      const prompt = buildGeminiAuditPrompt(knowledgeBase, diffOutput);
 
-    const resultText = response.text || '';
-    console.log('\n' + chalk.gray('─'.repeat(60)));
-    console.log(chalk.bold('AI Audit Report:'));
-    console.log(resultText);
-    console.log(chalk.gray('─'.repeat(60)) + '\n');
+      const response = await ai.models.generateContent({
+        model: modelName,
+        contents: prompt
+      });
 
-    if (resultText.includes('VERDICT: FAILED')) {
-      logError('AI Gatekeeper detected regressions or violations of resolved_issues.md!');
-      console.log(chalk.red('  Commit/Push rejected: Please address the AI audit findings above.\n'));
-      process.exit(1);
-    } else {
-      logSuccess('AI Knowledge Base audit PASSED. No known regressions detected.');
+      const resultText = response.text || '';
+      console.log('\n' + chalk.gray('─'.repeat(60)));
+      console.log(chalk.bold(`AI Audit Report [${modelName}]:`));
+      console.log(resultText);
+      console.log(chalk.gray('─'.repeat(60)) + '\n');
+
+      if (resultText.includes('VERDICT: FAILED')) {
+        logError('AI Gatekeeper detected regressions or violations of resolved_issues.md!');
+        console.log(chalk.red('  Commit/Push rejected: Please address the AI audit findings above.\n'));
+        return { passed: false, skipped: false, report: resultText };
+      } else {
+        logSuccess(`AI Knowledge Base audit PASSED using ${modelName}. No known regressions detected.`);
+        return { passed: true, skipped: false, report: resultText };
+      }
+    } catch (apiErr) {
+      lastError = apiErr;
+      // Try next fallback model
+      continue;
     }
-  } catch (apiErr) {
-    logError(`AI Audit call error: ${apiErr.message || apiErr}`);
-    console.log(chalk.yellow('  Allowing commit/push with warning due to AI service error.'));
   }
+
+  logError(`AI Audit call error: ${lastError?.message || lastError}`);
+  console.log(chalk.yellow('  Allowing commit/push with warning due to AI service error.'));
+  return { passed: true, skipped: true, report: `AI Service Warning: ${lastError?.message || lastError}` };
 }

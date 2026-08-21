@@ -159,7 +159,7 @@ async function runInstaller() {
   console.log(BANNER);
   console.log(chalk.red.bold('  Welcome to the Angular Git Quality & AI Gatekeeper Setup Wizard!\n'));
   console.log(chalk.white('  This installer configures a global Git pre-commit hook for all your Angular repositories,'));
-  console.log(chalk.white('  enforcing strict quality, Angular build checks, and Gemini 2.5 Flash AI regression audits.\n'));
+  console.log(chalk.white('  enforcing strict quality, Angular build checks, and Gemini 3.6 Flash AI regression audits.\n'));
 
   // 1. Prompt for Gemini API Key (Optional)
   console.log(chalk.yellow('┌─────────────────────────────────────────────────────────────┐'));
@@ -180,7 +180,29 @@ async function runInstaller() {
     console.log(chalk.green('\n✔ Gemini AI Key configured successfully.'));
   }
 
-  console.log(chalk.blue('Starting installation process...'));
+  // 2. Prompt for Live Progress Window preference (Optional)
+  console.log(chalk.yellow('\n┌─────────────────────────────────────────────────────────────┐'));
+  console.log(chalk.yellow('│ ') + chalk.bold.white('Live Commit Progress Window (Optional)') + chalk.yellow('                    │'));
+  console.log(chalk.yellow('└─────────────────────────────────────────────────────────────┘'));
+  console.log(chalk.gray('  Show a floating window with live step progress during every git commit.'));
+  console.log(chalk.gray('  The window closes automatically when all checks pass.'));
+  console.log(chalk.gray('  If an error is found, the window re-opens even if you closed it.\n'));
+
+  const progressResponse = await prompts({
+    type: 'confirm',
+    name: 'showProgress',
+    message: 'Enable Live Commit Progress Window?',
+    initial: true
+  });
+
+  const showProgress = progressResponse.showProgress !== false; // default true
+  if (showProgress) {
+    console.log(chalk.green('\n✔ Live progress window will be shown during each commit.'));
+  } else {
+    console.log(chalk.gray('\nℹ Progress window disabled. Engine will run silently in the background.'));
+  }
+
+  console.log(chalk.blue('\nStarting installation process...'));
 
   // 2. Define Installation Directories
   console.log(chalk.gray(`\n• Target Directory: ${targetDir}`));
@@ -198,9 +220,9 @@ async function runInstaller() {
   // 3. Save Configuration (.env)
   const envFilePath = path.join(targetDir, '.env');
   try {
-    const envContent = apiKey
-      ? `# Frontend Gatekeeper Environment Configuration\nGEMINI_API_KEY=${apiKey}\n`
-      : `# Frontend Gatekeeper Environment Configuration\n# GEMINI_API_KEY=\n`;
+    let envContent = '# Angular Gatekeeper Environment Configuration\n';
+    envContent += apiKey ? `GEMINI_API_KEY=${apiKey}\n` : `# GEMINI_API_KEY=\n`;
+    envContent += `SHOW_PROGRESS=${showProgress ? 'true' : 'false'}\n`;
     fs.writeFileSync(envFilePath, envContent, 'utf8');
     if (apiKey) {
       console.log(chalk.green('✔ AI credentials saved to configuration file.'));
@@ -456,10 +478,12 @@ esac
   // Write CLI tools into targetDir
   const cliCmdPath = path.join(targetDir, 'a-gatekeeper.cmd');
   const cliBashPath = path.join(targetDir, 'a-gatekeeper');
+  const cliCmdNormalized = cliCmdContent.replace(/\r\n/g, '\n').replace(/\n/g, '\r\n');
+  const cliBashNormalized = cliBashContent.replace(/\r\n/g, '\n');
 
   try {
-    fs.writeFileSync(cliCmdPath, cliCmdContent, 'utf8');
-    fs.writeFileSync(cliBashPath, cliBashContent, { encoding: 'utf8', mode: 0o777 });
+    fs.writeFileSync(cliCmdPath, cliCmdNormalized, 'utf8');
+    fs.writeFileSync(cliBashPath, cliBashNormalized, { encoding: 'utf8', mode: 0o777 });
     console.log(chalk.green(`✔ CLI tools created in: ${targetDir}`));
   } catch (e) {
     console.log(chalk.yellow(`⚠ Could not create CLI scripts: ${e.message}`));
@@ -469,8 +493,8 @@ esac
   const appDataNpmDir = path.join(appDataRoot, 'npm');
   if (fs.existsSync(appDataNpmDir)) {
     try {
-      fs.writeFileSync(path.join(appDataNpmDir, 'a-gatekeeper.cmd'), cliCmdContent, 'utf8');
-      fs.writeFileSync(path.join(appDataNpmDir, 'a-gatekeeper'), cliBashContent, { encoding: 'utf8', mode: 0o777 });
+      fs.writeFileSync(path.join(appDataNpmDir, 'a-gatekeeper.cmd'), cliCmdNormalized, 'utf8');
+      fs.writeFileSync(path.join(appDataNpmDir, 'a-gatekeeper'), cliBashNormalized, { encoding: 'utf8', mode: 0o777 });
       console.log(chalk.green(`✔ CLI tools installed into global npm PATH (${appDataNpmDir}) for instant access.`));
     } catch (npmErr) {
       // ignore
