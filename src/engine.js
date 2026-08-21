@@ -233,7 +233,5 @@ async function main() {
 }
 
 main().catch(err => {
-  console.error(chalk.red.bold(`\nUnhandled Gatekeeper Error: ${err.message}`));
-  console.error(err);
   process.exit(1);
 });

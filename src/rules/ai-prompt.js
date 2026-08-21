@@ -34,7 +34,7 @@ ${diffOutput.slice(0, 25000)}
    - Provide a concise list of specific violations with line numbers or code snippets from the diff, explaining why it violates the rule and how to fix it in Angular.
 4. If the diff is clean and adheres to all documented best practices:
    - Output: "VERDICT: PASSED"
-   - Provide a concise, professional summary and Junior Developer mentorship tips if relevant.
+   - Provide a concise, professional summary and Developer mentorship tips if relevant.
 
 Ensure your response clearly includes either "VERDICT: PASSED" or "VERDICT: FAILED" in capital letters.
 `;
@@ -69,7 +69,7 @@ export async function runAiKnowledgeBaseAudit(apiKey, cwd = process.cwd()) {
   }
 
   console.log(chalk.cyan('  Consulting Gemini 3.6 Flash to audit Angular code against known issues...'));
-  
+
   const candidateModels = ['gemini-3.6-flash', 'gemini-3.5-flash', 'gemini-flash-latest'];
   let lastError = null;
 

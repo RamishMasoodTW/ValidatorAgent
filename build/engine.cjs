@@ -28058,19 +28058,19 @@ var source_default = chalk;
 
 // src/ascii-art.js
 var BANNER = `
-${source_default.yellow.bold("  \u2588\u2588\u2588\u2588\u2588\u2557 \u2588\u2588\u2588\u2557   \u2588\u2588\u2557 \u2588\u2588\u2588\u2588\u2588\u2588\u2557 \u2588\u2588\u2557   \u2588\u2588\u2557\u2588\u2588\u2557      \u2588\u2588\u2588\u2588\u2588\u2557 \u2588\u2588\u2588\u2588\u2588\u2588\u2557 ")}
-${source_default.yellow.bold(" \u2588\u2588\u2554\u2550\u2550\u2588\u2588\u2557\u2588\u2588\u2588\u2588\u2557  \u2588\u2588\u2551\u2588\u2588\u2554\u2550\u2550\u2550\u2550\u255D \u2588\u2588\u2551   \u2588\u2588\u2551\u2588\u2588\u2551     \u2588\u2588\u2554\u2550\u2550\u2588\u2588\u2557\u2588\u2588\u2554\u2550\u2550\u2588\u2588\u2557")}
-${source_default.yellow.bold(" \u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2551\u2588\u2588\u2554\u2588\u2588\u2557 \u2588\u2588\u2551\u2588\u2588\u2551  \u2588\u2588\u2588\u2557\u2588\u2588\u2551   \u2588\u2588\u2551\u2588\u2588\u2551     \u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2551\u2588\u2588\u2588\u2588\u2588\u2588\u2554\u255D")}
-${source_default.yellow.bold(" \u2588\u2588\u2554\u2550\u2550\u2588\u2588\u2551\u2588\u2588\u2551\u255A\u2588\u2588\u2557\u2588\u2588\u2551\u2588\u2588\u2551   \u2588\u2588\u2551\u2588\u2588\u2551   \u2588\u2588\u2551\u2588\u2588\u2551     \u2588\u2588\u2554\u2550\u2550\u2588\u2588\u2551\u2588\u2588\u2554\u2550\u2550\u2588\u2588\u2557")}
-${source_default.yellow.bold(" \u2588\u2588\u2551  \u2588\u2588\u2551\u2588\u2588\u2551 \u255A\u2588\u2588\u2588\u2588\u2551\u255A\u2588\u2588\u2588\u2588\u2588\u2588\u2554\u255D\u255A\u2588\u2588\u2588\u2588\u2588\u2588\u2554\u255D\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2557\u2588\u2588\u2551  \u2588\u2588\u2551\u2588\u2588\u2551  \u2588\u2588\u2551")}
+${source_default.red.bold("  \u2588\u2588\u2588\u2588\u2588\u2557 \u2588\u2588\u2588\u2557   \u2588\u2588\u2557 \u2588\u2588\u2588\u2588\u2588\u2588\u2557 \u2588\u2588\u2557   \u2588\u2588\u2557\u2588\u2588\u2557      \u2588\u2588\u2588\u2588\u2588\u2557 \u2588\u2588\u2588\u2588\u2588\u2588\u2557 ")}
+${source_default.red.bold(" \u2588\u2588\u2554\u2550\u2550\u2588\u2588\u2557\u2588\u2588\u2588\u2588\u2557  \u2588\u2588\u2551\u2588\u2588\u2554\u2550\u2550\u2550\u2550\u255D \u2588\u2588\u2551   \u2588\u2588\u2551\u2588\u2588\u2551     \u2588\u2588\u2554\u2550\u2550\u2588\u2588\u2557\u2588\u2588\u2554\u2550\u2550\u2588\u2588\u2557")}
+${source_default.red.bold(" \u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2551\u2588\u2588\u2554\u2588\u2588\u2557 \u2588\u2588\u2551\u2588\u2588\u2551  \u2588\u2588\u2588\u2557\u2588\u2588\u2551   \u2588\u2588\u2551\u2588\u2588\u2551     \u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2551\u2588\u2588\u2588\u2588\u2588\u2588\u2554\u255D")}
+${source_default.red.bold(" \u2588\u2588\u2554\u2550\u2550\u2588\u2588\u2551\u2588\u2588\u2551\u255A\u2588\u2588\u2557\u2588\u2588\u2551\u2588\u2588\u2551   \u2588\u2588\u2551\u2588\u2588\u2551   \u2588\u2588\u2551\u2588\u2588\u2551     \u2588\u2588\u2554\u2550\u2550\u2588\u2588\u2551\u2588\u2588\u2554\u2550\u2550\u2588\u2588\u2557")}
+${source_default.red.bold(" \u2588\u2588\u2551  \u2588\u2588\u2551\u2588\u2588\u2551 \u255A\u2588\u2588\u2588\u2588\u2551\u255A\u2588\u2588\u2588\u2588\u2588\u2588\u2554\u255D\u255A\u2588\u2588\u2588\u2588\u2588\u2588\u2554\u255D\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2557\u2588\u2588\u2551  \u2588\u2588\u2551\u2588\u2588\u2551  \u2588\u2588\u2551")}
 ${source_default.cyan.bold("  \u2588\u2588\u2588\u2588\u2588\u2588\u2557  \u2588\u2588\u2588\u2588\u2588\u2557 \u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2557\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2557\u2588\u2588\u2557  \u2588\u2588\u2557\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2557\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2557\u2588\u2588\u2588\u2588\u2588\u2588\u2557 \u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2557\u2588\u2588\u2588\u2588\u2588\u2588\u2557 ")}
 ${source_default.cyan.bold("  \u2588\u2588\u2554\u2550\u2550\u2550\u2550\u255D \u2588\u2588\u2554\u2550\u2550\u2588\u2588\u2557\u255A\u2550\u2550\u2588\u2588\u2554\u2550\u2550\u255D\u2588\u2588\u2554\u2550\u2550\u2550\u2550\u255D\u2588\u2588\u2551 \u2588\u2588\u2554\u255D\u2588\u2588\u2554\u2550\u2550\u2550\u2550\u255D\u2588\u2588\u2554\u2550\u2550\u2550\u2550\u255D\u2588\u2588\u2554\u2550\u2550\u2588\u2588\u2557\u2588\u2588\u2554\u2550\u2550\u2550\u2550\u255D\u2588\u2588\u2554\u2550\u2550\u2588\u2588\u2557")}
 ${source_default.cyan.bold("  \u2588\u2588\u2551  \u2588\u2588\u2588\u2557\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2551   \u2588\u2588\u2551   \u2588\u2588\u2588\u2588\u2588\u2557  \u2588\u2588\u2588\u2588\u2588\u2550\u255D \u2588\u2588\u2588\u2588\u2588\u2557  \u2588\u2588\u2588\u2588\u2588\u2557  \u2588\u2588\u2588\u2588\u2588\u2588\u2554\u255D\u2588\u2588\u2588\u2588\u2588\u2557  \u2588\u2588\u2588\u2588\u2588\u2588\u2554\u255D")}
 ${source_default.cyan.bold("  \u2588\u2588\u2551   \u2588\u2588\u2551\u2588\u2588\u2554\u2550\u2550\u2588\u2588\u2551   \u2588\u2588\u2551   \u2588\u2588\u2554\u2550\u2550\u255D  \u2588\u2588\u2554\u2550\u2588\u2588\u2557 \u2588\u2588\u2554\u2550\u2550\u255D  \u2588\u2588\u2554\u2550\u2550\u255D  \u2588\u2588\u2554\u2550\u2550\u2550\u255D \u2588\u2588\u2554\u2550\u2550\u255D  \u2588\u2588\u2554\u2550\u2550\u2588\u2588\u2557")}
 ${source_default.cyan.bold("  \u255A\u2588\u2588\u2588\u2588\u2588\u2588\u2554\u255D\u2588\u2588\u2551  \u2588\u2588\u2551   \u2588\u2588\u2551   \u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2557\u2588\u2588\u2551 \u255A\u2588\u2588\u2557\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2557\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2557\u2588\u2588\u2551     \u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2557\u2588\u2588\u2551  \u2588\u2588\u2551")}
-${source_default.yellow("  \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550")}
+${source_default.red("  \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550")}
 ${source_default.cyan.bold("          [ Angular DevSecOps Automated Git Pre-Commit Quality & AI Gatekeeper ]         ")}
-${source_default.yellow("  \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550")}
+${source_default.red("  \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550")}
 `;
 var MINI_BANNER = `
 ${source_default.red.bold(">>> [ANGULAR GATEKEEPER] Pre-Commit AI Validation Engine <<<")}
@@ -28216,7 +28216,7 @@ function checkCriticalArchitecture(cwd = process.cwd()) {
   if (missingItems.length > 0) {
     logError(`Missing critical Angular file(s)/directory: ${missingItems.join(", ")}`);
     console.log(source_default.red("  Commit rejected: Ensure your project structure adheres to Angular CLI standards.\n"));
-    process.exit(1);
+    throw new Error(`Missing critical Angular file(s)/directory: ${missingItems.join(", ")}`);
   }
   logSuccess("All critical Angular architecture files, tsconfig, and entry points verified.");
 }
@@ -28227,7 +28227,7 @@ function validateCompiledArtifacts(cwd = process.cwd()) {
   if (!outputDir || !import_fs.default.existsSync(outputDir)) {
     logError("Build output directory (dist/) was not generated or is missing!");
     console.log(source_default.red("  Commit rejected: Ensure ng build produces valid output.\n"));
-    process.exit(1);
+    throw new Error("Build output directory (dist/) was not generated or is missing!");
   }
   console.log(source_default.gray(`  Inspecting build distribution output at: ${outputDir}`));
   const outputFiles = getAllFiles(outputDir).map((f3) => import_path.default.relative(outputDir, f3).replace(/\\/g, "/"));
@@ -28235,13 +28235,13 @@ function validateCompiledArtifacts(cwd = process.cwd()) {
   if (!hasIndexHtml) {
     logError("Critical build artifact missing: index.html was not generated in distribution output!");
     console.log(source_default.red("  Commit rejected: index.html is required for IIS/web servers to load the application.\n"));
-    process.exit(1);
+    throw new Error("Critical build artifact missing: index.html");
   }
   const jsBundles = outputFiles.filter((f3) => f3.endsWith(".js"));
   if (jsBundles.length === 0) {
     logError("Critical build artifact missing: No compiled JavaScript bundles found in output!");
     console.log(source_default.red("  Commit rejected: Application logic files (main.js, polyfills.js, runtime.js) are missing.\n"));
-    process.exit(1);
+    throw new Error("Critical build artifact missing: No compiled JavaScript bundles found");
   }
   const cssFiles = outputFiles.filter((f3) => f3.endsWith(".css"));
   const hasStylesCss = cssFiles.some((f3) => import_path.default.basename(f3).toLowerCase().startsWith("styles") || cssFiles.length > 0);
@@ -28312,7 +28312,7 @@ function runTypeScriptAndLintChecks(cwd = process.cwd(), projectPkg = {}) {
     } catch (err) {
       logError("Angular linter reported errors!");
       console.log(source_default.red("\n  Fix the linting issues before committing code.\n"));
-      process.exit(1);
+      throw new Error("Angular linting failed");
     }
   }
   if (scripts["type-check"] || scripts["typecheck"]) {
@@ -28324,7 +28324,7 @@ function runTypeScriptAndLintChecks(cwd = process.cwd(), projectPkg = {}) {
     } catch (err) {
       logError("TypeScript type checking failed!");
       console.log(source_default.red("\n  Fix the TypeScript errors before committing code.\n"));
-      process.exit(1);
+      throw new Error("TypeScript type checking failed");
     }
   }
   if (scripts["test:ci"] || scripts["test-ci"]) {
@@ -28336,7 +28336,7 @@ function runTypeScriptAndLintChecks(cwd = process.cwd(), projectPkg = {}) {
     } catch (err) {
       logError("Automated CI tests failed!");
       console.log(source_default.red("\n  Fix the failing tests before committing code.\n"));
-      process.exit(1);
+      throw new Error("CI automated tests failed");
     }
   }
   console.log(source_default.blue("  Running Mandatory Angular Build Compilation..."));
@@ -28354,7 +28354,7 @@ function runTypeScriptAndLintChecks(cwd = process.cwd(), projectPkg = {}) {
     console.log(source_default.red.bold("  \u274C COMMIT REJECTED: Application bundle generation failed!"));
     console.log(source_default.yellow("  Please fix the Angular/TypeScript build errors displayed above."));
     console.log(source_default.red("  \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\n"));
-    process.exit(1);
+    throw new Error("Angular build compilation failed");
   }
 }
 
@@ -28362,10 +28362,11 @@ function runTypeScriptAndLintChecks(cwd = process.cwd(), projectPkg = {}) {
 function scanSecurityRules(diffOutput) {
   if (!diffOutput || diffOutput.trim() === "") return true;
   const forbiddenPatterns = [
-    { pattern: /(?:AIzaSy[0-9A-Za-z-_]{33})/g, name: "Google API Key" },
-    { pattern: /(?:sk-[a-zA-Z0-9]{32,})/g, name: "OpenAI Secret Key" },
-    { pattern: /(?:ghp_[a-zA-Z0-9]{36})/g, name: "GitHub Personal Access Token" },
-    { pattern: /(?:BEGIN\s+PRIVATE\s+KEY)/g, name: "Unencrypted Private Key" }
+    { pattern: /AIzaSy[0-9A-Za-z-_]{33}/, name: "Google API Key" },
+    { pattern: /sk-(?:proj-|admin-|none-)?[a-zA-Z0-9_-]{20,}/, name: "OpenAI Secret Key" },
+    { pattern: /ghp_[a-zA-Z0-9]{36}/, name: "GitHub Personal Access Token" },
+    { pattern: /AKIA[0-9A-Z]{16}/, name: "AWS Access Key ID" },
+    { pattern: /BEGIN\s+(?:RSA\s+)?PRIVATE\s+KEY/, name: "Unencrypted Private Key" }
   ];
   let violations = [];
   for (const item of forbiddenPatterns) {
@@ -28376,7 +28377,7 @@ function scanSecurityRules(diffOutput) {
   if (violations.length > 0) {
     logError(`Security Alert: Hardcoded secrets detected in diff: ${violations.join(", ")}`);
     console.log(source_default.red("  Commit rejected: Remove hardcoded credentials and use environment variables.\n"));
-    process.exit(1);
+    throw new Error(`Hardcoded secrets detected: ${violations.join(", ")}`);
   }
   return true;
 }
@@ -50759,7 +50760,7 @@ ${diffOutput.slice(0, 25e3)}
    - Provide a concise list of specific violations with line numbers or code snippets from the diff, explaining why it violates the rule and how to fix it in Angular.
 4. If the diff is clean and adheres to all documented best practices:
    - Output: "VERDICT: PASSED"
-   - Provide a concise, professional summary and Junior Developer mentorship tips if relevant.
+   - Provide a concise, professional summary and Developer mentorship tips if relevant.
 
 Ensure your response clearly includes either "VERDICT: PASSED" or "VERDICT: FAILED" in capital letters.
 `;
@@ -51935,9 +51936,6 @@ async function main() {
   await runGatekeeper();
 }
 main().catch((err) => {
-  console.error(source_default.red.bold(`
-Unhandled Gatekeeper Error: ${err.message}`));
-  console.error(err);
   process.exit(1);
 });
 /*! Bundled license information:

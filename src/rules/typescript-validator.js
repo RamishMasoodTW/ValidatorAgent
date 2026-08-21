@@ -18,7 +18,7 @@ export function runTypeScriptAndLintChecks(cwd = process.cwd(), projectPkg = {})
     } catch (err) {
       logError('Angular linter reported errors!');
       console.log(chalk.red('\n  Fix the linting issues before committing code.\n'));
-      process.exit(1);
+      throw new Error('Angular linting failed');
     }
   }
 
@@ -32,7 +32,7 @@ export function runTypeScriptAndLintChecks(cwd = process.cwd(), projectPkg = {})
     } catch (err) {
       logError('TypeScript type checking failed!');
       console.log(chalk.red('\n  Fix the TypeScript errors before committing code.\n'));
-      process.exit(1);
+      throw new Error('TypeScript type checking failed');
     }
   }
 
@@ -46,7 +46,7 @@ export function runTypeScriptAndLintChecks(cwd = process.cwd(), projectPkg = {})
     } catch (err) {
       logError('Automated CI tests failed!');
       console.log(chalk.red('\n  Fix the failing tests before committing code.\n'));
-      process.exit(1);
+      throw new Error('CI automated tests failed');
     }
   }
 
@@ -67,6 +67,6 @@ export function runTypeScriptAndLintChecks(cwd = process.cwd(), projectPkg = {})
     console.log(chalk.red.bold('  ❌ COMMIT REJECTED: Application bundle generation failed!'));
     console.log(chalk.yellow('  Please fix the Angular/TypeScript build errors displayed above.'));
     console.log(chalk.red('  ═════════════════════════════════════════════════════════════════\n'));
-    process.exit(1);
+    throw new Error('Angular build compilation failed');
   }
 }

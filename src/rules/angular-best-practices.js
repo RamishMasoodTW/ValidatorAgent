@@ -121,7 +121,7 @@ export function checkCriticalArchitecture(cwd = process.cwd()) {
   if (missingItems.length > 0) {
     logError(`Missing critical Angular file(s)/directory: ${missingItems.join(', ')}`);
     console.log(chalk.red('  Commit rejected: Ensure your project structure adheres to Angular CLI standards.\n'));
-    process.exit(1);
+    throw new Error(`Missing critical Angular file(s)/directory: ${missingItems.join(', ')}`);
   }
   logSuccess('All critical Angular architecture files, tsconfig, and entry points verified.');
 }
@@ -137,7 +137,7 @@ export function validateCompiledArtifacts(cwd = process.cwd()) {
   if (!outputDir || !fs.existsSync(outputDir)) {
     logError('Build output directory (dist/) was not generated or is missing!');
     console.log(chalk.red('  Commit rejected: Ensure ng build produces valid output.\n'));
-    process.exit(1);
+    throw new Error('Build output directory (dist/) was not generated or is missing!');
   }
 
   console.log(chalk.gray(`  Inspecting build distribution output at: ${outputDir}`));
@@ -148,7 +148,7 @@ export function validateCompiledArtifacts(cwd = process.cwd()) {
   if (!hasIndexHtml) {
     logError('Critical build artifact missing: index.html was not generated in distribution output!');
     console.log(chalk.red('  Commit rejected: index.html is required for IIS/web servers to load the application.\n'));
-    process.exit(1);
+    throw new Error('Critical build artifact missing: index.html');
   }
 
   // 2. Check compiled JavaScript bundles
@@ -156,7 +156,7 @@ export function validateCompiledArtifacts(cwd = process.cwd()) {
   if (jsBundles.length === 0) {
     logError('Critical build artifact missing: No compiled JavaScript bundles found in output!');
     console.log(chalk.red('  Commit rejected: Application logic files (main.js, polyfills.js, runtime.js) are missing.\n'));
-    process.exit(1);
+    throw new Error('Critical build artifact missing: No compiled JavaScript bundles found');
   }
 
   // 3. Check compiled styles

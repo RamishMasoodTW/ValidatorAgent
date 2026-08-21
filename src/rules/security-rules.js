@@ -8,10 +8,11 @@ export function scanSecurityRules(diffOutput) {
   if (!diffOutput || diffOutput.trim() === '') return true;
 
   const forbiddenPatterns = [
-    { pattern: /(?:AIzaSy[0-9A-Za-z-_]{33})/g, name: 'Google API Key' },
-    { pattern: /(?:sk-[a-zA-Z0-9]{32,})/g, name: 'OpenAI Secret Key' },
-    { pattern: /(?:ghp_[a-zA-Z0-9]{36})/g, name: 'GitHub Personal Access Token' },
-    { pattern: /(?:BEGIN\s+PRIVATE\s+KEY)/g, name: 'Unencrypted Private Key' }
+    { pattern: /AIzaSy[0-9A-Za-z-_]{33}/, name: 'Google API Key' },
+    { pattern: /sk-(?:proj-|admin-|none-)?[a-zA-Z0-9_-]{20,}/, name: 'OpenAI Secret Key' },
+    { pattern: /ghp_[a-zA-Z0-9]{36}/, name: 'GitHub Personal Access Token' },
+    { pattern: /AKIA[0-9A-Z]{16}/, name: 'AWS Access Key ID' },
+    { pattern: /BEGIN\s+(?:RSA\s+)?PRIVATE\s+KEY/, name: 'Unencrypted Private Key' }
   ];
 
   let violations = [];
@@ -25,7 +26,7 @@ export function scanSecurityRules(diffOutput) {
   if (violations.length > 0) {
     logError(`Security Alert: Hardcoded secrets detected in diff: ${violations.join(', ')}`);
     console.log(chalk.red('  Commit rejected: Remove hardcoded credentials and use environment variables.\n'));
-    process.exit(1);
+    throw new Error(`Hardcoded secrets detected: ${violations.join(', ')}`);
   }
 
   return true;
