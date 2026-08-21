@@ -18,7 +18,8 @@ import {
   enableBranchWatcher,
   disableBranchWatcher,
   statusBranchWatcher,
-  runDaemonLoop
+  runDaemonLoop,
+  autoRestartIfEnabled
 } from './branch-watcher.js';
 import {
   initProgressWindow,
@@ -205,11 +206,17 @@ async function main() {
   );
 
   if (isBranchCmd) {
-    const isEnable = argv.some(a => a === '--enable' || a === 'enable' || a === '-e');
+    const isEnable  = argv.some(a => a === '--enable'  || a === 'enable'  || a === '-e');
     const isDisable = argv.some(a => a === '--disable' || a === 'disable' || a === '-d');
-    const isStatus = argv.some(a => a === '--status' || a === 'status' || a === '-s');
+    const isStatus  = argv.some(a => a === '--status'  || a === 'status'  || a === '-s');
+    const isWatch   = argv.some(a => a === 'watch' || a === '--watch');
+    const isAutoRestart = argv.some(a => a === '--auto-restart' || a === 'auto-restart');
 
-    if (isEnable) {
+    if (isAutoRestart || (isWatch && isAutoRestart)) {
+      // Called by VS Code tasks.json on folder open — silently restart daemon if enabled
+      await autoRestartIfEnabled(process.cwd());
+      return;
+    } else if (isEnable) {
       await enableBranchWatcher(process.cwd());
       return;
     } else if (isDisable) {

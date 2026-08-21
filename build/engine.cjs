@@ -50847,6 +50847,125 @@ function getAlertLogPath(cwd = process.cwd()) {
   if (!import_fs4.default.existsSync(gitDir)) return null;
   return import_path3.default.join(gitDir, "gatekeeper-conflict-alert.log");
 }
+function getEngineBinaryPath() {
+  const installed = process.env.APPDATA ? import_path3.default.join(process.env.APPDATA, "FrontendGatekeeper", "engine.exe") : null;
+  if (installed && import_fs4.default.existsSync(installed)) return installed;
+  return process.execPath;
+}
+function setupVSCodeAutoRestart(cwd) {
+  const vscodDir = import_path3.default.join(cwd, ".vscode");
+  const tasksFile = import_path3.default.join(vscodDir, "tasks.json");
+  const engineBin = getEngineBinaryPath();
+  const newTask = {
+    label: "Angular Gatekeeper: Auto-Restart Branch Watcher",
+    type: "shell",
+    command: `"${engineBin}"`,
+    args: ["branch", "watch", "--auto-restart"],
+    options: { cwd: "${workspaceFolder}" },
+    runOptions: { runOn: "folderOpen" },
+    presentation: {
+      reveal: "silent",
+      panel: "dedicated",
+      showReuseMessage: false,
+      close: true
+    },
+    problemMatcher: []
+  };
+  try {
+    import_fs4.default.mkdirSync(vscodDir, { recursive: true });
+    let existingTasks = { version: "2.0.0", tasks: [] };
+    if (import_fs4.default.existsSync(tasksFile)) {
+      try {
+        existingTasks = JSON.parse(import_fs4.default.readFileSync(tasksFile, "utf8"));
+        if (!Array.isArray(existingTasks.tasks)) existingTasks.tasks = [];
+      } catch (_) {
+      }
+    }
+    existingTasks.tasks = existingTasks.tasks.filter((t2) => t2.label !== newTask.label);
+    existingTasks.tasks.push(newTask);
+    import_fs4.default.writeFileSync(tasksFile, JSON.stringify(existingTasks, null, 2), "utf8");
+    const settingsFile = import_path3.default.join(vscodDir, "settings.json");
+    let existingSettings = {};
+    if (import_fs4.default.existsSync(settingsFile)) {
+      try {
+        existingSettings = JSON.parse(import_fs4.default.readFileSync(settingsFile, "utf8"));
+      } catch (_) {
+      }
+    }
+    existingSettings["task.allowAutomaticTasks"] = "on";
+    import_fs4.default.writeFileSync(settingsFile, JSON.stringify(existingSettings, null, 2), "utf8");
+  } catch (err) {
+  }
+}
+function removeVSCodeAutoRestart(cwd) {
+  const vscodDir = import_path3.default.join(cwd, ".vscode");
+  const tasksFile = import_path3.default.join(vscodDir, "tasks.json");
+  if (import_fs4.default.existsSync(tasksFile)) {
+    try {
+      const existing = JSON.parse(import_fs4.default.readFileSync(tasksFile, "utf8"));
+      if (Array.isArray(existing.tasks)) {
+        existing.tasks = existing.tasks.filter(
+          (t2) => t2.label !== "Angular Gatekeeper: Auto-Restart Branch Watcher"
+        );
+        import_fs4.default.writeFileSync(tasksFile, JSON.stringify(existing, null, 2), "utf8");
+      }
+    } catch (_) {
+    }
+  }
+  const settingsFile = import_path3.default.join(vscodDir, "settings.json");
+  if (import_fs4.default.existsSync(settingsFile)) {
+    try {
+      const settings = JSON.parse(import_fs4.default.readFileSync(settingsFile, "utf8"));
+      delete settings["task.allowAutomaticTasks"];
+      import_fs4.default.writeFileSync(settingsFile, JSON.stringify(settings, null, 2), "utf8");
+    } catch (_) {
+    }
+  }
+}
+async function autoRestartIfEnabled(cwd = process.cwd()) {
+  const configPath = getWatcherConfigPath(cwd);
+  if (!configPath || !import_fs4.default.existsSync(configPath)) return;
+  let config = {};
+  try {
+    config = JSON.parse(import_fs4.default.readFileSync(configPath, "utf8"));
+  } catch (_) {
+    return;
+  }
+  if (!config.enabled) return;
+  const targetBranch = config.targetBranch || "main";
+  const intervalMinutes = parseInt(config.intervalMinutes, 10) || 15;
+  if (config.pid && isPidAlive(config.pid)) return;
+  const engineBin = getEngineBinaryPath();
+  let execBinary = engineBin;
+  let execArgs = [];
+  if (import_path3.default.basename(execBinary).toLowerCase().startsWith("node")) {
+    execArgs = [process.argv[1]];
+  }
+  const gitDir = import_path3.default.join(cwd, ".git");
+  const daemonLogPath = import_path3.default.join(gitDir, "gatekeeper-daemon.log");
+  const outLog = import_fs4.default.openSync(daemonLogPath, "a");
+  const errLog = import_fs4.default.openSync(daemonLogPath, "a");
+  const child = (0, import_child_process3.spawn)(execBinary, execArgs, {
+    detached: true,
+    stdio: ["ignore", outLog, errLog],
+    cwd,
+    windowsHide: true,
+    env: {
+      ...process.env,
+      GATEKEEPER_DAEMON_MODE: "1",
+      GATEKEEPER_REPO_PATH: cwd,
+      GATEKEEPER_TARGET_BRANCH: targetBranch,
+      GATEKEEPER_INTERVAL_MINUTES: String(intervalMinutes)
+    }
+  });
+  child.unref();
+  try {
+    config.pid = child.pid;
+    config.startedAt = (/* @__PURE__ */ new Date()).toISOString();
+    import_fs4.default.writeFileSync(configPath, JSON.stringify(config, null, 2), "utf8");
+  } catch (_) {
+  }
+}
 function sendWindowsNotification(title, message, cwd = process.cwd()) {
   if (process.platform !== "win32") return;
   const safeTitle = title.replace(/'/g, "''").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -51090,10 +51209,7 @@ async function enableBranchWatcher(cwd = process.cwd()) {
   await disableBranchWatcher(cwd, true);
   console.log(source_default.blue(`
 >>> Launching background ${intervalMinutes}-minute sync monitor daemon...`));
-  let execBinary = process.env.APPDATA ? import_path3.default.join(process.env.APPDATA, "FrontendGatekeeper", "engine.exe") : process.execPath;
-  if (!import_fs4.default.existsSync(execBinary)) {
-    execBinary = process.execPath;
-  }
+  let execBinary = getEngineBinaryPath();
   let execArgs = [];
   if (import_path3.default.basename(execBinary).toLowerCase().startsWith("node")) {
     const scriptPath = process.argv[1];
@@ -51133,6 +51249,8 @@ async function enableBranchWatcher(cwd = process.cwd()) {
   if (configPath) {
     import_fs4.default.writeFileSync(configPath, JSON.stringify(configData, null, 2), "utf8");
   }
+  setupVSCodeAutoRestart(cwd);
+  console.log(source_default.gray("  [Auto-Restart] .vscode/tasks.json configured \u2014 watcher will auto-restart when this project is opened in VS Code / Cursor."));
   console.log(source_default.green.bold("\n\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550"));
   console.log(source_default.green.bold(`   \u2714 ${intervalMinutes}-MINUTE BACKGROUND BRANCH CONFLICT WATCHER ACTIVATED!   `));
   console.log(source_default.green.bold("\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550"));
@@ -51140,6 +51258,7 @@ async function enableBranchWatcher(cwd = process.cwd()) {
   console.log(source_default.white(`  \u2022 Active Branch:     ${source_default.cyan.bold(currentBranch)}`));
   console.log(source_default.white(`  \u2022 Check Interval:    ${source_default.cyan(`Every ${intervalMinutes} Minute(s)`)}`));
   console.log(source_default.white(`  \u2022 Background PID:    ${source_default.cyan(child.pid)}`));
+  console.log(source_default.white(`  \u2022 Auto-Restart:      ${source_default.cyan.bold("ON")} ${source_default.gray("(restarts on VS Code / Cursor folder open)")}`));
   console.log(source_default.magenta("\n  You will receive automatic Windows Desktop Toast alerts"));
   console.log(source_default.magenta(`  whenever new commits on "${targetBranch}" cause conflicts with your work.`));
   console.log(source_default.gray("\n  To stop watcher:     a-gatekeeper branch check --disable"));
@@ -51168,6 +51287,8 @@ async function disableBranchWatcher(cwd = process.cwd(), silent = false) {
   }
   try {
     const config = JSON.parse(import_fs4.default.readFileSync(configPath, "utf8"));
+    config.enabled = false;
+    import_fs4.default.writeFileSync(configPath, JSON.stringify(config, null, 2), "utf8");
     if (config.pid) {
       try {
         process.kill(config.pid);
@@ -51179,8 +51300,10 @@ async function disableBranchWatcher(cwd = process.cwd(), silent = false) {
     if (alertLog && import_fs4.default.existsSync(alertLog)) {
       import_fs4.default.unlinkSync(alertLog);
     }
+    removeVSCodeAutoRestart(cwd);
     if (!silent) {
-      console.log(source_default.green("\u2714 Branch conflict watcher DISABLED successfully for this repository."));
+      console.log(source_default.green("\u2714 Branch conflict watcher DISABLED for this repository."));
+      console.log(source_default.gray("  Auto-restart on IDE open has also been removed."));
     }
   } catch (err) {
     if (!silent) {
@@ -51281,6 +51404,7 @@ Please pull or rebase origin/${targetBranch} to resolve.
       appendDaemonLog(`Error in check cycle: ${cycleErr.message || cycleErr}`);
     }
   }
+  await checkCycle();
   setInterval(checkCycle, INTERVAL_MS);
 }
 
@@ -51792,7 +51916,12 @@ async function main() {
     const isEnable = argv.some((a) => a === "--enable" || a === "enable" || a === "-e");
     const isDisable = argv.some((a) => a === "--disable" || a === "disable" || a === "-d");
     const isStatus = argv.some((a) => a === "--status" || a === "status" || a === "-s");
-    if (isEnable) {
+    const isWatch = argv.some((a) => a === "watch" || a === "--watch");
+    const isAutoRestart = argv.some((a) => a === "--auto-restart" || a === "auto-restart");
+    if (isAutoRestart || isWatch && isAutoRestart) {
+      await autoRestartIfEnabled(process.cwd());
+      return;
+    } else if (isEnable) {
       await enableBranchWatcher(process.cwd());
       return;
     } else if (isDisable) {
