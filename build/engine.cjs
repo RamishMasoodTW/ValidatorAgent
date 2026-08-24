@@ -28109,9 +28109,6 @@ function runGit(command, allowFail = false, cwd = process.cwd()) {
     return "";
   }
 }
-function getCurrentBranch(cwd = process.cwd()) {
-  return runGit("git rev-parse --abbrev-ref HEAD", true, cwd) || "main";
-}
 function getDiff(cwd = process.cwd()) {
   let diff = runGit("git diff --cached", true, cwd);
   if (!diff || diff.trim() === "") {
@@ -28182,7 +28179,7 @@ function checkAngularProject(cwd = process.cwd()) {
   return { isAngular, projectPkg };
 }
 function checkCriticalArchitecture(cwd = process.cwd()) {
-  logStep(3, "Critical Angular Architecture & Source Validation");
+  logStep(2, "Critical Angular Architecture & Source Validation");
   const requiredItems = [
     { name: "angular.json", path: import_path.default.join(cwd, "angular.json"), type: "file" },
     { name: "package.json", path: import_path.default.join(cwd, "package.json"), type: "file" },
@@ -28221,7 +28218,7 @@ function checkCriticalArchitecture(cwd = process.cwd()) {
   logSuccess("All critical Angular architecture files, tsconfig, and entry points verified.");
 }
 function validateCompiledArtifacts(cwd = process.cwd()) {
-  logStep(5, "Production Build Artifacts Validation");
+  logStep(4, "Production Build Artifacts Validation");
   const distPath = import_path.default.join(cwd, "dist");
   const outputDir = findBuildOutputDir(distPath);
   if (!outputDir || !import_fs.default.existsSync(outputDir)) {
@@ -28265,7 +28262,7 @@ function validateCompiledArtifacts(cwd = process.cwd()) {
   logSuccess("Production distribution artifacts validated successfully.");
 }
 function updateBuildMetadata(cwd = process.cwd(), projectPkg = {}) {
-  logStep(6, "Automated Angular Build Versioning");
+  logStep(5, "Automated Angular Build Versioning");
   const srcDir = import_path.default.join(cwd, "src");
   if (import_fs.default.existsSync(srcDir) && import_fs.default.statSync(srcDir).isDirectory()) {
     const buildMetaPath = import_path.default.join(srcDir, "build-metadata.json");
@@ -28302,7 +28299,7 @@ function updateBuildMetadata(cwd = process.cwd(), projectPkg = {}) {
 // src/rules/typescript-validator.js
 var import_child_process2 = require("child_process");
 function runTypeScriptAndLintChecks(cwd = process.cwd(), projectPkg = {}) {
-  logStep(4, "Angular Build, Compilation & Type Checks");
+  logStep(3, "Angular Build, Compilation & Type Checks");
   const scripts = projectPkg.scripts || {};
   if (scripts["lint"]) {
     console.log(source_default.blue("  Running Angular Linter (npm run lint)..."));
@@ -51419,13 +51416,12 @@ var PS_SCRIPT = import_path4.default.join(import_os.default.tmpdir(), "gk-progre
 var VBS_SCRIPT = import_path4.default.join(import_os.default.tmpdir(), "gk-progress-launcher.vbs");
 var STEPS = [
   { id: 1, label: "1. Angular Project Detection" },
-  { id: 2, label: "2. Remote Repository Sync Check" },
-  { id: 3, label: "3. Critical Architecture & Entry Points" },
-  { id: 4, label: "4. Angular Build & TypeScript Compilation" },
-  { id: 5, label: "5. Production Distribution Artifacts" },
-  { id: 6, label: "6. Automated Build Versioning" },
-  { id: 7, label: "7. Security & Secret Leak Scanning" },
-  { id: 8, label: "8. AI Knowledge Base Audit (Gemini 3.6)" }
+  { id: 2, label: "2. Critical Architecture & Entry Points" },
+  { id: 3, label: "3. Angular Build & TypeScript Compilation" },
+  { id: 4, label: "4. Production Distribution Artifacts" },
+  { id: 5, label: "5. Automated Build Versioning" },
+  { id: 6, label: "6. Security & Secret Leak Scanning" },
+  { id: 7, label: "7. AI Knowledge Base Audit (Gemini 3.6)" }
 ];
 var _windowEnabled = false;
 function writeProgressFile(data) {
@@ -51559,13 +51555,12 @@ $closeBtn.Add_Click({
 
 $stepLabels = @(
   '1. Angular Project Detection',
-  '2. Remote Repository Sync Check',
-  '3. Critical Architecture & Entry Points',
-  '4. Angular Build & TypeScript Compilation',
-  '5. Production Distribution Artifacts',
-  '6. Automated Build Versioning',
-  '7. Security & Secret Leak Scanning',
-  '8. AI Knowledge Base Audit (Gemini 3.6)'
+  '2. Critical Architecture & Entry Points',
+  '3. Angular Build & TypeScript Compilation',
+  '4. Production Distribution Artifacts',
+  '5. Automated Build Versioning',
+  '6. Security & Secret Leak Scanning',
+  '7. AI Knowledge Base Audit (Gemini 3.6)'
 )
 
 $rowBorders = @{}
@@ -51800,35 +51795,17 @@ async function runGatekeeper() {
   startStep(1);
   updateStep(1, "pass");
   startStep(2);
-  logStep(2, "Remote Repository Sync Check");
   try {
-    const currentBranch = getCurrentBranch(cwd);
-    console.log(source_default.blue(`  Current active branch: ${source_default.bold(currentBranch)}`));
-    let fetched = false;
-    try {
-      runGit("git fetch origin", true, cwd);
-      fetched = true;
-    } catch (e2) {
-    }
-    if (fetched) {
-      const unpulledCountStr = runGit(`git rev-list --count HEAD..origin/${currentBranch}`, true, cwd);
-      const unpulledCount = parseInt(unpulledCountStr, 10);
-      if (!isNaN(unpulledCount) && unpulledCount > 0) {
-        logWarning(`Note: Your branch is behind origin/${currentBranch} by ${unpulledCount} commit(s). Remember to rebase before pushing.`);
-      } else {
-        logSuccess("Local branch is up to date with remote origin.");
-      }
-    } else {
-      console.log(source_default.gray("  Remote sync check skipped (working locally)."));
-    }
+    checkCriticalArchitecture(cwd);
     updateStep(2, "pass");
   } catch (err) {
-    logWarning(`Sync check notice: ${err.message || err}. Continuing...`);
-    updateStep(2, "pass");
+    updateStep(2, "error");
+    finalizeProgress(false);
+    throw err;
   }
   startStep(3);
   try {
-    checkCriticalArchitecture(cwd);
+    runTypeScriptAndLintChecks(cwd, projectPkg);
     updateStep(3, "pass");
   } catch (err) {
     updateStep(3, "error");
@@ -51837,7 +51814,7 @@ async function runGatekeeper() {
   }
   startStep(4);
   try {
-    runTypeScriptAndLintChecks(cwd, projectPkg);
+    validateCompiledArtifacts(cwd);
     updateStep(4, "pass");
   } catch (err) {
     updateStep(4, "error");
@@ -51846,7 +51823,7 @@ async function runGatekeeper() {
   }
   startStep(5);
   try {
-    validateCompiledArtifacts(cwd);
+    updateBuildMetadata(cwd, projectPkg);
     updateStep(5, "pass");
   } catch (err) {
     updateStep(5, "error");
@@ -51855,7 +51832,8 @@ async function runGatekeeper() {
   }
   startStep(6);
   try {
-    updateBuildMetadata(cwd, projectPkg);
+    const diffOutput = getDiff(cwd);
+    scanSecurityRules(diffOutput);
     updateStep(6, "pass");
   } catch (err) {
     updateStep(6, "error");
@@ -51863,16 +51841,6 @@ async function runGatekeeper() {
     throw err;
   }
   startStep(7);
-  try {
-    const diffOutput = getDiff(cwd);
-    scanSecurityRules(diffOutput);
-    updateStep(7, "pass");
-  } catch (err) {
-    updateStep(7, "error");
-    finalizeProgress(false);
-    throw err;
-  }
-  startStep(8);
   const apiKey = process.env.GEMINI_API_KEY;
   let aiReport = "";
   try {
@@ -51880,18 +51848,18 @@ async function runGatekeeper() {
     if (auditRes) {
       aiReport = auditRes.report || "";
       if (!auditRes.passed) {
-        updateStep(8, "error", aiReport);
+        updateStep(7, "error", aiReport);
         finalizeProgress(false, aiReport);
         process.exit(1);
       } else {
         const status = auditRes.skipped ? "skip" : "pass";
-        updateStep(8, status, aiReport);
+        updateStep(7, status, aiReport);
       }
     } else {
-      updateStep(8, apiKey ? "pass" : "skip");
+      updateStep(7, apiKey ? "pass" : "skip");
     }
   } catch (err) {
-    updateStep(8, "error", err.message);
+    updateStep(7, "error", err.message);
     finalizeProgress(false, err.message);
     throw err;
   }

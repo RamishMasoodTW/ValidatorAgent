@@ -22,13 +22,12 @@ const VBS_SCRIPT    = path.join(os.tmpdir(), 'gk-progress-launcher.vbs');
 
 const STEPS = [
   { id: 1, label: '1. Angular Project Detection' },
-  { id: 2, label: '2. Remote Repository Sync Check' },
-  { id: 3, label: '3. Critical Architecture & Entry Points' },
-  { id: 4, label: '4. Angular Build & TypeScript Compilation' },
-  { id: 5, label: '5. Production Distribution Artifacts' },
-  { id: 6, label: '6. Automated Build Versioning' },
-  { id: 7, label: '7. Security & Secret Leak Scanning' },
-  { id: 8, label: '8. AI Knowledge Base Audit (Gemini 3.6)' }
+  { id: 2, label: '2. Critical Architecture & Entry Points' },
+  { id: 3, label: '3. Angular Build & TypeScript Compilation' },
+  { id: 4, label: '4. Production Distribution Artifacts' },
+  { id: 5, label: '5. Automated Build Versioning' },
+  { id: 6, label: '6. Security & Secret Leak Scanning' },
+  { id: 7, label: '7. AI Knowledge Base Audit (Gemini 3.6)' }
 ];
 
 let _windowEnabled = false;
@@ -165,13 +164,12 @@ $closeBtn.Add_Click({
 
 $stepLabels = @(
   '1. Angular Project Detection',
-  '2. Remote Repository Sync Check',
-  '3. Critical Architecture & Entry Points',
-  '4. Angular Build & TypeScript Compilation',
-  '5. Production Distribution Artifacts',
-  '6. Automated Build Versioning',
-  '7. Security & Secret Leak Scanning',
-  '8. AI Knowledge Base Audit (Gemini 3.6)'
+  '2. Critical Architecture & Entry Points',
+  '3. Angular Build & TypeScript Compilation',
+  '4. Production Distribution Artifacts',
+  '5. Automated Build Versioning',
+  '6. Security & Secret Leak Scanning',
+  '7. AI Knowledge Base Audit (Gemini 3.6)'
 )
 
 $rowBorders = @{}

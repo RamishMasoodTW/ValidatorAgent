@@ -3,10 +3,10 @@ import chalk from 'chalk';
 import { logStep, logSuccess, logError } from '../utils/logger.js';
 
 /**
- * Step 4: Mandatory Angular Build & TypeScript Compilation Checks
+ * Step 3: Mandatory Angular Build & TypeScript Compilation Checks
  */
 export function runTypeScriptAndLintChecks(cwd = process.cwd(), projectPkg = {}) {
-  logStep(4, 'Angular Build, Compilation & Type Checks');
+  logStep(3, 'Angular Build, Compilation & Type Checks');
   const scripts = projectPkg.scripts || {};
 
   // 1. Run custom linters if configured

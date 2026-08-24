@@ -76,10 +76,10 @@ export function checkAngularProject(cwd = process.cwd()) {
 }
 
 /**
- * Step 3: Critical Architecture & Entry Point Validation
+ * Step 2: Critical Architecture & Entry Point Validation
  */
 export function checkCriticalArchitecture(cwd = process.cwd()) {
-  logStep(3, 'Critical Angular Architecture & Source Validation');
+  logStep(2, 'Critical Angular Architecture & Source Validation');
   const requiredItems = [
     { name: 'angular.json', path: path.join(cwd, 'angular.json'), type: 'file' },
     { name: 'package.json', path: path.join(cwd, 'package.json'), type: 'file' },
@@ -127,10 +127,10 @@ export function checkCriticalArchitecture(cwd = process.cwd()) {
 }
 
 /**
- * Step 5: Compiled Production Artifacts Validation (IIS / Web Entry Points)
+ * Step 4: Compiled Production Artifacts Validation (IIS / Web Entry Points)
  */
 export function validateCompiledArtifacts(cwd = process.cwd()) {
-  logStep(5, 'Production Build Artifacts Validation');
+  logStep(4, 'Production Build Artifacts Validation');
   const distPath = path.join(cwd, 'dist');
   const outputDir = findBuildOutputDir(distPath);
 
@@ -189,10 +189,10 @@ export function validateCompiledArtifacts(cwd = process.cwd()) {
 }
 
 /**
- * Step 6: Automated Build Versioning
+ * Step 5: Automated Build Versioning
  */
 export function updateBuildMetadata(cwd = process.cwd(), projectPkg = {}) {
-  logStep(6, 'Automated Angular Build Versioning');
+  logStep(5, 'Automated Angular Build Versioning');
   const srcDir = path.join(cwd, 'src');
   if (fs.existsSync(srcDir) && fs.statSync(srcDir).isDirectory()) {
     const buildMetaPath = path.join(srcDir, 'build-metadata.json');
