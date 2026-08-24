@@ -349,43 +349,77 @@ export function checkBranchConflicts(cwd = process.cwd(), targetBranch = 'main')
       stdio: ['pipe', 'pipe', 'pipe'],
       windowsHide: true
     });
-    mergeTreeOutput = res;
-    hasConflict = false;
+    mergeTreeOutput = res || '';
   } catch (err) {
-    // Exit code 1 indicates merge conflicts in modern Git
     mergeTreeOutput = (err.stdout || '') + '\n' + (err.stderr || '');
     hasConflict = true;
+  }
 
-    // Extract conflicting filenames
+  // Modern Git prints conflict messages directly in stdout even with exit 0, or on error
+  if (mergeTreeOutput) {
     const lines = mergeTreeOutput.split('\n');
     for (const line of lines) {
       if (line.includes('CONFLICT') || line.includes('Auto-merging')) {
         const match = line.match(/CONFLICT \([^)]+\): (?:Merge conflict in )?(.*)/i);
         if (match && match[1]) {
-          conflictingFiles.push(match[1].trim());
-        }
-      }
-    }
-  }
-
-  // Fallback for classic git merge-tree if no files parsed
-  if (hasConflict && conflictingFiles.length === 0) {
-    const mergeBase = runGit(`git merge-base ${uncommittedStateRef} origin/${targetBranch}`, cwd, true);
-    if (mergeBase) {
-      const classicOutput = runGit(`git merge-tree ${mergeBase} ${uncommittedStateRef} origin/${targetBranch}`, cwd, true);
-      const blocks = classicOutput.split('changed in both');
-      if (blocks.length > 1) {
-        for (let i = 1; i < blocks.length; i++) {
-          const match = blocks[i].match(/^\s*\n\s*base\s+[0-9a-f]+\s+([^\n]+)/m);
-          if (match && match[1]) {
-            conflictingFiles.push(match[1].trim());
+          let cleanFileName = match[1].trim();
+          // Strip leading git hash if present (e.g. "372b06ca... src/app/app.ts" -> "src/app/app.ts")
+          cleanFileName = cleanFileName.replace(/^[0-9a-fA-F]{40}\s+/, '').trim();
+          if (cleanFileName) {
+            conflictingFiles.push(cleanFileName.replace(/\\/g, '/'));
+            hasConflict = true;
           }
         }
       }
     }
   }
 
-  conflictingFiles = [...new Set(conflictingFiles)].filter(Boolean);
+  // Fallback for classic git merge-tree if no files parsed
+  if (!hasConflict || conflictingFiles.length === 0) {
+    const mergeBase = runGit(`git merge-base ${uncommittedStateRef} origin/${targetBranch}`, cwd, true);
+    if (mergeBase) {
+      const classicOutput = runGit(`git merge-tree ${mergeBase} ${uncommittedStateRef} origin/${targetBranch}`, cwd, true);
+      if (classicOutput && classicOutput.includes('changed in both')) {
+        const blocks = classicOutput.split('changed in both');
+        for (let i = 1; i < blocks.length; i++) {
+          const match = blocks[i].match(/^\s*\n\s*base\s+[0-9a-f]+\s+([^\n]+)/m);
+          if (match && match[1]) {
+            let cleanFileName = match[1].trim().replace(/^[0-9a-fA-F]{40}\s+/, '').trim();
+            if (cleanFileName) {
+              conflictingFiles.push(cleanFileName.replace(/\\/g, '/'));
+              hasConflict = true;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // 5. Working-Tree Collision Check (Catches "error: Your local changes would be overwritten by pull/merge")
+  // If remote modified files touch any locally uncommitted files, they collide
+  if (behindCount > 0 && localEditedFiles.length > 0) {
+    try {
+      const remoteChangedFilesStr = runGit(`git diff --name-only HEAD..origin/${targetBranch}`, cwd, true);
+      if (remoteChangedFilesStr) {
+        const remoteChangedFiles = remoteChangedFilesStr.split('\n').map(f => f.trim().replace(/\\/g, '/')).filter(Boolean);
+        const normalizedLocalFiles = localEditedFiles.map(f => f.replace(/\\/g, '/'));
+
+        for (const rf of remoteChangedFiles) {
+          if (normalizedLocalFiles.includes(rf)) {
+            conflictingFiles.push(rf);
+            hasConflict = true;
+          }
+        }
+      }
+    } catch (_) {}
+  }
+
+  // Clean, normalize and deduplicate all filenames
+  conflictingFiles = [...new Set(
+    conflictingFiles
+      .map(f => f.replace(/^[0-9a-fA-F]{40}\s+/, '').trim().replace(/\\/g, '/'))
+      .filter(Boolean)
+  )];
   if (conflictingFiles.length > 0) {
     hasConflict = true;
   }
@@ -634,6 +668,16 @@ export async function statusBranchWatcher(cwd = process.cwd()) {
 
   let isRunning = isPidAlive(config.pid);
 
+  // Perform a live on-demand check to guarantee real-time status
+  const liveResult = checkBranchConflicts(cwd, config.targetBranch || 'main');
+  config.lastCheckedAt = liveResult.checkedAt;
+  config.hasConflict = liveResult.hasConflict;
+  config.conflictingFiles = liveResult.conflictingFiles;
+  config.behindCount = liveResult.behindCount;
+  try {
+    fs.writeFileSync(configPath, JSON.stringify(config, null, 2), 'utf8');
+  } catch (_) {}
+
   console.log('\n' + chalk.cyan.bold('┌─────────────────────────────────────────────────────────────┐'));
   console.log(chalk.cyan.bold('│ ') + chalk.bold.white('🌿 BRANCH CONFLICT WATCHER STATUS                          ') + chalk.cyan.bold('│'));
   console.log(chalk.cyan.bold('└─────────────────────────────────────────────────────────────┘\n'));
@@ -693,24 +737,27 @@ export async function runDaemonLoop(cwd, targetBranch, intervalMinutes = 15) {
         } catch (e) { }
       }
 
-      // If conflicts detected, trigger Windows Toast Notification
+      // If conflicts or file overwrite collisions detected, trigger Windows Toast Notification
       if (result.hasConflict && result.conflictingFiles.length > 0) {
         const fileList = result.conflictingFiles.slice(0, 3).join(', ') + (result.conflictingFiles.length > 3 ? '...' : '');
-        const toastTitle = result.hasUncommittedChanges
-          ? '⚠️ Live Conflict in Active Work!'
-          : '⚠️ Angular Gatekeeper: Merge Conflict Detected!';
-        const toastMessage = `Branch "${result.currentBranch}" conflicts with origin/${targetBranch} in: ${fileList}`;
+        let toastTitle = '⚠️ Merge Conflict Detected!';
+        let toastMessage = `Branch "${result.currentBranch}" conflicts with origin/${targetBranch} in: ${fileList}`;
 
-        appendDaemonLog(`CONFLICT DETECTED in: ${result.conflictingFiles.join(', ')}. Sending Windows toast alert.`);
+        if (result.hasUncommittedChanges) {
+          toastTitle = '⚠️ Overwrite Collision in Active Work!';
+          toastMessage = `Remote changes on origin/${targetBranch} would overwrite your unsaved edits in: ${fileList}`;
+        }
+
+        appendDaemonLog(`COLLISION / CONFLICT DETECTED in: ${result.conflictingFiles.join(', ')}. Sending Windows toast alert.`);
         sendWindowsNotification(toastTitle, toastMessage, cwd);
 
         const alertLogPath = getAlertLogPath(cwd);
         if (alertLogPath) {
-          const logContent = `[${new Date().toLocaleString()}] LIVE CONFLICT ALERT\n` +
+          const logContent = `[${new Date().toLocaleString()}] LIVE COLLISION & CONFLICT ALERT\n` +
             `Current Branch: ${result.currentBranch}\n` +
             `Target Branch: origin/${targetBranch}\n` +
             `Uncommitted Changes: ${result.hasUncommittedChanges ? 'YES (Live edits detected)' : 'NO'}\n` +
-            `Conflicting Files:\n` +
+            `Collision / Conflicting Files:\n` +
             result.conflictingFiles.map(f => `  - ${f}`).join('\n') +
             `\n\nPlease pull or rebase origin/${targetBranch} to resolve.\n\n`;
           fs.appendFileSync(alertLogPath, logContent, 'utf8');
