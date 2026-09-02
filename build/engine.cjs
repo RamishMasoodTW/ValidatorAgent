@@ -28137,6 +28137,11 @@ function getProjectStructureTree(cwd = process.cwd()) {
   }
   return "";
 }
+function getStagedFiles(cwd = process.cwd()) {
+  const output = runGit("git diff --cached --name-only --diff-filter=ACM", true, cwd);
+  if (!output) return [];
+  return output.split("\n").map((f3) => f3.trim()).filter(Boolean);
+}
 
 // src/rules/angular-best-practices.js
 var import_fs = __toESM(require("fs"), 1);
@@ -28243,7 +28248,29 @@ function checkCriticalArchitecture(cwd = process.cwd()) {
     }
   }
   validateCaseSensitiveImports(cwd, stagedFiles);
+  checkNodeEngineCompatibility(cwd);
   logSuccess("All critical Angular architecture files, lockfile sync, and entry points verified.");
+}
+function checkNodeEngineCompatibility(cwd = process.cwd()) {
+  try {
+    const pkgPath = import_path.default.join(cwd, "package.json");
+    if (!import_fs.default.existsSync(pkgPath)) return;
+    const pkg = JSON.parse(import_fs.default.readFileSync(pkgPath, "utf8"));
+    const requiredNode = pkg.engines && pkg.engines.node;
+    if (requiredNode) {
+      const currentMajor = parseInt(process.versions.node.split(".")[0], 10);
+      const match2 = requiredNode.match(/\d+/);
+      if (match2) {
+        const requiredMajor = parseInt(match2[0], 10);
+        if (requiredNode.startsWith(">=") && currentMajor < requiredMajor) {
+          logError(`Node.js Version Incompatibility! Required: ${requiredNode}, Active: ${process.version}`);
+          throw new Error(`Node.js version mismatch: Required ${requiredNode} but running ${process.version}`);
+        }
+      }
+    }
+  } catch (err) {
+    if (err.message.includes("Node.js version mismatch")) throw err;
+  }
 }
 function validateCaseSensitiveImports(cwd = process.cwd(), stagedFiles = []) {
   const tsFiles = stagedFiles.filter((f3) => f3.endsWith(".ts") && !f3.endsWith(".d.ts") && import_fs.default.existsSync(import_path.default.join(cwd, f3)));
@@ -28332,9 +28359,17 @@ function validateCompiledArtifacts(cwd = process.cwd()) {
     const dockerContent = import_fs.default.readFileSync(dockerfilePath, "utf8");
     dockerValid = dockerContent.includes("FROM ") && (dockerContent.includes("COPY ") || dockerContent.includes("ADD "));
   }
+  let totalBundleSizeBytes = 0;
+  for (const jsFile of jsBundles) {
+    const fullJsPath = import_path.default.join(outputDir, jsFile);
+    if (import_fs.default.existsSync(fullJsPath)) {
+      totalBundleSizeBytes += import_fs.default.statSync(fullJsPath).size;
+    }
+  }
+  const totalBundleSizeMb = (totalBundleSizeBytes / (1024 * 1024)).toFixed(2);
   console.log(source_default.white("  Distribution & CD Readiness Checklist:"));
   console.log(`    ${source_default.green("\u2714")} index.html (Main SPA Entry Point)`);
-  console.log(`    ${source_default.green("\u2714")} Compiled JavaScript Bundles (${jsBundles.length} files: ${jsBundles.slice(0, 3).map((f3) => import_path.default.basename(f3)).join(", ")}${jsBundles.length > 3 ? "..." : ""})`);
+  console.log(`    ${source_default.green("\u2714")} Compiled JavaScript Bundles (${jsBundles.length} files: ${totalBundleSizeMb} MB total)`);
   if (hasStylesCss) {
     console.log(`    ${source_default.green("\u2714")} Global Production Styles (${cssFiles.map((f3) => import_path.default.basename(f3)).join(", ")})`);
   }
@@ -28347,9 +28382,10 @@ function validateCompiledArtifacts(cwd = process.cwd()) {
   if (hasLocalhostLeak) {
     logWarning("CD Warning: Localhost/dev endpoint detected in environment.prod.ts!");
   }
-  logSuccess("Production distribution & CD deployment artifacts validated successfully.");
+  logSuccess(`Production distribution & CD deployment artifacts validated successfully (${totalBundleSizeMb} MB).`);
   return {
     bundleCount: jsBundles.length,
+    totalBundleSizeMb,
     hasSpaRewrite,
     dockerValid,
     hasLocalhostLeak
@@ -28626,11 +28662,41 @@ function scanSecurityRules(diffOutput) {
     });
     console.log(source_default.yellow("\n  Security Requirement:"));
     console.log(source_default.yellow("  Never commit secrets to Git. Move credentials to .env / environment variables."));
-    console.log(source_default.red("  \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\n"));
+    console.log(source_default.red("  \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\n"));
     throw new Error(`Hardcoded secrets detected: ${violations.map((v) => v.name).join(", ")}`);
   }
+  scanStagedFileIntegrity();
   logSuccess("Security scan passed: Zero leaked API keys, tokens, or private credentials.");
   return true;
+}
+function scanStagedFileIntegrity(cwd = process.cwd()) {
+  try {
+    const files = getStagedFiles(cwd);
+    const forbiddenFiles = [];
+    for (const f3 of files) {
+      const base = import_path3.default.basename(f3).toLowerCase();
+      if (base.startsWith(".env") && !base.endsWith(".example") && !base.endsWith(".template") || base.endsWith(".pem") || base.endsWith(".key") || base.endsWith(".pfx") || base.endsWith(".p12") || base === "thumbs.db" || base === ".ds_store") {
+        forbiddenFiles.push({ file: f3, reason: "Sensitive / Local OS environment file" });
+      }
+      const fullPath = import_path3.default.join(cwd, f3);
+      if (import_fs3.default.existsSync(fullPath)) {
+        const stats = import_fs3.default.statSync(fullPath);
+        if (stats.size > 10 * 1024 * 1024) {
+          forbiddenFiles.push({ file: f3, reason: `Oversized binary file (${(stats.size / (1024 * 1024)).toFixed(2)} MB exceeds 10MB limit)` });
+        }
+      }
+    }
+    if (forbiddenFiles.length > 0) {
+      logError("CRITICAL: Forbidden or oversized files detected in active commit stage:");
+      forbiddenFiles.forEach((item) => {
+        console.log(source_default.red(`    \u2022 ${source_default.bold(item.file)} [${item.reason}]`));
+      });
+      console.log(source_default.yellow('\n  Remove these files from git staging using "git reset HEAD <file>".'));
+      throw new Error("Forbidden or oversized files detected in staged commit");
+    }
+  } catch (err) {
+    if (err.message.includes("Forbidden or oversized")) throw err;
+  }
 }
 function scanDependencyVulnerabilities(cwd = process.cwd()) {
   logStep(3, "Dependency Vulnerability & Security Audit (npm audit)");
@@ -51049,7 +51115,7 @@ Ensure your response clearly includes either "VERDICT: PASSED" or "VERDICT: FAIL
 `;
 }
 async function runAiKnowledgeBaseAudit(apiKey, cwd = process.cwd()) {
-  logStep(8, "Angular AI Knowledge Base Regression Audit (Gemini 3.6 Flash)");
+  logStep(8, "Angular AI Knowledge Base Regression Audit (Gemini 3.7 Flash)");
   const resolvedIssuesPath = import_path4.default.join(cwd, "resolved_issues.md");
   if (!import_fs5.default.existsSync(resolvedIssuesPath)) {
     console.log(source_default.gray("  No resolved_issues.md found at repository root. AI audit skipped."));
@@ -51068,8 +51134,8 @@ async function runAiKnowledgeBaseAudit(apiKey, cwd = process.cwd()) {
     console.log(source_default.gray("  No code diff detected against baseline. AI audit passed."));
     return { passed: true, skipped: true, report: "No active code git diff detected against baseline (documentation edits ignored)." };
   }
-  console.log(source_default.cyan("  Consulting Gemini 3.6 Flash to audit Angular code against known issues..."));
-  const candidateModels = ["gemini-3.6-flash", "gemini-3.5-flash", "gemini-flash-latest"];
+  console.log(source_default.cyan("  Consulting Gemini 3.7 Flash to audit Angular code against known issues..."));
+  const candidateModels = ["gemini-3.7-flash", "gemini-3.6-flash", "gemini-2.5-flash", "gemini-flash-latest"];
   let lastError = null;
   for (const modelName of candidateModels) {
     try {
@@ -51093,6 +51159,7 @@ async function runAiKnowledgeBaseAudit(apiKey, cwd = process.cwd()) {
         return { passed: true, skipped: false, report: resultText };
       }
     } catch (apiErr) {
+      console.log(source_default.yellow(`  \u26A0 ${modelName} returned error (${apiErr.message || apiErr}). Switching to alternative model fallback...`));
       lastError = apiErr;
       continue;
     }
@@ -51750,7 +51817,7 @@ var STEPS = [
   { id: 5, label: "5. Automated Unit Tests (test:ci)" },
   { id: 6, label: "6. Production Build & Distribution Artifacts" },
   { id: 7, label: "7. Security & Secret Leak Scanning" },
-  { id: 8, label: "8. AI Knowledge Base Audit (Gemini 3.6)" }
+  { id: 8, label: "8. AI Knowledge Base Audit (Gemini 3.7)" }
 ];
 var _windowEnabled = false;
 function writeProgressFile(data) {
@@ -51918,7 +51985,7 @@ $stepLabels = @(
   '5. Automated Unit Tests (test:ci)',
   '6. Production Build & Distribution Artifacts',
   '7. Security & Secret Leak Scanning',
-  '8. AI Knowledge Base Audit (Gemini 3.6)'
+  '8. AI Knowledge Base Audit (Gemini 3.7)'
 )
 
 $rowBorders = @{}
@@ -52234,9 +52301,9 @@ async function runGatekeeper() {
     runAngularProductionBuild(cwd, projectPkg);
     const cdRes = validateCompiledArtifacts(cwd);
     updateBuildMetadata(cwd, projectPkg);
-    let cdDetail = "Production bundle built & verified in dist/ (index.html + bundles)";
+    let cdDetail = `Verified ${cdRes?.bundleCount || 0} production bundles (${cdRes?.totalBundleSizeMb || "0"} MB)`;
     if (cdRes && cdRes.hasSpaRewrite) {
-      cdDetail = "Production artifacts verified + SPA web server rewrite rule present";
+      cdDetail += " + SPA web.config/nginx rule";
     }
     updateStep(6, "pass", cdDetail);
   } catch (err) {
@@ -52244,13 +52311,13 @@ async function runGatekeeper() {
     finalizeProgress(false);
     throw err;
   }
-  startStep(7, "Scanning staged diff for exposed credentials...");
+  startStep(7, "Scanning staged diff & files for credentials or repo bloat...");
   try {
     const diffOutput = getDiff(cwd);
     scanSecurityRules(diffOutput);
-    updateStep(7, "pass", "0 leaked API keys, tokens, private keys or conflict markers");
+    updateStep(7, "pass", "0 leaked secrets, 0 conflict markers, clean file stage (<10MB)");
   } catch (err) {
-    updateStep(7, "error", "Secret credentials or conflict markers detected in commit");
+    updateStep(7, "error", "Secret credentials, forbidden files, or conflict markers detected");
     finalizeProgress(false);
     throw err;
   }

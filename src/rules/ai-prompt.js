@@ -44,10 +44,10 @@ Ensure your response clearly includes either "VERDICT: PASSED" or "VERDICT: FAIL
 }
 
 /**
- * Step 8: AI Knowledge Base Audit (Gemini 3.6 Flash)
+ * Step 8: AI Knowledge Base Audit (Gemini 3.7 / 3.6 Flash)
  */
 export async function runAiKnowledgeBaseAudit(apiKey, cwd = process.cwd()) {
-  logStep(8, 'Angular AI Knowledge Base Regression Audit (Gemini 3.6 Flash)');
+  logStep(8, 'Angular AI Knowledge Base Regression Audit (Gemini 3.7 Flash)');
   const resolvedIssuesPath = path.join(cwd, 'resolved_issues.md');
 
   if (!fs.existsSync(resolvedIssuesPath)) {
@@ -72,9 +72,10 @@ export async function runAiKnowledgeBaseAudit(apiKey, cwd = process.cwd()) {
     return { passed: true, skipped: true, report: 'No active code git diff detected against baseline (documentation edits ignored).' };
   }
 
-  console.log(chalk.cyan('  Consulting Gemini 3.6 Flash to audit Angular code against known issues...'));
+  console.log(chalk.cyan('  Consulting Gemini 3.7 Flash to audit Angular code against known issues...'));
 
-  const candidateModels = ['gemini-3.6-flash', 'gemini-3.5-flash', 'gemini-flash-latest'];
+  // Default: Gemini 3.7 Flash, Fallback: Gemini 3.6 Flash, then Gemini 2.5 Flash
+  const candidateModels = ['gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-2.5-flash', 'gemini-flash-latest'];
   let lastError = null;
 
   for (const modelName of candidateModels) {
@@ -102,6 +103,7 @@ export async function runAiKnowledgeBaseAudit(apiKey, cwd = process.cwd()) {
         return { passed: true, skipped: false, report: resultText };
       }
     } catch (apiErr) {
+      console.log(chalk.yellow(`  ⚠ ${modelName} returned error (${apiErr.message || apiErr}). Switching to alternative model fallback...`));
       lastError = apiErr;
       // Try next fallback model
       continue;

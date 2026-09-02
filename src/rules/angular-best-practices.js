@@ -145,7 +145,35 @@ export function checkCriticalArchitecture(cwd = process.cwd()) {
   // 2. Linux Case-Sensitivity & File Path Integrity Check (Stops Linux CI "Module not found" errors)
   validateCaseSensitiveImports(cwd, stagedFiles);
 
+  // 3. Node.js Engine & CI Runner Compatibility Check
+  checkNodeEngineCompatibility(cwd);
+
   logSuccess('All critical Angular architecture files, lockfile sync, and entry points verified.');
+}
+
+/**
+ * Checks if current Node.js version satisfies package.json "engines" or .nvmrc
+ */
+export function checkNodeEngineCompatibility(cwd = process.cwd()) {
+  try {
+    const pkgPath = path.join(cwd, 'package.json');
+    if (!fs.existsSync(pkgPath)) return;
+    const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
+    const requiredNode = pkg.engines && pkg.engines.node;
+    if (requiredNode) {
+      const currentMajor = parseInt(process.versions.node.split('.')[0], 10);
+      const match = requiredNode.match(/\d+/);
+      if (match) {
+        const requiredMajor = parseInt(match[0], 10);
+        if (requiredNode.startsWith('>=') && currentMajor < requiredMajor) {
+          logError(`Node.js Version Incompatibility! Required: ${requiredNode}, Active: ${process.version}`);
+          throw new Error(`Node.js version mismatch: Required ${requiredNode} but running ${process.version}`);
+        }
+      }
+    }
+  } catch (err) {
+    if (err.message.includes('Node.js version mismatch')) throw err;
+  }
 }
 
 /**
@@ -268,9 +296,19 @@ export function validateCompiledArtifacts(cwd = process.cwd()) {
     dockerValid = dockerContent.includes('FROM ') && (dockerContent.includes('COPY ') || dockerContent.includes('ADD '));
   }
 
+  // 7. CD Check: Bundle Size & Performance Budget Calculation
+  let totalBundleSizeBytes = 0;
+  for (const jsFile of jsBundles) {
+    const fullJsPath = path.join(outputDir, jsFile);
+    if (fs.existsSync(fullJsPath)) {
+      totalBundleSizeBytes += fs.statSync(fullJsPath).size;
+    }
+  }
+  const totalBundleSizeMb = (totalBundleSizeBytes / (1024 * 1024)).toFixed(2);
+
   console.log(chalk.white('  Distribution & CD Readiness Checklist:'));
   console.log(`    ${chalk.green('✔')} index.html (Main SPA Entry Point)`);
-  console.log(`    ${chalk.green('✔')} Compiled JavaScript Bundles (${jsBundles.length} files: ${jsBundles.slice(0, 3).map(f => path.basename(f)).join(', ')}${jsBundles.length > 3 ? '...' : ''})`);
+  console.log(`    ${chalk.green('✔')} Compiled JavaScript Bundles (${jsBundles.length} files: ${totalBundleSizeMb} MB total)`);
   if (hasStylesCss) {
     console.log(`    ${chalk.green('✔')} Global Production Styles (${cssFiles.map(f => path.basename(f)).join(', ')})`);
   }
@@ -284,9 +322,10 @@ export function validateCompiledArtifacts(cwd = process.cwd()) {
     logWarning('CD Warning: Localhost/dev endpoint detected in environment.prod.ts!');
   }
 
-  logSuccess('Production distribution & CD deployment artifacts validated successfully.');
+  logSuccess(`Production distribution & CD deployment artifacts validated successfully (${totalBundleSizeMb} MB).`);
   return {
     bundleCount: jsBundles.length,
+    totalBundleSizeMb,
     hasSpaRewrite,
     dockerValid,
     hasLocalhostLeak

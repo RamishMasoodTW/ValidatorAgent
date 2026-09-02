@@ -3,6 +3,7 @@ import path from 'path';
 import { execSync } from 'child_process';
 import chalk from 'chalk';
 import { logStep, logWarning, logError, logSuccess } from '../utils/logger.js';
+import { getStagedFiles } from '../utils/git.js';
 
 /**
  * Enterprise-Grade Security & Secret Leak Scanner
@@ -85,12 +86,62 @@ export function scanSecurityRules(diffOutput) {
     });
     console.log(chalk.yellow('\n  Security Requirement:'));
     console.log(chalk.yellow('  Never commit secrets to Git. Move credentials to .env / environment variables.'));
-    console.log(chalk.red('  ═════════════════════════════════════════════════════════════════════\n'));
+    console.log(chalk.red('  ═════════════════════════════════════════════════════════════════\n'));
     throw new Error(`Hardcoded secrets detected: ${violations.map(v => v.name).join(', ')}`);
   }
 
+  // 9. Accidental Heavy & Ignored Files Scanner (Stops repo bloat in CI)
+  scanStagedFileIntegrity();
+
   logSuccess('Security scan passed: Zero leaked API keys, tokens, or private credentials.');
   return true;
+}
+
+/**
+ * Scans staged filenames for forbidden sensitive extensions (.env, .pem, .key) or oversized binary blobs (>10MB)
+ */
+export function scanStagedFileIntegrity(cwd = process.cwd()) {
+  try {
+    const files = getStagedFiles(cwd);
+    const forbiddenFiles = [];
+
+    for (const f of files) {
+      const base = path.basename(f).toLowerCase();
+      // Block sensitive local env / key files
+      if (
+        (base.startsWith('.env') && !base.endsWith('.example') && !base.endsWith('.template')) ||
+        base.endsWith('.pem') ||
+        base.endsWith('.key') ||
+        base.endsWith('.pfx') ||
+        base.endsWith('.p12') ||
+        base === 'thumbs.db' ||
+        base === '.ds_store'
+      ) {
+        forbiddenFiles.push({ file: f, reason: 'Sensitive / Local OS environment file' });
+      }
+
+      // Check for oversized binary files (>10MB)
+      const fullPath = path.join(cwd, f);
+      if (fs.existsSync(fullPath)) {
+        const stats = fs.statSync(fullPath);
+        if (stats.size > 10 * 1024 * 1024) { // 10MB limit
+          forbiddenFiles.push({ file: f, reason: `Oversized binary file (${(stats.size / (1024 * 1024)).toFixed(2)} MB exceeds 10MB limit)` });
+        }
+      }
+    }
+
+    if (forbiddenFiles.length > 0) {
+      logError('CRITICAL: Forbidden or oversized files detected in active commit stage:');
+      forbiddenFiles.forEach(item => {
+        console.log(chalk.red(`    • ${chalk.bold(item.file)} [${item.reason}]`));
+      });
+      console.log(chalk.yellow('\n  Remove these files from git staging using "git reset HEAD <file>".'));
+      throw new Error('Forbidden or oversized files detected in staged commit');
+    }
+  } catch (err) {
+    if (err.message.includes('Forbidden or oversized')) throw err;
+    // Otherwise continue
+  }
 }
 
 /**

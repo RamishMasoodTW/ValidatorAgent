@@ -124,9 +124,9 @@ async function runGatekeeper() {
     runAngularProductionBuild(cwd, projectPkg);
     const cdRes = validateCompiledArtifacts(cwd);
     updateBuildMetadata(cwd, projectPkg);
-    let cdDetail = 'Production bundle built & verified in dist/ (index.html + bundles)';
+    let cdDetail = `Verified ${cdRes?.bundleCount || 0} production bundles (${cdRes?.totalBundleSizeMb || '0'} MB)`;
     if (cdRes && cdRes.hasSpaRewrite) {
-      cdDetail = 'Production artifacts verified + SPA web server rewrite rule present';
+      cdDetail += ' + SPA web.config/nginx rule';
     }
     updateStep(6, 'pass', cdDetail);
   } catch (err) {
@@ -135,19 +135,19 @@ async function runGatekeeper() {
     throw err;
   }
 
-  // STEP 7: Security & Secret Leak Scanning (API keys, Tokens)
-  startStep(7, 'Scanning staged diff for exposed credentials...');
+  // STEP 7: Security & Secret Leak Scanning (API keys, Tokens, Heavy Files)
+  startStep(7, 'Scanning staged diff & files for credentials or repo bloat...');
   try {
     const diffOutput = getDiff(cwd);
     scanSecurityRules(diffOutput);
-    updateStep(7, 'pass', '0 leaked API keys, tokens, private keys or conflict markers');
+    updateStep(7, 'pass', '0 leaked secrets, 0 conflict markers, clean file stage (<10MB)');
   } catch (err) {
-    updateStep(7, 'error', 'Secret credentials or conflict markers detected in commit');
+    updateStep(7, 'error', 'Secret credentials, forbidden files, or conflict markers detected');
     finalizeProgress(false);
     throw err;
   }
 
-  // STEP 8: AI Knowledge Base Audit (Gemini 3.6 Flash)
+  // STEP 8: AI Knowledge Base Audit (Gemini 3.7 / 3.6 Flash)
   startStep(8, 'Auditing regression against knowledge base...');
   const apiKey = process.env.GEMINI_API_KEY;
   let aiReport = '';
