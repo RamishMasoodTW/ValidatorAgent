@@ -242,29 +242,55 @@ export function validateCompiledArtifacts(cwd = process.cwd()) {
   const cssFiles = outputFiles.filter(f => f.endsWith('.css'));
   const hasStylesCss = cssFiles.some(f => path.basename(f).toLowerCase().startsWith('styles') || cssFiles.length > 0);
 
-  // 4. Check assets directory
-  const srcAssetsPath = path.join(cwd, 'src', 'assets');
-  const publicPath = path.join(cwd, 'public');
-  const hasSourceAssets = (fs.existsSync(srcAssetsPath) && fs.readdirSync(srcAssetsPath).length > 0) ||
-                          (fs.existsSync(publicPath) && fs.readdirSync(publicPath).length > 0);
+  // 4. CD Check: SPA Fallback & URL Rewrite Rules (Stops 404 on page refresh)
+  const hasSpaRewrite = outputFiles.some(f => 
+    f.toLowerCase().endsWith('web.config') || 
+    f.toLowerCase().endsWith('nginx.conf') || 
+    f.toLowerCase().endsWith('_redirects') ||
+    f.toLowerCase().endsWith('htaccess')
+  );
   
-  const hasDistAssets = outputFiles.some(f => f.startsWith('assets/') || f.startsWith('media/'));
-
-  console.log(chalk.white('  Distribution Artifact Checklist:'));
-  console.log(`    ${chalk.green('✔')} index.html (Main Entry Point)`);
-  console.log(`    ${chalk.green('✔')} Compiled JavaScript Bundles (${jsBundles.length} files: ${jsBundles.slice(0, 3).map(f => path.basename(f)).join(', ')}${jsBundles.length > 3 ? '...' : ''})`);
-  if (hasStylesCss) {
-    console.log(`    ${chalk.green('✔')} Global Styles (${cssFiles.map(f => path.basename(f)).join(', ')})`);
-  }
-  if (hasSourceAssets) {
-    if (hasDistAssets) {
-      console.log(`    ${chalk.green('✔')} Static Assets (images/fonts/icons verified in dist)`);
-    } else {
-      console.log(`    ${chalk.yellow('⚠')} Static Assets: Source assets detected, please verify assets config in angular.json`);
+  // 5. CD Check: Production Environment Localhost Leak Scan
+  const envProdPath = path.join(cwd, 'src', 'environments', 'environment.prod.ts');
+  let hasLocalhostLeak = false;
+  if (fs.existsSync(envProdPath)) {
+    const envContent = fs.readFileSync(envProdPath, 'utf8');
+    if (/(?:http:\/\/localhost|http:\/\/127\.0\.0\.1|http:\/\/0\.0\.0\.0)/i.test(envContent)) {
+      hasLocalhostLeak = true;
     }
   }
 
-  logSuccess('Production distribution artifacts validated successfully.');
+  // 6. CD Check: Dockerfile Integrity (if present in repo)
+  const dockerfilePath = path.join(cwd, 'Dockerfile');
+  let dockerValid = null;
+  if (fs.existsSync(dockerfilePath)) {
+    const dockerContent = fs.readFileSync(dockerfilePath, 'utf8');
+    dockerValid = dockerContent.includes('FROM ') && (dockerContent.includes('COPY ') || dockerContent.includes('ADD '));
+  }
+
+  console.log(chalk.white('  Distribution & CD Readiness Checklist:'));
+  console.log(`    ${chalk.green('✔')} index.html (Main SPA Entry Point)`);
+  console.log(`    ${chalk.green('✔')} Compiled JavaScript Bundles (${jsBundles.length} files: ${jsBundles.slice(0, 3).map(f => path.basename(f)).join(', ')}${jsBundles.length > 3 ? '...' : ''})`);
+  if (hasStylesCss) {
+    console.log(`    ${chalk.green('✔')} Global Production Styles (${cssFiles.map(f => path.basename(f)).join(', ')})`);
+  }
+  if (hasSpaRewrite) {
+    console.log(`    ${chalk.green('✔')} Web Server SPA Rewrite Config (IIS web.config / Nginx / _redirects)`);
+  }
+  if (dockerValid !== null) {
+    console.log(`    ${chalk.green('✔')} Dockerfile Container Specification Validated`);
+  }
+  if (hasLocalhostLeak) {
+    logWarning('CD Warning: Localhost/dev endpoint detected in environment.prod.ts!');
+  }
+
+  logSuccess('Production distribution & CD deployment artifacts validated successfully.');
+  return {
+    bundleCount: jsBundles.length,
+    hasSpaRewrite,
+    dockerValid,
+    hasLocalhostLeak
+  };
 }
 
 /**

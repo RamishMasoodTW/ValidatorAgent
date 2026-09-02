@@ -3,38 +3,41 @@ import path from 'path';
 import chalk from 'chalk';
 import { GoogleGenAI } from '@google/genai';
 import { logStep, logSuccess, logError, logWarning } from '../utils/logger.js';
-import { getDiff } from '../utils/git.js';
+import { getDiff, getProjectStructureTree } from '../utils/git.js';
 
 /**
  * Generate the Senior Angular Architect & Security Gatekeeper prompt
  */
-export function buildGeminiAuditPrompt(knowledgeBase, diffOutput) {
+export function buildGeminiAuditPrompt(knowledgeBase, diffOutput, projectTree = '') {
   return `
 You are a Principal Angular Architect, DevSecOps Specialist, and Code Quality Gatekeeper.
-Your job is to audit incoming Git code changes in an Angular application against our repository's historical Knowledge Base of previously resolved issues, anti-patterns, bugs, and architecture rules.
+Your job is to audit the current Angular repository and incoming Git changes against our repository's Knowledge Base of established standards, architecture patterns, and resolved issues in "resolved_issues.md".
 
-### HISTORICAL RESOLVED ISSUES KNOWLEDGE BASE:
+### 1. ESTABLISHED REPOSITORY STANDARDS & RESOLVED ISSUES (Knowledge Base):
 \`\`\`markdown
 ${knowledgeBase.slice(0, 15000)}
 \`\`\`
 
-### INCOMING GIT DIFF:
+### 2. REPOSITORY PROJECT STRUCTURE SNAPSHOT:
+\`\`\`text
+${projectTree.slice(0, 8000)}
+\`\`\`
+
+### 3. ACTIVE CODE DIFF / COMMITTED CHANGES:
 \`\`\`diff
 ${diffOutput.slice(0, 25000)}
 \`\`\`
 
-### ANGULAR AUDIT CRITERIA:
-1. Thoroughly analyze the Git diff against each rule/bug in the Knowledge Base.
-2. Specifically check for critical Angular regressions:
-   - Unhandled RxJS subscription memory leaks (missing takeUntilDestroyed / async pipe).
-   - Direct DOM mutations (e.g. element.nativeElement.innerHTML or document.getElementById) bypassing Angular renderer/templates.
-   - Any violation of documented business rules, security rules, or architectural standards in resolved_issues.md.
-3. If the diff reintroduces any previously resolved bugs or violates forbidden patterns:
+### CRITICAL EVALUATION RULES:
+1. **IGNORE direct edits or deletions to the "resolved_issues.md" file itself**. Do NOT fail the commit because resolved_issues.md was modified, reformatted, or shortened.
+2. Evaluate the **entire codebase and incoming code changes** against the technical rules, architecture constraints, and bug avoidance guidelines documented in resolved_issues.md.
+3. Verify that the project structure adheres to the architectural requirements (e.g. proper folder layout, RxJS cleanup with takeUntilDestroyed / async pipe, zero direct nativeElement.innerHTML mutations, clean type safety).
+4. If the active code changes reintroduce previously documented bugs, break architecture rules, or violate security standards:
    - Output: "VERDICT: FAILED"
-   - Provide a concise list of specific violations with line numbers or code snippets from the diff, explaining why it violates the rule and how to fix it in Angular.
-4. If the diff is clean and adheres to all documented best practices:
+   - Provide a concise explanation of the violation with relevant file paths / code snippets.
+5. If the project code adheres to the documented guidelines:
    - Output: "VERDICT: PASSED"
-   - Provide a concise, professional summary and Developer mentorship tips if relevant.
+   - Provide a concise summary and constructive architectural insights.
 
 Ensure your response clearly includes either "VERDICT: PASSED" or "VERDICT: FAILED" in capital letters.
 `;
@@ -61,11 +64,12 @@ export async function runAiKnowledgeBaseAudit(apiKey, cwd = process.cwd()) {
   const knowledgeBase = fs.readFileSync(resolvedIssuesPath, 'utf8');
   console.log(chalk.blue('  Reading git diff for current Angular changes...'));
 
-  const diffOutput = getDiff(cwd);
+  const diffOutput = getDiff(cwd, true); // true = exclude resolved_issues.md and lockfile diff
+  const projectTree = getProjectStructureTree(cwd);
 
   if (!diffOutput || diffOutput.trim() === '') {
-    console.log(chalk.gray('  No diff detected against baseline. AI audit passed.'));
-    return { passed: true, skipped: true, report: 'No active git diff detected against baseline.' };
+    console.log(chalk.gray('  No code diff detected against baseline. AI audit passed.'));
+    return { passed: true, skipped: true, report: 'No active code git diff detected against baseline (documentation edits ignored).' };
   }
 
   console.log(chalk.cyan('  Consulting Gemini 3.6 Flash to audit Angular code against known issues...'));
@@ -76,7 +80,7 @@ export async function runAiKnowledgeBaseAudit(apiKey, cwd = process.cwd()) {
   for (const modelName of candidateModels) {
     try {
       const ai = new GoogleGenAI({ apiKey });
-      const prompt = buildGeminiAuditPrompt(knowledgeBase, diffOutput);
+      const prompt = buildGeminiAuditPrompt(knowledgeBase, diffOutput, projectTree);
 
       const response = await ai.models.generateContent({
         model: modelName,

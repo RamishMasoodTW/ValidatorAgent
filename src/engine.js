@@ -118,15 +118,19 @@ async function runGatekeeper() {
     throw err;
   }
 
-  // STEP 6: Production Build Compilation & Artifact Verification
-  startStep(6, 'Compiling production bundle (ng build)...');
+  // STEP 6: Production Build & CD Deployment Readiness Verification
+  startStep(6, 'Compiling production bundle & verifying CD readiness...');
   try {
     runAngularProductionBuild(cwd, projectPkg);
-    validateCompiledArtifacts(cwd);
+    const cdRes = validateCompiledArtifacts(cwd);
     updateBuildMetadata(cwd, projectPkg);
-    updateStep(6, 'pass', 'Production bundle built & verified in dist/ (index.html + bundles)');
+    let cdDetail = 'Production bundle built & verified in dist/ (index.html + bundles)';
+    if (cdRes && cdRes.hasSpaRewrite) {
+      cdDetail = 'Production artifacts verified + SPA web server rewrite rule present';
+    }
+    updateStep(6, 'pass', cdDetail);
   } catch (err) {
-    updateStep(6, 'error', 'Production build compilation failed');
+    updateStep(6, 'error', 'Production build compilation or CD artifact verification failed');
     finalizeProgress(false);
     throw err;
   }

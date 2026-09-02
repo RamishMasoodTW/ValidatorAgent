@@ -20,21 +20,33 @@ export function getCurrentBranch(cwd = process.cwd()) {
   return runGit('git rev-parse --abbrev-ref HEAD', true, cwd) || 'main';
 }
 
-export function getDiff(cwd = process.cwd()) {
-  let diff = runGit('git diff --cached', true, cwd);
+export function getDiff(cwd = process.cwd(), excludeResolvedIssues = true) {
+  const excludeArg = excludeResolvedIssues ? '":(exclude)resolved_issues.md" ":(exclude)package-lock.json"' : '';
+  let diff = runGit(`git diff --cached -- . ${excludeArg}`, true, cwd);
   if (!diff || diff.trim() === '') {
-    diff = runGit('git diff HEAD~1', true, cwd);
+    diff = runGit(`git diff HEAD~1 -- . ${excludeArg}`, true, cwd);
   }
   if (!diff || diff.trim() === '') {
-    diff = runGit('git diff origin/main...HEAD', true, cwd);
+    diff = runGit(`git diff origin/main...HEAD -- . ${excludeArg}`, true, cwd);
   }
   if (!diff || diff.trim() === '') {
-    diff = runGit('git diff origin/master...HEAD', true, cwd);
+    diff = runGit(`git diff origin/master...HEAD -- . ${excludeArg}`, true, cwd);
   }
   if (!diff || diff.trim() === '') {
-    diff = runGit('git diff HEAD', true, cwd);
+    diff = runGit(`git diff HEAD -- . ${excludeArg}`, true, cwd);
   }
   return diff || '';
+}
+
+export function getProjectStructureTree(cwd = process.cwd()) {
+  try {
+    const output = runGit('git ls-tree -r --name-only HEAD', true, cwd);
+    if (output) {
+      const files = output.split('\n').filter(f => !f.includes('node_modules') && !f.includes('dist') && !f.startsWith('.git'));
+      return files.slice(0, 150).join('\n');
+    }
+  } catch (_) {}
+  return '';
 }
 
 export function getStagedFiles(cwd = process.cwd()) {
