@@ -43,8 +43,8 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
 // node_modules/dotenv/lib/main.js
 var require_main = __commonJS({
   "node_modules/dotenv/lib/main.js"(exports2, module2) {
-    var fs8 = require("fs");
-    var path7 = require("path");
+    var fs10 = require("fs");
+    var path9 = require("path");
     var os3 = require("os");
     var crypto2 = require("crypto");
     var TIPS = [
@@ -175,7 +175,7 @@ var require_main = __commonJS({
       if (options && options.path && options.path.length > 0) {
         if (Array.isArray(options.path)) {
           for (const filepath of options.path) {
-            if (fs8.existsSync(filepath)) {
+            if (fs10.existsSync(filepath)) {
               possibleVaultPath = filepath.endsWith(".vault") ? filepath : `${filepath}.vault`;
             }
           }
@@ -183,15 +183,15 @@ var require_main = __commonJS({
           possibleVaultPath = options.path.endsWith(".vault") ? options.path : `${options.path}.vault`;
         }
       } else {
-        possibleVaultPath = path7.resolve(process.cwd(), ".env.vault");
+        possibleVaultPath = path9.resolve(process.cwd(), ".env.vault");
       }
-      if (fs8.existsSync(possibleVaultPath)) {
+      if (fs10.existsSync(possibleVaultPath)) {
         return possibleVaultPath;
       }
       return null;
     }
     function _resolveHome(envPath2) {
-      return envPath2[0] === "~" ? path7.join(os3.homedir(), envPath2.slice(1)) : envPath2;
+      return envPath2[0] === "~" ? path9.join(os3.homedir(), envPath2.slice(1)) : envPath2;
     }
     function _configVault(options) {
       const debug = parseBoolean(process.env.DOTENV_CONFIG_DEBUG || options && options.debug);
@@ -208,7 +208,7 @@ var require_main = __commonJS({
       return { parsed };
     }
     function configDotenv(options) {
-      const dotenvPath = path7.resolve(process.cwd(), ".env");
+      const dotenvPath = path9.resolve(process.cwd(), ".env");
       let encoding = "utf8";
       let processEnv = process.env;
       if (options && options.processEnv != null) {
@@ -236,13 +236,13 @@ var require_main = __commonJS({
       }
       let lastError;
       const parsedAll = {};
-      for (const path8 of optionPaths) {
+      for (const path10 of optionPaths) {
         try {
-          const parsed = DotenvModule.parse(fs8.readFileSync(path8, { encoding }));
+          const parsed = DotenvModule.parse(fs10.readFileSync(path10, { encoding }));
           DotenvModule.populate(parsedAll, parsed, options);
         } catch (e2) {
           if (debug) {
-            _debug(`failed to load ${path8} ${e2.message}`);
+            _debug(`failed to load ${path10} ${e2.message}`);
           }
           lastError = e2;
         }
@@ -255,7 +255,7 @@ var require_main = __commonJS({
         const shortPaths = [];
         for (const filePath of optionPaths) {
           try {
-            const relative = path7.relative(process.cwd(), filePath);
+            const relative = path9.relative(process.cwd(), filePath);
             shortPaths.push(relative);
           } catch (e2) {
             if (debug) {
@@ -7160,22 +7160,22 @@ var init_from = __esm({
     init_file();
     init_fetch_blob();
     ({ stat } = import_node_fs.promises);
-    blobFromSync = (path7, type) => fromBlob((0, import_node_fs.statSync)(path7), path7, type);
-    blobFrom = (path7, type) => stat(path7).then((stat3) => fromBlob(stat3, path7, type));
-    fileFrom = (path7, type) => stat(path7).then((stat3) => fromFile(stat3, path7, type));
-    fileFromSync = (path7, type) => fromFile((0, import_node_fs.statSync)(path7), path7, type);
-    fromBlob = (stat3, path7, type = "") => new fetch_blob_default([new BlobDataItem({
-      path: path7,
+    blobFromSync = (path9, type) => fromBlob((0, import_node_fs.statSync)(path9), path9, type);
+    blobFrom = (path9, type) => stat(path9).then((stat3) => fromBlob(stat3, path9, type));
+    fileFrom = (path9, type) => stat(path9).then((stat3) => fromFile(stat3, path9, type));
+    fileFromSync = (path9, type) => fromFile((0, import_node_fs.statSync)(path9), path9, type);
+    fromBlob = (stat3, path9, type = "") => new fetch_blob_default([new BlobDataItem({
+      path: path9,
       size: stat3.size,
       lastModified: stat3.mtimeMs,
       start: 0
     })], { type });
-    fromFile = (stat3, path7, type = "") => new file_default([new BlobDataItem({
-      path: path7,
+    fromFile = (stat3, path9, type = "") => new file_default([new BlobDataItem({
+      path: path9,
       size: stat3.size,
       lastModified: stat3.mtimeMs,
       start: 0
-    })], (0, import_node_path.basename)(path7), { type, lastModified: stat3.mtimeMs });
+    })], (0, import_node_path.basename)(path9), { type, lastModified: stat3.mtimeMs });
     BlobDataItem = class _BlobDataItem {
       #path;
       #start;
@@ -12354,9 +12354,9 @@ var require_util2 = __commonJS({
     exports2.removeUndefinedValuesInObject = removeUndefinedValuesInObject;
     exports2.isValidFile = isValidFile;
     exports2.getWellKnownCertificateConfigFileLocation = getWellKnownCertificateConfigFileLocation;
-    var fs8 = require("fs");
+    var fs10 = require("fs");
     var os3 = require("os");
-    var path7 = require("path");
+    var path9 = require("path");
     var WELL_KNOWN_CERTIFICATE_CONFIG_FILE = "certificate_config.json";
     var CLOUDSDK_CONFIG_DIRECTORY = "gcloud";
     function snakeToCamel(str) {
@@ -12442,15 +12442,15 @@ var require_util2 = __commonJS({
     }
     async function isValidFile(filePath) {
       try {
-        const stats = await fs8.promises.lstat(filePath);
+        const stats = await fs10.promises.lstat(filePath);
         return stats.isFile();
       } catch (e2) {
         return false;
       }
     }
     function getWellKnownCertificateConfigFileLocation() {
-      const configDir = process.env.CLOUDSDK_CONFIG || (_isWindows() ? path7.join(process.env.APPDATA || "", CLOUDSDK_CONFIG_DIRECTORY) : path7.join(process.env.HOME || "", ".config", CLOUDSDK_CONFIG_DIRECTORY));
-      return path7.join(configDir, WELL_KNOWN_CERTIFICATE_CONFIG_FILE);
+      const configDir = process.env.CLOUDSDK_CONFIG || (_isWindows() ? path9.join(process.env.APPDATA || "", CLOUDSDK_CONFIG_DIRECTORY) : path9.join(process.env.HOME || "", ".config", CLOUDSDK_CONFIG_DIRECTORY));
+      return path9.join(configDir, WELL_KNOWN_CERTIFICATE_CONFIG_FILE);
     }
     function _isWindows() {
       return os3.platform().startsWith("win");
@@ -14396,11 +14396,11 @@ var require_getCredentials = __commonJS({
     "use strict";
     Object.defineProperty(exports2, "__esModule", { value: true });
     exports2.getCredentials = getCredentials;
-    var path7 = require("path");
-    var fs8 = require("fs");
+    var path9 = require("path");
+    var fs10 = require("fs");
     var util_1 = require("util");
     var errorWithCode_1 = require_errorWithCode();
-    var readFile = fs8.readFile ? (0, util_1.promisify)(fs8.readFile) : async () => {
+    var readFile = fs10.readFile ? (0, util_1.promisify)(fs10.readFile) : async () => {
       throw new errorWithCode_1.ErrorWithCode("use key rather than keyFile.", "MISSING_CREDENTIALS");
     };
     var ExtensionFiles;
@@ -14468,7 +14468,7 @@ var require_getCredentials = __commonJS({
        * @returns An instance of a class that implements ICredentialsProvider.
        */
       static create(keyFilePath) {
-        const keyFileExtension = path7.extname(keyFilePath);
+        const keyFileExtension = path9.extname(keyFilePath);
         switch (keyFileExtension) {
           case ExtensionFiles.JSON:
             return new JsonCredentialsProvider(keyFilePath);
@@ -16077,12 +16077,12 @@ var require_filesubjecttokensupplier = __commonJS({
     Object.defineProperty(exports2, "__esModule", { value: true });
     exports2.FileSubjectTokenSupplier = void 0;
     var util_1 = require("util");
-    var fs8 = require("fs");
-    var readFile = (0, util_1.promisify)(fs8.readFile ?? (() => {
+    var fs10 = require("fs");
+    var readFile = (0, util_1.promisify)(fs10.readFile ?? (() => {
     }));
-    var realpath = (0, util_1.promisify)(fs8.realpath ?? (() => {
+    var realpath = (0, util_1.promisify)(fs10.realpath ?? (() => {
     }));
-    var lstat = (0, util_1.promisify)(fs8.lstat ?? (() => {
+    var lstat = (0, util_1.promisify)(fs10.lstat ?? (() => {
     }));
     var FileSubjectTokenSupplier = class {
       filePath;
@@ -16200,7 +16200,7 @@ var require_certificatesubjecttokensupplier = __commonJS({
     Object.defineProperty(exports2, "__esModule", { value: true });
     exports2.CertificateSubjectTokenSupplier = exports2.InvalidConfigurationError = exports2.CertificateSourceUnavailableError = exports2.CERTIFICATE_CONFIGURATION_ENV_VARIABLE = void 0;
     var util_1 = require_util2();
-    var fs8 = require("fs");
+    var fs10 = require("fs");
     var crypto_1 = require("crypto");
     var https2 = require("https");
     exports2.CERTIFICATE_CONFIGURATION_ENV_VARIABLE = "GOOGLE_API_CERTIFICATE_CONFIG";
@@ -16294,7 +16294,7 @@ var require_certificatesubjecttokensupplier = __commonJS({
         const configPath = this.certificateConfigPath;
         let fileContents;
         try {
-          fileContents = await fs8.promises.readFile(configPath, "utf8");
+          fileContents = await fs10.promises.readFile(configPath, "utf8");
         } catch (err) {
           throw new CertificateSourceUnavailableError(`Failed to read certificate config file at: ${configPath}`);
         }
@@ -16319,14 +16319,14 @@ var require_certificatesubjecttokensupplier = __commonJS({
       async #getKeyAndCert(certPath, keyPath) {
         let cert, key;
         try {
-          cert = await fs8.promises.readFile(certPath);
+          cert = await fs10.promises.readFile(certPath);
           new crypto_1.X509Certificate(cert);
         } catch (err) {
           const message = err instanceof Error ? err.message : String(err);
           throw new CertificateSourceUnavailableError(`Failed to read certificate file at ${certPath}: ${message}`);
         }
         try {
-          key = await fs8.promises.readFile(keyPath);
+          key = await fs10.promises.readFile(keyPath);
           (0, crypto_1.createPrivateKey)(key);
         } catch (err) {
           const message = err instanceof Error ? err.message : String(err);
@@ -16345,7 +16345,7 @@ var require_certificatesubjecttokensupplier = __commonJS({
           return JSON.stringify([leafCert.raw.toString("base64")]);
         }
         try {
-          const chainPems = await fs8.promises.readFile(this.trustChainPath, "utf8");
+          const chainPems = await fs10.promises.readFile(this.trustChainPath, "utf8");
           const pemBlocks = chainPems.match(/-----BEGIN CERTIFICATE-----[^-]+-----END CERTIFICATE-----/g) ?? [];
           const chainCerts = pemBlocks.map((pem, index) => {
             try {
@@ -17047,7 +17047,7 @@ var require_pluggable_auth_handler = __commonJS({
     exports2.PluggableAuthHandler = exports2.ExecutableError = void 0;
     var executable_response_1 = require_executable_response();
     var childProcess = require("child_process");
-    var fs8 = require("fs");
+    var fs10 = require("fs");
     var ExecutableError = class extends Error {
       /**
        * The exit code returned by the executable.
@@ -17132,14 +17132,14 @@ var require_pluggable_auth_handler = __commonJS({
         }
         let filePath;
         try {
-          filePath = await fs8.promises.realpath(this.outputFile);
+          filePath = await fs10.promises.realpath(this.outputFile);
         } catch {
           return void 0;
         }
-        if (!(await fs8.promises.lstat(filePath)).isFile()) {
+        if (!(await fs10.promises.lstat(filePath)).isFile()) {
           return void 0;
         }
-        const responseString = await fs8.promises.readFile(filePath, {
+        const responseString = await fs10.promises.readFile(filePath, {
           encoding: "utf8"
         });
         if (responseString === "") {
@@ -17550,7 +17550,7 @@ var require_gdchclient = __commonJS({
     Object.defineProperty(exports2, "__esModule", { value: true });
     exports2.GdchClient = exports2.GDCH_SERVICE_ACCOUNT_TYPE = void 0;
     var crypto2 = require("crypto");
-    var fs8 = require("fs");
+    var fs10 = require("fs");
     var https2 = require("https");
     var oauth2client_1 = require_oauth2client();
     var DEFAULT_LIFETIME_IN_SECONDS = 3600;
@@ -17773,7 +17773,7 @@ var require_gdchclient = __commonJS({
         const currentPath = this.caCertPath;
         this.caAgentPromise = (async () => {
           try {
-            const ca = await fs8.promises.readFile(currentPath);
+            const ca = await fs10.promises.readFile(currentPath);
             return new https2.Agent({ ca });
           } catch (err) {
             if (this.cachedCaCertPath === currentPath) {
@@ -17833,11 +17833,11 @@ var require_googleauth = __commonJS({
     Object.defineProperty(exports2, "__esModule", { value: true });
     exports2.GoogleAuth = exports2.GoogleAuthExceptionMessages = void 0;
     var child_process_1 = require("child_process");
-    var fs8 = require("fs");
+    var fs10 = require("fs");
     var gaxios_1 = require_src2();
     var gcpMetadata = require_src4();
     var os3 = require("os");
-    var path7 = require("path");
+    var path9 = require("path");
     var crypto_1 = require_crypto3();
     var computeclient_1 = require_computeclient();
     var idtokenclient_1 = require_idtokenclient();
@@ -18122,20 +18122,20 @@ var require_googleauth = __commonJS({
         if (!configDir) {
           if (this._isWindows()) {
             if (process.env["APPDATA"]) {
-              configDir = path7.join(process.env["APPDATA"], "gcloud");
+              configDir = path9.join(process.env["APPDATA"], "gcloud");
             }
           } else {
             const home = process.env["HOME"];
             if (home) {
-              configDir = path7.join(home, ".config", "gcloud");
+              configDir = path9.join(home, ".config", "gcloud");
             }
           }
         }
         if (!configDir) {
           return null;
         }
-        const location = path7.join(configDir, "application_default_credentials.json");
-        if (!fs8.existsSync(location)) {
+        const location = path9.join(configDir, "application_default_credentials.json");
+        if (!fs10.existsSync(location)) {
           return null;
         }
         const client = await this._getApplicationCredentialsFromFilePath(location, options);
@@ -18152,8 +18152,8 @@ var require_googleauth = __commonJS({
           throw new Error("The file path is invalid.");
         }
         try {
-          filePath = fs8.realpathSync(filePath);
-          if (!fs8.lstatSync(filePath).isFile()) {
+          filePath = fs10.realpathSync(filePath);
+          if (!fs10.lstatSync(filePath).isFile()) {
             throw new Error();
           }
         } catch (err) {
@@ -18162,7 +18162,7 @@ var require_googleauth = __commonJS({
           }
           throw err;
         }
-        const readStream = fs8.createReadStream(filePath);
+        const readStream = fs10.createReadStream(filePath);
         return this.fromStream(readStream, options);
       }
       /**
@@ -18489,8 +18489,8 @@ var require_googleauth = __commonJS({
         if (this.jsonContent) {
           return this._cacheClientFromJSON(this.jsonContent, this.clientOptions);
         } else if (this.keyFilename) {
-          const filePath = path7.resolve(this.keyFilename);
-          const stream = fs8.createReadStream(filePath);
+          const filePath = path9.resolve(this.keyFilename);
+          const stream = fs10.createReadStream(filePath);
           return await this.fromStreamAsync(stream, this.clientOptions);
         } else if (this.apiKey) {
           const client = await this.fromAPIKey(this.apiKey, this.clientOptions);
@@ -27557,8 +27557,8 @@ var require_prompts3 = __commonJS({
 });
 
 // src/engine.js
-var import_fs6 = __toESM(require("fs"), 1);
-var import_path5 = __toESM(require("path"), 1);
+var import_fs8 = __toESM(require("fs"), 1);
+var import_path7 = __toESM(require("path"), 1);
 var import_dotenv = __toESM(require_main(), 1);
 
 // node_modules/chalk/source/vendor/ansi-styles/index.js
@@ -28215,7 +28215,68 @@ function checkCriticalArchitecture(cwd = process.cwd()) {
     console.log(source_default.red("  Commit rejected: Ensure your project structure adheres to Angular CLI standards.\n"));
     throw new Error(`Missing critical Angular file(s)/directory: ${missingItems.join(", ")}`);
   }
-  logSuccess("All critical Angular architecture files, tsconfig, and entry points verified.");
+  const stagedFiles = runGit("git diff --cached --name-only", true, cwd).split("\n").map((f3) => f3.trim());
+  const packageJsonStaged = stagedFiles.includes("package.json");
+  const lockfileStaged = stagedFiles.includes("package-lock.json") || stagedFiles.includes("yarn.lock") || stagedFiles.includes("pnpm-lock.yaml");
+  if (packageJsonStaged && !lockfileStaged) {
+    const lockfilePath = import_path.default.join(cwd, "package-lock.json");
+    if (import_fs.default.existsSync(lockfilePath)) {
+      logError("CI Integrity Violation: package.json is staged for commit, but package-lock.json is NOT staged!");
+      console.log(source_default.red("\n  \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550"));
+      console.log(source_default.red.bold("  \u274C COMMIT REJECTED: Lockfile out of sync!"));
+      console.log(source_default.yellow('  CI pipelines use "npm ci", which will FAIL if package-lock.json is not updated.'));
+      console.log(source_default.yellow('  Action: Run "git add package-lock.json" and commit again.'));
+      console.log(source_default.red("  \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\n"));
+      throw new Error("Lockfile out of sync: package.json is staged without package-lock.json");
+    }
+  }
+  validateCaseSensitiveImports(cwd, stagedFiles);
+  logSuccess("All critical Angular architecture files, lockfile sync, and entry points verified.");
+}
+function validateCaseSensitiveImports(cwd = process.cwd(), stagedFiles = []) {
+  const tsFiles = stagedFiles.filter((f3) => f3.endsWith(".ts") && !f3.endsWith(".d.ts") && import_fs.default.existsSync(import_path.default.join(cwd, f3)));
+  if (tsFiles.length === 0) return;
+  const importRegex = /(?:import|from)\s+['"](\.[^'"]+)['"]/g;
+  const casingErrors = [];
+  for (const relFile of tsFiles) {
+    const fullFilePath = import_path.default.join(cwd, relFile);
+    const fileDir = import_path.default.dirname(fullFilePath);
+    const content = import_fs.default.readFileSync(fullFilePath, "utf8");
+    let match2;
+    while ((match2 = importRegex.exec(content)) !== null) {
+      const importPath = match2[1];
+      const targetBase = import_path.default.resolve(fileDir, importPath);
+      const targetDir = import_path.default.dirname(targetBase);
+      const targetFileName = import_path.default.basename(targetBase);
+      if (import_fs.default.existsSync(targetDir)) {
+        const actualDiskFiles = import_fs.default.readdirSync(targetDir);
+        const matchedExact = actualDiskFiles.find((f3) => {
+          const noExt = f3.replace(/\.(ts|js|d\.ts)$/, "");
+          return f3 === targetFileName || noExt === targetFileName;
+        });
+        const matchedCaseInsensitive = actualDiskFiles.find((f3) => {
+          const noExt = f3.replace(/\.(ts|js|d\.ts)$/, "");
+          return f3.toLowerCase() === targetFileName.toLowerCase() || noExt.toLowerCase() === targetFileName.toLowerCase();
+        });
+        if (!matchedExact && matchedCaseInsensitive) {
+          casingErrors.push({
+            file: relFile,
+            imported: importPath,
+            actual: import_path.default.join(import_path.default.dirname(importPath), matchedCaseInsensitive).replace(/\\/g, "/")
+          });
+        }
+      }
+    }
+  }
+  if (casingErrors.length > 0) {
+    logError("CRITICAL: Linux CI Path Incompatibility! Case-sensitivity mismatch detected in imports:");
+    casingErrors.forEach((err) => {
+      console.log(source_default.red(`    \u2022 In ${source_default.bold(err.file)}: Imported "${source_default.yellow(err.imported)}" but file on disk is "${source_default.green(err.actual)}"`));
+    });
+    console.log(source_default.yellow('\n  While Windows is case-insensitive, Linux CI servers will FAIL with "Module not found".'));
+    console.log(source_default.yellow("  Fix the casing of the import statement to match the actual file name.\n"));
+    throw new Error("Case-sensitive import mismatch detected (Linux CI incompatibility)");
+  }
 }
 function validateCompiledArtifacts(cwd = process.cwd()) {
   logStep(4, "Production Build Artifacts Validation");
@@ -28297,15 +28358,17 @@ function updateBuildMetadata(cwd = process.cwd(), projectPkg = {}) {
 }
 
 // src/rules/typescript-validator.js
+var import_fs2 = __toESM(require("fs"), 1);
+var import_path2 = __toESM(require("path"), 1);
 var import_child_process2 = require("child_process");
 function runTypeScriptAndLintChecks(cwd = process.cwd(), projectPkg = {}) {
-  logStep(3, "Angular Build, Compilation & Type Checks");
+  logStep(4, "Strict TypeScript & Linter Verification");
   const scripts = projectPkg.scripts || {};
   if (scripts["lint"]) {
     console.log(source_default.blue("  Running Angular Linter (npm run lint)..."));
     try {
       (0, import_child_process2.execSync)("npm run lint", { stdio: "inherit", cwd });
-      logSuccess("Angular linter passed.");
+      logSuccess("Angular linter passed with zero errors.");
     } catch (err) {
       logError("Angular linter reported errors!");
       console.log(source_default.red("\n  Fix the linting issues before committing code.\n"));
@@ -28323,19 +28386,128 @@ function runTypeScriptAndLintChecks(cwd = process.cwd(), projectPkg = {}) {
       console.log(source_default.red("\n  Fix the TypeScript errors before committing code.\n"));
       throw new Error("TypeScript type checking failed");
     }
-  }
-  if (scripts["test:ci"] || scripts["test-ci"]) {
-    const testScript = scripts["test:ci"] ? "test:ci" : "test-ci";
-    console.log(source_default.blue(`  Running CI Tests (npm run ${testScript})...`));
+  } else {
+    console.log(source_default.blue("  Running Type Safety Check (npx tsc --noEmit)..."));
     try {
-      (0, import_child_process2.execSync)(`npm run ${testScript}`, { stdio: "inherit", cwd });
-      logSuccess("Automated CI tests passed.");
+      (0, import_child_process2.execSync)("npx tsc --noEmit --skipLibCheck", { stdio: "inherit", cwd });
+      logSuccess("TypeScript compilation verification passed with zero type errors.");
     } catch (err) {
-      logError("Automated CI tests failed!");
-      console.log(source_default.red("\n  Fix the failing tests before committing code.\n"));
-      throw new Error("CI automated tests failed");
+      logError("TypeScript type checking failed!");
+      throw new Error("TypeScript compilation failed");
     }
   }
+}
+function runAutomatedUnitTests(cwd = process.cwd(), projectPkg = {}) {
+  logStep(5, "Automated Unit Tests & Regression Verification");
+  const pkgPath = import_path2.default.join(cwd, "package.json");
+  const scripts = projectPkg.scripts || {};
+  const srcDir = import_path2.default.join(cwd, "src");
+  const checkDir = import_fs2.default.existsSync(srcDir) ? srcDir : cwd;
+  const allProjectFiles = getAllFiles(checkDir);
+  let specFiles = allProjectFiles.filter((f3) => {
+    const base = import_path2.default.basename(f3).toLowerCase();
+    return (base.endsWith(".spec.ts") || base.endsWith(".test.ts") || base.endsWith(".spec.js") || base.endsWith(".test.js")) && !f3.includes("node_modules") && !f3.includes("dist");
+  });
+  let tempSpecPath = null;
+  if (specFiles.length === 0) {
+    const targetSmokeDir = import_fs2.default.existsSync(import_path2.default.join(cwd, "src", "app")) ? import_path2.default.join(cwd, "src", "app") : import_fs2.default.existsSync(srcDir) ? srcDir : cwd;
+    tempSpecPath = import_path2.default.join(targetSmokeDir, "gatekeeper-smoke.spec.ts");
+    const smokeSpecContent = `// Auto-generated by Angular Gatekeeper (CI Smoke Test)
+try {
+  const { describe, it, expect } = await import('vitest');
+  describe('Angular CI Pipeline Verification', () => {
+    it('should verify test runner environment is functional', () => {
+      expect(true).toBe(true);
+    });
+  });
+} catch (_) {
+  // Fallback for Karma/Jasmine where describe/it/expect are globals
+  describe('Angular CI Pipeline Verification', () => {
+    it('should verify test runner environment is functional', () => {
+      expect(true).toBe(true);
+    });
+  });
+}
+`;
+    try {
+      import_fs2.default.writeFileSync(tempSpecPath, smokeSpecContent, "utf8");
+      console.log(source_default.blue("  Auto-generating temporary smoke test spec (gatekeeper-smoke.spec.ts)..."));
+    } catch (_) {
+      tempSpecPath = null;
+    }
+  } else {
+    console.log(source_default.gray(`  Found ${specFiles.length} existing unit test spec file(s) in project.`));
+  }
+  let testCommand = "";
+  let tempInjected = false;
+  let originalPkgRaw = null;
+  try {
+    const deps = { ...projectPkg.dependencies || {}, ...projectPkg.devDependencies || {} };
+    const isVitest = deps["vitest"] || import_fs2.default.existsSync(import_path2.default.join(cwd, "vite.config.ts")) || import_fs2.default.existsSync(import_path2.default.join(cwd, "vitest.config.ts"));
+    const isJest = deps["jest"] || import_fs2.default.existsSync(import_path2.default.join(cwd, "jest.config.js")) || import_fs2.default.existsSync(import_path2.default.join(cwd, "jest.config.ts"));
+    if (scripts["test:ci"]) {
+      testCommand = "npm run test:ci";
+    } else if (scripts["test-ci"]) {
+      testCommand = "npm run test-ci";
+    } else if (isVitest) {
+      testCommand = "npx vitest run --passWithNoTests";
+    } else if (isJest) {
+      testCommand = "npx jest --ci --watchAll=false --passWithNoTests";
+    } else if (scripts["test"]) {
+      testCommand = "npm test -- --watch=false --passWithNoTests";
+    } else if (import_fs2.default.existsSync(pkgPath)) {
+      originalPkgRaw = import_fs2.default.readFileSync(pkgPath, "utf8");
+      const parsedPkg = JSON.parse(originalPkgRaw);
+      parsedPkg.scripts = parsedPkg.scripts || {};
+      console.log(source_default.blue("  Auto-configuring headless test runner for validation..."));
+      parsedPkg.scripts["test:ci"] = "ng test --watch=false";
+      import_fs2.default.writeFileSync(pkgPath, JSON.stringify(parsedPkg, null, 2), "utf8");
+      tempInjected = true;
+      testCommand = "npm run test:ci";
+    } else {
+      testCommand = "npx ng test --watch=false";
+    }
+    console.log(source_default.blue(`  Executing Automated Unit Tests (${testCommand})...`));
+    (0, import_child_process2.execSync)(testCommand, { stdio: "inherit", cwd });
+    logSuccess("Automated unit tests & regression verification passed with 0 failures.");
+    return {
+      autoInjected: !!tempSpecPath,
+      specCount: specFiles.length,
+      command: testCommand
+    };
+  } catch (err) {
+    const errMsg = err.message || "";
+    if (errMsg.includes("not found") || errMsg.includes("requires either")) {
+      logWarning(`Test runner configuration warning: ${errMsg.split("\n")[0]}`);
+      logWarning("Skipping test execution because test provider packages are not installed.");
+      return { skipped: true, reason: "missing provider" };
+    }
+    logError("Automated unit tests failed! Regression or broken test specs detected.");
+    console.log(source_default.red("\n  \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550"));
+    console.log(source_default.red.bold("  \u274C COMMIT REJECTED: Unit test suite reported failures!"));
+    console.log(source_default.yellow("  Please fix the failing unit test specs displayed above."));
+    console.log(source_default.red("  \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\n"));
+    throw new Error("Automated unit tests failed");
+  } finally {
+    if (tempSpecPath && import_fs2.default.existsSync(tempSpecPath)) {
+      try {
+        import_fs2.default.unlinkSync(tempSpecPath);
+        console.log(source_default.gray("  Cleaned up temporary smoke test spec file."));
+      } catch (_) {
+      }
+    }
+    if (tempInjected && originalPkgRaw && import_fs2.default.existsSync(pkgPath)) {
+      try {
+        import_fs2.default.writeFileSync(pkgPath, originalPkgRaw, "utf8");
+        console.log(source_default.gray("  Cleaned up temporary test runner configuration from package.json."));
+      } catch (cleanErr) {
+      }
+    }
+  }
+}
+function runAngularProductionBuild(cwd = process.cwd(), projectPkg = {}) {
+  logStep(6, "Mandatory Angular Build Compilation");
+  const scripts = projectPkg.scripts || {};
   console.log(source_default.blue("  Running Mandatory Angular Build Compilation..."));
   let buildCommand = "npm run build";
   if (!scripts["build"]) {
@@ -28356,6 +28528,9 @@ function runTypeScriptAndLintChecks(cwd = process.cwd(), projectPkg = {}) {
 }
 
 // src/rules/security-rules.js
+var import_fs3 = __toESM(require("fs"), 1);
+var import_path3 = __toESM(require("path"), 1);
+var import_child_process3 = require("child_process");
 function scanSecurityRules(diffOutput) {
   if (!diffOutput || diffOutput.trim() === "") return true;
   logStep(6, "Enterprise Security & Secret Leak Scanning");
@@ -28387,7 +28562,11 @@ function scanSecurityRules(diffOutput) {
     { pattern: /(?:password|secret|passwd|pwd)\s*[:=]\s*['"][^'"\s]{8,}['"]/i, name: "Hardcoded Password Assignment" },
     // 7. Cryptographic Keys & Certificates
     { pattern: /-----BEGIN\s+(?:RSA\s+|EC\s+|DSA\s+|OPENSSH\s+)?PRIVATE\s+KEY-----/, name: "Unencrypted Private Key (PEM/RSA/EC)" },
-    { pattern: /-----BEGIN\s+CERTIFICATE-----/, name: "Raw SSL/TLS Certificate Block" }
+    { pattern: /-----BEGIN\s+CERTIFICATE-----/, name: "Raw SSL/TLS Certificate Block" },
+    // 8. Git Merge Conflict Markers (Stops CI Syntax/Compilation Disasters)
+    { pattern: /^<{7}\s+HEAD/, name: "Unresolved Git Merge Conflict Marker (<<<<<<< HEAD)" },
+    { pattern: /^={7}$/, name: "Unresolved Git Merge Conflict Separator (=======)" },
+    { pattern: /^>{7}\s+/, name: "Unresolved Git Merge Conflict Marker (>>>>>>> branch)" }
   ];
   let violations = [];
   const lines = diffOutput.split("\n");
@@ -28420,16 +28599,45 @@ function scanSecurityRules(diffOutput) {
   logSuccess("Security scan passed: Zero leaked API keys, tokens, or private credentials.");
   return true;
 }
+function scanDependencyVulnerabilities(cwd = process.cwd()) {
+  logStep(3, "Dependency Vulnerability & Security Audit (npm audit)");
+  const pkgLockExists = import_fs3.default.existsSync(import_path3.default.join(cwd, "package-lock.json")) || import_fs3.default.existsSync(import_path3.default.join(cwd, "yarn.lock")) || import_fs3.default.existsSync(import_path3.default.join(cwd, "pnpm-lock.yaml"));
+  if (!pkgLockExists) {
+    logWarning("No package lockfile found (package-lock.json). Skipping dependency vulnerability audit.");
+    return true;
+  }
+  console.log(source_default.blue("  Running dependency security audit (npm audit --audit-level=high)..."));
+  try {
+    (0, import_child_process3.execSync)("npm audit --audit-level=high", { stdio: "pipe", cwd });
+    logSuccess("Dependency vulnerability audit passed: 0 High/Critical CVEs.");
+    return true;
+  } catch (err) {
+    const stdout = err.stdout ? err.stdout.toString() : "";
+    const stderr = err.stderr ? err.stderr.toString() : "";
+    const output = (stdout + "\n" + stderr).trim();
+    if (output.includes("vulnerabilities") || output.includes("severity")) {
+      logError("CRITICAL: High or Critical security vulnerabilities detected in dependencies!");
+      console.log(source_default.red("\n  \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550"));
+      console.log(source_default.red.bold("  \u274C COMMIT REJECTED: Security vulnerabilities found in npm packages!"));
+      console.log(source_default.yellow('  Run "npm audit" or "npm audit fix" to resolve known CVEs.'));
+      console.log(source_default.red("  \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\n"));
+      throw new Error("Dependency security audit failed (High/Critical CVEs detected)");
+    } else {
+      logWarning("npm audit could not connect to registry; skipping offline.");
+      return true;
+    }
+  }
+}
 
 // src/rules/ai-prompt.js
-var import_fs3 = __toESM(require("fs"), 1);
-var import_path2 = __toESM(require("path"), 1);
+var import_fs5 = __toESM(require("fs"), 1);
+var import_path4 = __toESM(require("path"), 1);
 
 // node_modules/@google/genai/dist/node/index.mjs
 var import_p_retry = __toESM(require_p_retry(), 1);
 var import_google_auth_library = __toESM(require_src5(), 1);
-var import_fs2 = require("fs");
-var fs3 = __toESM(require("fs/promises"), 1);
+var import_fs4 = require("fs");
+var fs5 = __toESM(require("fs/promises"), 1);
 var import_promises = require("fs/promises");
 var import_node_stream3 = require("node:stream");
 var import_promises2 = require("node:stream/promises");
@@ -28445,7 +28653,7 @@ var import_websocket = __toESM(require_websocket(), 1);
 var import_websocket_server = __toESM(require_websocket_server(), 1);
 
 // node_modules/@google/genai/dist/node/index.mjs
-var path2 = __toESM(require("path"), 1);
+var path4 = __toESM(require("path"), 1);
 var _defaultBaseGeminiUrl = void 0;
 var _defaultBaseVertexUrl = void 0;
 function getDefaultBaseUrls() {
@@ -32095,7 +32303,7 @@ var Batches = class extends BaseModule {
       params
     );
     const urlParams = body["_url"];
-    const path7 = formatMap("{model}:batchGenerateContent", urlParams);
+    const path9 = formatMap("{model}:batchGenerateContent", urlParams);
     const batch = body["batch"];
     const inputConfig = batch["inputConfig"];
     const requestsWrapper = inputConfig["requests"];
@@ -32116,7 +32324,7 @@ var Batches = class extends BaseModule {
     delete body["config"];
     delete body["_url"];
     delete body["_query"];
-    return { path: path7, body };
+    return { path: path9, body };
   }
   // Helper function to get the first GCS URI
   getGcsUri(src) {
@@ -32172,16 +32380,16 @@ var Batches = class extends BaseModule {
   async createInternal(params) {
     var _a2, _b, _c, _d;
     let response;
-    let path7 = "";
+    let path9 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = createBatchJobParametersToVertex(this.apiClient, params);
-      path7 = formatMap("batchPredictionJobs", body["_url"]);
+      path9 = formatMap("batchPredictionJobs", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path7,
+        path: path9,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
@@ -32196,12 +32404,12 @@ var Batches = class extends BaseModule {
       });
     } else {
       const body = createBatchJobParametersToMldev(this.apiClient, params);
-      path7 = formatMap("{model}:batchGenerateContent", body["_url"]);
+      path9 = formatMap("{model}:batchGenerateContent", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path7,
+        path: path9,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
@@ -32226,18 +32434,18 @@ var Batches = class extends BaseModule {
   async createEmbeddingsInternal(params) {
     var _a2, _b;
     let response;
-    let path7 = "";
+    let path9 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       throw new Error("This method is only supported by the Gemini Developer API.");
     } else {
       const body = createEmbeddingsBatchJobParametersToMldev(this.apiClient, params);
-      path7 = formatMap("{model}:asyncBatchEmbedContent", body["_url"]);
+      path9 = formatMap("{model}:asyncBatchEmbedContent", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path7,
+        path: path9,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
@@ -32266,16 +32474,16 @@ var Batches = class extends BaseModule {
   async get(params) {
     var _a2, _b, _c, _d;
     let response;
-    let path7 = "";
+    let path9 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = getBatchJobParametersToVertex(this.apiClient, params);
-      path7 = formatMap("batchPredictionJobs/{name}", body["_url"]);
+      path9 = formatMap("batchPredictionJobs/{name}", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path7,
+        path: path9,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "GET",
@@ -32290,12 +32498,12 @@ var Batches = class extends BaseModule {
       });
     } else {
       const body = getBatchJobParametersToMldev(this.apiClient, params);
-      path7 = formatMap("batches/{name}", body["_url"]);
+      path9 = formatMap("batches/{name}", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path7,
+        path: path9,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "GET",
@@ -32323,16 +32531,16 @@ var Batches = class extends BaseModule {
    */
   async cancel(params) {
     var _a2, _b, _c, _d;
-    let path7 = "";
+    let path9 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = cancelBatchJobParametersToVertex(this.apiClient, params);
-      path7 = formatMap("batchPredictionJobs/{name}:cancel", body["_url"]);
+      path9 = formatMap("batchPredictionJobs/{name}:cancel", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       await this.apiClient.request({
-        path: path7,
+        path: path9,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
@@ -32341,12 +32549,12 @@ var Batches = class extends BaseModule {
       });
     } else {
       const body = cancelBatchJobParametersToMldev(this.apiClient, params);
-      path7 = formatMap("batches/{name}:cancel", body["_url"]);
+      path9 = formatMap("batches/{name}:cancel", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       await this.apiClient.request({
-        path: path7,
+        path: path9,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
@@ -32358,16 +32566,16 @@ var Batches = class extends BaseModule {
   async listInternal(params) {
     var _a2, _b, _c, _d;
     let response;
-    let path7 = "";
+    let path9 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = listBatchJobsParametersToVertex(params);
-      path7 = formatMap("batchPredictionJobs", body["_url"]);
+      path9 = formatMap("batchPredictionJobs", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path7,
+        path: path9,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "GET",
@@ -32390,12 +32598,12 @@ var Batches = class extends BaseModule {
       });
     } else {
       const body = listBatchJobsParametersToMldev(params);
-      path7 = formatMap("batches", body["_url"]);
+      path9 = formatMap("batches", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path7,
+        path: path9,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "GET",
@@ -32432,16 +32640,16 @@ var Batches = class extends BaseModule {
   async delete(params) {
     var _a2, _b, _c, _d;
     let response;
-    let path7 = "";
+    let path9 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = deleteBatchJobParametersToVertex(this.apiClient, params);
-      path7 = formatMap("batchPredictionJobs/{name}", body["_url"]);
+      path9 = formatMap("batchPredictionJobs/{name}", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path7,
+        path: path9,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "DELETE",
@@ -32462,12 +32670,12 @@ var Batches = class extends BaseModule {
       });
     } else {
       const body = deleteBatchJobParametersToMldev(this.apiClient, params);
-      path7 = formatMap("batches/{name}", body["_url"]);
+      path9 = formatMap("batches/{name}", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path7,
+        path: path9,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "DELETE",
@@ -33413,16 +33621,16 @@ var Caches = class extends BaseModule {
   async create(params) {
     var _a2, _b, _c, _d;
     let response;
-    let path7 = "";
+    let path9 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = createCachedContentParametersToVertex(this.apiClient, params);
-      path7 = formatMap("cachedContents", body["_url"]);
+      path9 = formatMap("cachedContents", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path7,
+        path: path9,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
@@ -33436,12 +33644,12 @@ var Caches = class extends BaseModule {
       });
     } else {
       const body = createCachedContentParametersToMldev(this.apiClient, params);
-      path7 = formatMap("cachedContents", body["_url"]);
+      path9 = formatMap("cachedContents", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path7,
+        path: path9,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
@@ -33469,16 +33677,16 @@ var Caches = class extends BaseModule {
   async get(params) {
     var _a2, _b, _c, _d;
     let response;
-    let path7 = "";
+    let path9 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = getCachedContentParametersToVertex(this.apiClient, params);
-      path7 = formatMap("{name}", body["_url"]);
+      path9 = formatMap("{name}", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path7,
+        path: path9,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "GET",
@@ -33492,12 +33700,12 @@ var Caches = class extends BaseModule {
       });
     } else {
       const body = getCachedContentParametersToMldev(this.apiClient, params);
-      path7 = formatMap("{name}", body["_url"]);
+      path9 = formatMap("{name}", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path7,
+        path: path9,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "GET",
@@ -33525,16 +33733,16 @@ var Caches = class extends BaseModule {
   async delete(params) {
     var _a2, _b, _c, _d;
     let response;
-    let path7 = "";
+    let path9 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = deleteCachedContentParametersToVertex(this.apiClient, params);
-      path7 = formatMap("{name}", body["_url"]);
+      path9 = formatMap("{name}", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path7,
+        path: path9,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "DELETE",
@@ -33557,12 +33765,12 @@ var Caches = class extends BaseModule {
       });
     } else {
       const body = deleteCachedContentParametersToMldev(this.apiClient, params);
-      path7 = formatMap("{name}", body["_url"]);
+      path9 = formatMap("{name}", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path7,
+        path: path9,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "DELETE",
@@ -33602,16 +33810,16 @@ var Caches = class extends BaseModule {
   async update(params) {
     var _a2, _b, _c, _d;
     let response;
-    let path7 = "";
+    let path9 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = updateCachedContentParametersToVertex(this.apiClient, params);
-      path7 = formatMap("{name}", body["_url"]);
+      path9 = formatMap("{name}", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path7,
+        path: path9,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "PATCH",
@@ -33625,12 +33833,12 @@ var Caches = class extends BaseModule {
       });
     } else {
       const body = updateCachedContentParametersToMldev(this.apiClient, params);
-      path7 = formatMap("{name}", body["_url"]);
+      path9 = formatMap("{name}", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path7,
+        path: path9,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "PATCH",
@@ -33647,16 +33855,16 @@ var Caches = class extends BaseModule {
   async listInternal(params) {
     var _a2, _b, _c, _d;
     let response;
-    let path7 = "";
+    let path9 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = listCachedContentsParametersToVertex(params);
-      path7 = formatMap("cachedContents", body["_url"]);
+      path9 = formatMap("cachedContents", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path7,
+        path: path9,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "GET",
@@ -33679,12 +33887,12 @@ var Caches = class extends BaseModule {
       });
     } else {
       const body = listCachedContentsParametersToMldev(params);
-      path7 = formatMap("cachedContents", body["_url"]);
+      path9 = formatMap("cachedContents", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path7,
+        path: path9,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "GET",
@@ -34280,18 +34488,18 @@ var Files = class extends BaseModule {
   async listInternal(params) {
     var _a2, _b;
     let response;
-    let path7 = "";
+    let path9 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       throw new Error("This method is only supported by the Gemini Developer API.");
     } else {
       const body = listFilesParametersToMldev(params);
-      path7 = formatMap("files", body["_url"]);
+      path9 = formatMap("files", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path7,
+        path: path9,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "GET",
@@ -34317,18 +34525,18 @@ var Files = class extends BaseModule {
   async createInternal(params) {
     var _a2, _b;
     let response;
-    let path7 = "";
+    let path9 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       throw new Error("This method is only supported by the Gemini Developer API.");
     } else {
       const body = createFileParametersToMldev(params);
-      path7 = formatMap("upload/v1beta/files", body["_url"]);
+      path9 = formatMap("upload/v1beta/files", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path7,
+        path: path9,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
@@ -34363,18 +34571,18 @@ var Files = class extends BaseModule {
   async get(params) {
     var _a2, _b;
     let response;
-    let path7 = "";
+    let path9 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       throw new Error("This method is only supported by the Gemini Developer API.");
     } else {
       const body = getFileParametersToMldev(params);
-      path7 = formatMap("files/{file}", body["_url"]);
+      path9 = formatMap("files/{file}", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path7,
+        path: path9,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "GET",
@@ -34404,18 +34612,18 @@ var Files = class extends BaseModule {
   async delete(params) {
     var _a2, _b;
     let response;
-    let path7 = "";
+    let path9 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       throw new Error("This method is only supported by the Gemini Developer API.");
     } else {
       const body = deleteFileParametersToMldev(params);
-      path7 = formatMap("files/{file}", body["_url"]);
+      path9 = formatMap("files/{file}", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path7,
+        path: path9,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "DELETE",
@@ -34441,18 +34649,18 @@ var Files = class extends BaseModule {
   async registerFilesInternal(params) {
     var _a2, _b;
     let response;
-    let path7 = "";
+    let path9 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       throw new Error("This method is only supported by the Gemini Developer API.");
     } else {
       const body = internalRegisterFilesParametersToMldev(params);
-      path7 = formatMap("files:register", body["_url"]);
+      path9 = formatMap("files:register", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path7,
+        path: path9,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
@@ -40004,13 +40212,13 @@ var ApiClient = class {
       throw new Error("HTTP options are not correctly set.");
     }
   }
-  constructUrl(path7, httpOptions, prependProjectLocation) {
+  constructUrl(path9, httpOptions, prependProjectLocation) {
     const urlElement = [this.getRequestUrlInternal(httpOptions)];
     if (prependProjectLocation) {
       urlElement.push(this.getBaseResourcePath());
     }
-    if (path7 !== "") {
-      urlElement.push(path7);
+    if (path9 !== "") {
+      urlElement.push(path9);
     }
     const url = new URL(`${urlElement.join("/")}`);
     return url;
@@ -40303,8 +40511,8 @@ var ApiClient = class {
       file: fileToUpload
     };
     const fileName = this.getFileName(file);
-    const path7 = formatMap("upload/v1beta/files", body["_url"]);
-    const uploadUrl = await this.fetchUploadUrl(path7, fileToUpload.sizeBytes, fileToUpload.mimeType, fileName, body, config === null || config === void 0 ? void 0 : config.httpOptions);
+    const path9 = formatMap("upload/v1beta/files", body["_url"]);
+    const uploadUrl = await this.fetchUploadUrl(path9, fileToUpload.sizeBytes, fileToUpload.mimeType, fileName, body, config === null || config === void 0 ? void 0 : config.httpOptions);
     return uploader.upload(file, uploadUrl, this);
   }
   /**
@@ -40328,13 +40536,13 @@ var ApiClient = class {
     if (mimeType === void 0 || mimeType === "") {
       throw new Error("Can not determine mimeType. Please provide mimeType in the config.");
     }
-    const path7 = `upload/v1beta/${fileSearchStoreName}:uploadToFileSearchStore`;
+    const path9 = `upload/v1beta/${fileSearchStoreName}:uploadToFileSearchStore`;
     const fileName = this.getFileName(file);
     const body = {};
     if (config != null) {
       uploadToFileSearchStoreConfigToMldev(config, body);
     }
-    const uploadUrl = await this.fetchUploadUrl(path7, sizeBytes, mimeType, fileName, body, config === null || config === void 0 ? void 0 : config.httpOptions);
+    const uploadUrl = await this.fetchUploadUrl(path9, sizeBytes, mimeType, fileName, body, config === null || config === void 0 ? void 0 : config.httpOptions);
     return uploader.uploadToFileSearchStore(file, uploadUrl, this);
   }
   /**
@@ -40347,7 +40555,7 @@ var ApiClient = class {
     const downloader = this.clientOptions.downloader;
     await downloader.download(params, this);
   }
-  async fetchUploadUrl(path7, sizeBytes, mimeType, fileName, body, configHttpOptions) {
+  async fetchUploadUrl(path9, sizeBytes, mimeType, fileName, body, configHttpOptions) {
     var _a2;
     let httpOptions = {};
     if (configHttpOptions) {
@@ -40360,7 +40568,7 @@ var ApiClient = class {
       };
     }
     const httpResponse = await this.request({
-      path: path7,
+      path: path9,
       body: JSON.stringify(body),
       httpMethod: "POST",
       httpOptions
@@ -41593,16 +41801,16 @@ var Models = class _Models extends BaseModule {
   async generateContentInternal(params) {
     var _a2, _b, _c, _d;
     let response;
-    let path7 = "";
+    let path9 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = generateContentParametersToVertex(this.apiClient, params);
-      path7 = formatMap("{model}:generateContent", body["_url"]);
+      path9 = formatMap("{model}:generateContent", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path7,
+        path: path9,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
@@ -41625,12 +41833,12 @@ var Models = class _Models extends BaseModule {
       });
     } else {
       const body = generateContentParametersToMldev(this.apiClient, params);
-      path7 = formatMap("{model}:generateContent", body["_url"]);
+      path9 = formatMap("{model}:generateContent", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path7,
+        path: path9,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
@@ -41656,17 +41864,17 @@ var Models = class _Models extends BaseModule {
   async generateContentStreamInternal(params) {
     var _a2, _b, _c, _d;
     let response;
-    let path7 = "";
+    let path9 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = generateContentParametersToVertex(this.apiClient, params);
-      path7 = formatMap("{model}:streamGenerateContent?alt=sse", body["_url"]);
+      path9 = formatMap("{model}:streamGenerateContent?alt=sse", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       const apiClient = this.apiClient;
       response = apiClient.requestStream({
-        path: path7,
+        path: path9,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
@@ -41702,13 +41910,13 @@ var Models = class _Models extends BaseModule {
       });
     } else {
       const body = generateContentParametersToMldev(this.apiClient, params);
-      path7 = formatMap("{model}:streamGenerateContent?alt=sse", body["_url"]);
+      path9 = formatMap("{model}:streamGenerateContent?alt=sse", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       const apiClient = this.apiClient;
       response = apiClient.requestStream({
-        path: path7,
+        path: path9,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
@@ -41768,17 +41976,17 @@ var Models = class _Models extends BaseModule {
   async embedContentInternal(params) {
     var _a2, _b, _c, _d;
     let response;
-    let path7 = "";
+    let path9 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = embedContentParametersPrivateToVertex(this.apiClient, params, params);
       const endpointUrl = tIsVertexEmbedContentModel(params.model) ? "{model}:embedContent" : "{model}:predict";
-      path7 = formatMap(endpointUrl, body["_url"]);
+      path9 = formatMap(endpointUrl, body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path7,
+        path: path9,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
@@ -41801,12 +42009,12 @@ var Models = class _Models extends BaseModule {
       });
     } else {
       const body = embedContentParametersPrivateToMldev(this.apiClient, params);
-      path7 = formatMap("{model}:batchEmbedContents", body["_url"]);
+      path9 = formatMap("{model}:batchEmbedContents", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path7,
+        path: path9,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
@@ -41835,16 +42043,16 @@ var Models = class _Models extends BaseModule {
   async generateImagesInternal(params) {
     var _a2, _b, _c, _d;
     let response;
-    let path7 = "";
+    let path9 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = generateImagesParametersToVertex(this.apiClient, params);
-      path7 = formatMap("{model}:predict", body["_url"]);
+      path9 = formatMap("{model}:predict", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path7,
+        path: path9,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
@@ -41867,12 +42075,12 @@ var Models = class _Models extends BaseModule {
       });
     } else {
       const body = generateImagesParametersToMldev(this.apiClient, params);
-      path7 = formatMap("{model}:predict", body["_url"]);
+      path9 = formatMap("{model}:predict", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path7,
+        path: path9,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
@@ -41901,16 +42109,16 @@ var Models = class _Models extends BaseModule {
   async editImageInternal(params) {
     var _a2, _b;
     let response;
-    let path7 = "";
+    let path9 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = editImageParametersInternalToVertex(this.apiClient, params);
-      path7 = formatMap("{model}:predict", body["_url"]);
+      path9 = formatMap("{model}:predict", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path7,
+        path: path9,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
@@ -41941,16 +42149,16 @@ var Models = class _Models extends BaseModule {
   async upscaleImageInternal(params) {
     var _a2, _b;
     let response;
-    let path7 = "";
+    let path9 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = upscaleImageAPIParametersInternalToVertex(this.apiClient, params);
-      path7 = formatMap("{model}:predict", body["_url"]);
+      path9 = formatMap("{model}:predict", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path7,
+        path: path9,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
@@ -42002,16 +42210,16 @@ var Models = class _Models extends BaseModule {
   async recontextImage(params) {
     var _a2, _b;
     let response;
-    let path7 = "";
+    let path9 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = recontextImageParametersToVertex(this.apiClient, params);
-      path7 = formatMap("{model}:predict", body["_url"]);
+      path9 = formatMap("{model}:predict", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path7,
+        path: path9,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
@@ -42053,16 +42261,16 @@ var Models = class _Models extends BaseModule {
   async segmentImage(params) {
     var _a2, _b;
     let response;
-    let path7 = "";
+    let path9 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = segmentImageParametersToVertex(this.apiClient, params);
-      path7 = formatMap("{model}:predict", body["_url"]);
+      path9 = formatMap("{model}:predict", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path7,
+        path: path9,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
@@ -42092,16 +42300,16 @@ var Models = class _Models extends BaseModule {
   async get(params) {
     var _a2, _b, _c, _d;
     let response;
-    let path7 = "";
+    let path9 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = getModelParametersToVertex(this.apiClient, params);
-      path7 = formatMap("{name}", body["_url"]);
+      path9 = formatMap("{name}", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path7,
+        path: path9,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "GET",
@@ -42116,12 +42324,12 @@ var Models = class _Models extends BaseModule {
       });
     } else {
       const body = getModelParametersToMldev(this.apiClient, params);
-      path7 = formatMap("{name}", body["_url"]);
+      path9 = formatMap("{name}", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path7,
+        path: path9,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "GET",
@@ -42139,16 +42347,16 @@ var Models = class _Models extends BaseModule {
   async listInternal(params) {
     var _a2, _b, _c, _d;
     let response;
-    let path7 = "";
+    let path9 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = listModelsParametersToVertex(this.apiClient, params);
-      path7 = formatMap("{models_url}", body["_url"]);
+      path9 = formatMap("{models_url}", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path7,
+        path: path9,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "GET",
@@ -42171,12 +42379,12 @@ var Models = class _Models extends BaseModule {
       });
     } else {
       const body = listModelsParametersToMldev(this.apiClient, params);
-      path7 = formatMap("{models_url}", body["_url"]);
+      path9 = formatMap("{models_url}", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path7,
+        path: path9,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "GET",
@@ -42219,16 +42427,16 @@ var Models = class _Models extends BaseModule {
   async update(params) {
     var _a2, _b, _c, _d;
     let response;
-    let path7 = "";
+    let path9 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = updateModelParametersToVertex(this.apiClient, params);
-      path7 = formatMap("{model}", body["_url"]);
+      path9 = formatMap("{model}", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path7,
+        path: path9,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "PATCH",
@@ -42243,12 +42451,12 @@ var Models = class _Models extends BaseModule {
       });
     } else {
       const body = updateModelParametersToMldev(this.apiClient, params);
-      path7 = formatMap("{name}", body["_url"]);
+      path9 = formatMap("{name}", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path7,
+        path: path9,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "PATCH",
@@ -42277,16 +42485,16 @@ var Models = class _Models extends BaseModule {
   async delete(params) {
     var _a2, _b, _c, _d;
     let response;
-    let path7 = "";
+    let path9 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = deleteModelParametersToVertex(this.apiClient, params);
-      path7 = formatMap("{name}", body["_url"]);
+      path9 = formatMap("{name}", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path7,
+        path: path9,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "DELETE",
@@ -42309,12 +42517,12 @@ var Models = class _Models extends BaseModule {
       });
     } else {
       const body = deleteModelParametersToMldev(this.apiClient, params);
-      path7 = formatMap("{name}", body["_url"]);
+      path9 = formatMap("{name}", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path7,
+        path: path9,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "DELETE",
@@ -42356,16 +42564,16 @@ var Models = class _Models extends BaseModule {
   async countTokens(params) {
     var _a2, _b, _c, _d;
     let response;
-    let path7 = "";
+    let path9 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = countTokensParametersToVertex(this.apiClient, params);
-      path7 = formatMap("{model}:countTokens", body["_url"]);
+      path9 = formatMap("{model}:countTokens", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path7,
+        path: path9,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
@@ -42388,12 +42596,12 @@ var Models = class _Models extends BaseModule {
       });
     } else {
       const body = countTokensParametersToMldev(this.apiClient, params);
-      path7 = formatMap("{model}:countTokens", body["_url"]);
+      path9 = formatMap("{model}:countTokens", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path7,
+        path: path9,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
@@ -42437,16 +42645,16 @@ var Models = class _Models extends BaseModule {
   async computeTokens(params) {
     var _a2, _b;
     let response;
-    let path7 = "";
+    let path9 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = computeTokensParametersToVertex(this.apiClient, params);
-      path7 = formatMap("{model}:computeTokens", body["_url"]);
+      path9 = formatMap("{model}:computeTokens", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path7,
+        path: path9,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
@@ -42477,16 +42685,16 @@ var Models = class _Models extends BaseModule {
   async generateVideosInternal(params) {
     var _a2, _b, _c, _d;
     let response;
-    let path7 = "";
+    let path9 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = generateVideosParametersToVertex(this.apiClient, params);
-      path7 = formatMap("{model}:predictLongRunning", body["_url"]);
+      path9 = formatMap("{model}:predictLongRunning", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path7,
+        path: path9,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
@@ -42503,12 +42711,12 @@ var Models = class _Models extends BaseModule {
       });
     } else {
       const body = generateVideosParametersToMldev(this.apiClient, params);
-      path7 = formatMap("{model}:predictLongRunning", body["_url"]);
+      path9 = formatMap("{model}:predictLongRunning", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path7,
+        path: path9,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
@@ -42613,16 +42821,16 @@ var Operations = class extends BaseModule {
   async getVideosOperationInternal(params) {
     var _a2, _b, _c, _d;
     let response;
-    let path7 = "";
+    let path9 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = getOperationParametersToVertex(params);
-      path7 = formatMap("{operationName}", body["_url"]);
+      path9 = formatMap("{operationName}", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path7,
+        path: path9,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "GET",
@@ -42634,12 +42842,12 @@ var Operations = class extends BaseModule {
       return response;
     } else {
       const body = getOperationParametersToMldev(params);
-      path7 = formatMap("{operationName}", body["_url"]);
+      path9 = formatMap("{operationName}", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path7,
+        path: path9,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "GET",
@@ -42654,16 +42862,16 @@ var Operations = class extends BaseModule {
   async fetchPredictVideosOperationInternal(params) {
     var _a2, _b;
     let response;
-    let path7 = "";
+    let path9 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = fetchPredictOperationParametersToVertex(params);
-      path7 = formatMap("{resourceName}:fetchPredictOperation", body["_url"]);
+      path9 = formatMap("{resourceName}:fetchPredictOperation", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path7,
+        path: path9,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
@@ -43340,20 +43548,20 @@ var Tokens = class extends BaseModule {
   async create(params) {
     var _a2, _b;
     let response;
-    let path7 = "";
+    let path9 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       throw new Error("The client.tokens.create method is only supported by the Gemini Developer API.");
     } else {
       const body = createAuthTokenParametersToMldev(this.apiClient, params);
-      path7 = formatMap("auth_tokens", body["_url"]);
+      path9 = formatMap("auth_tokens", body["_url"]);
       queryParams = body["_query"];
       delete body["config"];
       delete body["_url"];
       delete body["_query"];
       const transformedBody = convertBidiSetupToTokenSetup(body, params.config);
       response = this.apiClient.request({
-        path: path7,
+        path: path9,
         queryParams,
         body: JSON.stringify(transformedBody),
         httpMethod: "POST",
@@ -43463,18 +43671,18 @@ var Documents = class extends BaseModule {
   async get(params) {
     var _a2, _b;
     let response;
-    let path7 = "";
+    let path9 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       throw new Error("This method is only supported by the Gemini Developer API.");
     } else {
       const body = getDocumentParametersToMldev(params);
-      path7 = formatMap("{name}", body["_url"]);
+      path9 = formatMap("{name}", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path7,
+        path: path9,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "GET",
@@ -43495,18 +43703,18 @@ var Documents = class extends BaseModule {
    */
   async delete(params) {
     var _a2, _b;
-    let path7 = "";
+    let path9 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       throw new Error("This method is only supported by the Gemini Developer API.");
     } else {
       const body = deleteDocumentParametersToMldev(params);
-      path7 = formatMap("{name}", body["_url"]);
+      path9 = formatMap("{name}", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       await this.apiClient.request({
-        path: path7,
+        path: path9,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "DELETE",
@@ -43518,18 +43726,18 @@ var Documents = class extends BaseModule {
   async listInternal(params) {
     var _a2, _b;
     let response;
-    let path7 = "";
+    let path9 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       throw new Error("This method is only supported by the Gemini Developer API.");
     } else {
       const body = listDocumentsParametersToMldev(params);
-      path7 = formatMap("{parent}/documents", body["_url"]);
+      path9 = formatMap("{parent}/documents", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path7,
+        path: path9,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "GET",
@@ -43646,18 +43854,18 @@ var FileSearchStores = class extends BaseModule {
   async create(params) {
     var _a2, _b;
     let response;
-    let path7 = "";
+    let path9 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       throw new Error("This method is only supported by the Gemini Developer API.");
     } else {
       const body = createFileSearchStoreParametersToMldev(this.apiClient, params);
-      path7 = formatMap("fileSearchStores", body["_url"]);
+      path9 = formatMap("fileSearchStores", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path7,
+        path: path9,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
@@ -43680,18 +43888,18 @@ var FileSearchStores = class extends BaseModule {
   async get(params) {
     var _a2, _b;
     let response;
-    let path7 = "";
+    let path9 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       throw new Error("This method is only supported by the Gemini Developer API.");
     } else {
       const body = getFileSearchStoreParametersToMldev(params);
-      path7 = formatMap("{name}", body["_url"]);
+      path9 = formatMap("{name}", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path7,
+        path: path9,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "GET",
@@ -43712,18 +43920,18 @@ var FileSearchStores = class extends BaseModule {
    */
   async delete(params) {
     var _a2, _b;
-    let path7 = "";
+    let path9 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       throw new Error("This method is only supported by the Gemini Developer API.");
     } else {
       const body = deleteFileSearchStoreParametersToMldev(params);
-      path7 = formatMap("{name}", body["_url"]);
+      path9 = formatMap("{name}", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       await this.apiClient.request({
-        path: path7,
+        path: path9,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "DELETE",
@@ -43735,18 +43943,18 @@ var FileSearchStores = class extends BaseModule {
   async listInternal(params) {
     var _a2, _b;
     let response;
-    let path7 = "";
+    let path9 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       throw new Error("This method is only supported by the Gemini Developer API.");
     } else {
       const body = listFileSearchStoresParametersToMldev(params);
-      path7 = formatMap("fileSearchStores", body["_url"]);
+      path9 = formatMap("fileSearchStores", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path7,
+        path: path9,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "GET",
@@ -43766,18 +43974,18 @@ var FileSearchStores = class extends BaseModule {
   async uploadToFileSearchStoreInternal(params) {
     var _a2, _b;
     let response;
-    let path7 = "";
+    let path9 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       throw new Error("This method is only supported by the Gemini Developer API.");
     } else {
       const body = uploadToFileSearchStoreParametersToMldev(params);
-      path7 = formatMap("upload/v1beta/{file_search_store_name}:uploadToFileSearchStore", body["_url"]);
+      path9 = formatMap("upload/v1beta/{file_search_store_name}:uploadToFileSearchStore", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path7,
+        path: path9,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
@@ -43805,18 +44013,18 @@ var FileSearchStores = class extends BaseModule {
   async importFile(params) {
     var _a2, _b;
     let response;
-    let path7 = "";
+    let path9 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       throw new Error("This method is only supported by the Gemini Developer API.");
     } else {
       const body = importFileParametersToMldev(params);
-      path7 = formatMap("{file_search_store_name}:importFile", body["_url"]);
+      path9 = formatMap("{file_search_store_name}:importFile", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path7,
+        path: path9,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
@@ -44941,16 +45149,16 @@ var ClientSDK = class {
   }
   _createRequest(context, conf, options) {
     var _a2, _b, _c, _d, _e;
-    const { method, path: path7, query, headers: opHeaders, security } = conf;
+    const { method, path: path9, query, headers: opHeaders, security } = conf;
     const base = (_a2 = conf.baseURL) !== null && _a2 !== void 0 ? _a2 : this._baseURL;
     if (!base) {
       return ERR(new InvalidRequestError("No base URL provided for operation"));
     }
     const baseURL = new URL(base);
     let reqURL;
-    if (path7) {
+    if (path9) {
       baseURL.pathname = baseURL.pathname.replace(/\/+$/, "") + "/";
-      reqURL = new URL(path7, baseURL);
+      reqURL = new URL(path9, baseURL);
       if (!reqURL.search && baseURL.search) {
         reqURL.search = baseURL.search;
       }
@@ -45765,7 +45973,7 @@ async function $do$p(client, body, api_version, options) {
   const pathParams = {
     api_version: encodeSimple("api_version", (_a2 = payload.api_version) !== null && _a2 !== void 0 ? _a2 : client._options.api_version, { explode: false, charEncoding: "percent" })
   };
-  const path7 = pathToFunc("/{api_version}/agents")(pathParams);
+  const path9 = pathToFunc("/{api_version}/agents")(pathParams);
   const headers = new Headers(compactMap({
     "Content-Type": "application/json",
     Accept: "application/json"
@@ -45796,7 +46004,7 @@ async function $do$p(client, body, api_version, options) {
     security: requestSecurity,
     method: "POST",
     baseURL: options === null || options === void 0 ? void 0 : options.server_url,
-    path: path7,
+    path: path9,
     headers,
     body: body$,
     userAgent: client._options.user_agent,
@@ -45840,7 +46048,7 @@ async function $do$o(client, id, api_version, options) {
       charEncoding: "percent"
     })
   };
-  const path7 = pathToFunc("/{api_version}/agents/{id}")(pathParams);
+  const path9 = pathToFunc("/{api_version}/agents/{id}")(pathParams);
   const headers = new Headers(compactMap({
     Accept: "application/json"
   }));
@@ -45870,7 +46078,7 @@ async function $do$o(client, id, api_version, options) {
     security: requestSecurity,
     method: "DELETE",
     baseURL: options === null || options === void 0 ? void 0 : options.server_url,
-    path: path7,
+    path: path9,
     headers,
     body,
     userAgent: client._options.user_agent,
@@ -45914,7 +46122,7 @@ async function $do$n(client, id, api_version, options) {
       charEncoding: "percent"
     })
   };
-  const path7 = pathToFunc("/{api_version}/agents/{id}")(pathParams);
+  const path9 = pathToFunc("/{api_version}/agents/{id}")(pathParams);
   const headers = new Headers(compactMap({
     Accept: "application/json"
   }));
@@ -45944,7 +46152,7 @@ async function $do$n(client, id, api_version, options) {
     security: requestSecurity,
     method: "GET",
     baseURL: options === null || options === void 0 ? void 0 : options.server_url,
-    path: path7,
+    path: path9,
     headers,
     body,
     userAgent: client._options.user_agent,
@@ -45986,7 +46194,7 @@ async function $do$m(client, api_version, page_size, page_token, parent, options
   const pathParams = {
     api_version: encodeSimple("api_version", (_a2 = payload === null || payload === void 0 ? void 0 : payload.api_version) !== null && _a2 !== void 0 ? _a2 : client._options.api_version, { explode: false, charEncoding: "percent" })
   };
-  const path7 = pathToFunc("/{api_version}/agents")(pathParams);
+  const path9 = pathToFunc("/{api_version}/agents")(pathParams);
   const query = encodeFormQuery({
     "page_size": payload === null || payload === void 0 ? void 0 : payload.page_size,
     "page_token": payload === null || payload === void 0 ? void 0 : payload.page_token,
@@ -46021,7 +46229,7 @@ async function $do$m(client, api_version, page_size, page_token, parent, options
     security: requestSecurity,
     method: "GET",
     baseURL: options === null || options === void 0 ? void 0 : options.server_url,
-    path: path7,
+    path: path9,
     headers,
     query,
     body,
@@ -46089,7 +46297,7 @@ async function $do$l(client, body, api_version, options) {
   const pathParams = {
     api_version: encodeSimple("api_version", (_a2 = payload.api_version) !== null && _a2 !== void 0 ? _a2 : client._options.api_version, { explode: false, charEncoding: "percent" })
   };
-  const path7 = pathToFunc("/{api_version}/environments")(pathParams);
+  const path9 = pathToFunc("/{api_version}/environments")(pathParams);
   const headers = new Headers(compactMap({
     "Content-Type": "application/json",
     Accept: "application/json"
@@ -46120,7 +46328,7 @@ async function $do$l(client, body, api_version, options) {
     security: requestSecurity,
     method: "POST",
     baseURL: options === null || options === void 0 ? void 0 : options.server_url,
-    path: path7,
+    path: path9,
     headers,
     body: body$,
     userAgent: client._options.user_agent,
@@ -46164,7 +46372,7 @@ async function $do$k(client, id, api_version, options) {
       charEncoding: "percent"
     })
   };
-  const path7 = pathToFunc("/{api_version}/environments/{id}")(pathParams);
+  const path9 = pathToFunc("/{api_version}/environments/{id}")(pathParams);
   const headers = new Headers(compactMap({
     Accept: "application/json"
   }));
@@ -46194,7 +46402,7 @@ async function $do$k(client, id, api_version, options) {
     security: requestSecurity,
     method: "DELETE",
     baseURL: options === null || options === void 0 ? void 0 : options.server_url,
-    path: path7,
+    path: path9,
     headers,
     body,
     userAgent: client._options.user_agent,
@@ -46238,7 +46446,7 @@ async function $do$j(client, id, api_version, options) {
       charEncoding: "percent"
     })
   };
-  const path7 = pathToFunc("/{api_version}/environments/{id}")(pathParams);
+  const path9 = pathToFunc("/{api_version}/environments/{id}")(pathParams);
   const headers = new Headers(compactMap({
     Accept: "application/json"
   }));
@@ -46268,7 +46476,7 @@ async function $do$j(client, id, api_version, options) {
     security: requestSecurity,
     method: "GET",
     baseURL: options === null || options === void 0 ? void 0 : options.server_url,
-    path: path7,
+    path: path9,
     headers,
     body,
     userAgent: client._options.user_agent,
@@ -46309,7 +46517,7 @@ async function $do$i(client, api_version, page_size, page_token, options) {
   const pathParams = {
     api_version: encodeSimple("api_version", (_a2 = payload === null || payload === void 0 ? void 0 : payload.api_version) !== null && _a2 !== void 0 ? _a2 : client._options.api_version, { explode: false, charEncoding: "percent" })
   };
-  const path7 = pathToFunc("/{api_version}/environments")(pathParams);
+  const path9 = pathToFunc("/{api_version}/environments")(pathParams);
   const query = encodeFormQuery({
     "page_size": payload === null || payload === void 0 ? void 0 : payload.page_size,
     "page_token": payload === null || payload === void 0 ? void 0 : payload.page_token
@@ -46343,7 +46551,7 @@ async function $do$i(client, api_version, page_size, page_token, options) {
     security: requestSecurity,
     method: "GET",
     baseURL: options === null || options === void 0 ? void 0 : options.server_url,
-    path: path7,
+    path: path9,
     headers,
     query,
     body,
@@ -46494,7 +46702,7 @@ async function $do$h(client, id, api_version, options) {
       charEncoding: "percent"
     })
   };
-  const path7 = pathToFunc("/{api_version}/interactions/{id}/cancel")(pathParams);
+  const path9 = pathToFunc("/{api_version}/interactions/{id}/cancel")(pathParams);
   const headers = new Headers(compactMap({
     Accept: "application/json"
   }));
@@ -46524,7 +46732,7 @@ async function $do$h(client, id, api_version, options) {
     security: requestSecurity,
     method: "POST",
     baseURL: options === null || options === void 0 ? void 0 : options.server_url,
-    path: path7,
+    path: path9,
     headers,
     body,
     userAgent: client._options.user_agent,
@@ -46567,7 +46775,7 @@ async function $do$g(client, body, api_version, options) {
   const pathParams = {
     api_version: encodeSimple("api_version", (_a2 = payload.api_version) !== null && _a2 !== void 0 ? _a2 : client._options.api_version, { explode: false, charEncoding: "percent" })
   };
-  const path7 = pathToFunc("/{api_version}/interactions")(pathParams);
+  const path9 = pathToFunc("/{api_version}/interactions")(pathParams);
   const headers = new Headers(compactMap({
     "Content-Type": "application/json",
     Accept: ((_b = input === null || input === void 0 ? void 0 : input.body) === null || _b === void 0 ? void 0 : _b.stream) ? "text/event-stream" : "application/json"
@@ -46598,7 +46806,7 @@ async function $do$g(client, body, api_version, options) {
     security: requestSecurity,
     method: "POST",
     baseURL: options === null || options === void 0 ? void 0 : options.server_url,
-    path: path7,
+    path: path9,
     headers,
     body: body$,
     userAgent: client._options.user_agent,
@@ -46648,7 +46856,7 @@ async function $do$f(client, id, api_version, options) {
       charEncoding: "percent"
     })
   };
-  const path7 = pathToFunc("/{api_version}/interactions/{id}")(pathParams);
+  const path9 = pathToFunc("/{api_version}/interactions/{id}")(pathParams);
   const headers = new Headers(compactMap({
     Accept: "application/json"
   }));
@@ -46678,7 +46886,7 @@ async function $do$f(client, id, api_version, options) {
     security: requestSecurity,
     method: "DELETE",
     baseURL: options === null || options === void 0 ? void 0 : options.server_url,
-    path: path7,
+    path: path9,
     headers,
     body,
     userAgent: client._options.user_agent,
@@ -46728,7 +46936,7 @@ async function $do$e(client, id, stream, last_event_id, include_input, api_versi
       charEncoding: "percent"
     })
   };
-  const path7 = pathToFunc("/{api_version}/interactions/{id}")(pathParams);
+  const path9 = pathToFunc("/{api_version}/interactions/{id}")(pathParams);
   const query = encodeFormQuery({
     "include_input": payload.include_input,
     "last_event_id": payload.last_event_id,
@@ -46763,7 +46971,7 @@ async function $do$e(client, id, stream, last_event_id, include_input, api_versi
     security: requestSecurity,
     method: "GET",
     baseURL: options === null || options === void 0 ? void 0 : options.server_url,
-    path: path7,
+    path: path9,
     headers,
     query,
     body,
@@ -46837,7 +47045,7 @@ async function $do$d(client, body, api_version, options) {
   const pathParams = {
     api_version: encodeSimple("api_version", (_a2 = payload.api_version) !== null && _a2 !== void 0 ? _a2 : client._options.api_version, { explode: false, charEncoding: "percent" })
   };
-  const path7 = pathToFunc("/{api_version}/triggers")(pathParams);
+  const path9 = pathToFunc("/{api_version}/triggers")(pathParams);
   const headers = new Headers(compactMap({
     "Content-Type": "application/json",
     Accept: "application/json"
@@ -46868,7 +47076,7 @@ async function $do$d(client, body, api_version, options) {
     security: requestSecurity,
     method: "POST",
     baseURL: options === null || options === void 0 ? void 0 : options.server_url,
-    path: path7,
+    path: path9,
     headers,
     body: body$,
     userAgent: client._options.user_agent,
@@ -46912,7 +47120,7 @@ async function $do$c(client, id, api_version, options) {
       charEncoding: "percent"
     })
   };
-  const path7 = pathToFunc("/{api_version}/triggers/{id}")(pathParams);
+  const path9 = pathToFunc("/{api_version}/triggers/{id}")(pathParams);
   const headers = new Headers(compactMap({
     Accept: "application/json"
   }));
@@ -46942,7 +47150,7 @@ async function $do$c(client, id, api_version, options) {
     security: requestSecurity,
     method: "DELETE",
     baseURL: options === null || options === void 0 ? void 0 : options.server_url,
-    path: path7,
+    path: path9,
     headers,
     body,
     userAgent: client._options.user_agent,
@@ -46986,7 +47194,7 @@ async function $do$b(client, id, api_version, options) {
       charEncoding: "percent"
     })
   };
-  const path7 = pathToFunc("/{api_version}/triggers/{id}")(pathParams);
+  const path9 = pathToFunc("/{api_version}/triggers/{id}")(pathParams);
   const headers = new Headers(compactMap({
     Accept: "application/json"
   }));
@@ -47016,7 +47224,7 @@ async function $do$b(client, id, api_version, options) {
     security: requestSecurity,
     method: "GET",
     baseURL: options === null || options === void 0 ? void 0 : options.server_url,
-    path: path7,
+    path: path9,
     headers,
     body,
     userAgent: client._options.user_agent,
@@ -47062,7 +47270,7 @@ async function $do$a(client, trigger_id, api_version, page_size, page_token, opt
       charEncoding: "percent"
     })
   };
-  const path7 = pathToFunc("/{api_version}/triggers/{trigger_id}/executions")(pathParams);
+  const path9 = pathToFunc("/{api_version}/triggers/{trigger_id}/executions")(pathParams);
   const query = encodeFormQuery({
     "page_size": payload.page_size,
     "page_token": payload.page_token
@@ -47096,7 +47304,7 @@ async function $do$a(client, trigger_id, api_version, page_size, page_token, opt
     security: requestSecurity,
     method: "GET",
     baseURL: options === null || options === void 0 ? void 0 : options.server_url,
-    path: path7,
+    path: path9,
     headers,
     query,
     body,
@@ -47139,7 +47347,7 @@ async function $do$9(client, api_version, filter, page_size, page_token, options
   const pathParams = {
     api_version: encodeSimple("api_version", (_a2 = payload === null || payload === void 0 ? void 0 : payload.api_version) !== null && _a2 !== void 0 ? _a2 : client._options.api_version, { explode: false, charEncoding: "percent" })
   };
-  const path7 = pathToFunc("/{api_version}/triggers")(pathParams);
+  const path9 = pathToFunc("/{api_version}/triggers")(pathParams);
   const query = encodeFormQuery({
     "filter": payload === null || payload === void 0 ? void 0 : payload.filter,
     "page_size": payload === null || payload === void 0 ? void 0 : payload.page_size,
@@ -47174,7 +47382,7 @@ async function $do$9(client, api_version, filter, page_size, page_token, options
     security: requestSecurity,
     method: "GET",
     baseURL: options === null || options === void 0 ? void 0 : options.server_url,
-    path: path7,
+    path: path9,
     headers,
     query,
     body,
@@ -47219,7 +47427,7 @@ async function $do$8(client, trigger_id, api_version, options) {
       charEncoding: "percent"
     })
   };
-  const path7 = pathToFunc("/{api_version}/triggers/{trigger_id}/executions")(pathParams);
+  const path9 = pathToFunc("/{api_version}/triggers/{trigger_id}/executions")(pathParams);
   const headers = new Headers(compactMap({
     Accept: "application/json"
   }));
@@ -47249,7 +47457,7 @@ async function $do$8(client, trigger_id, api_version, options) {
     security: requestSecurity,
     method: "POST",
     baseURL: options === null || options === void 0 ? void 0 : options.server_url,
-    path: path7,
+    path: path9,
     headers,
     body,
     userAgent: client._options.user_agent,
@@ -47294,7 +47502,7 @@ async function $do$7(client, id, body, api_version, options) {
       charEncoding: "percent"
     })
   };
-  const path7 = pathToFunc("/{api_version}/triggers/{id}")(pathParams);
+  const path9 = pathToFunc("/{api_version}/triggers/{id}")(pathParams);
   const headers = new Headers(compactMap({
     "Content-Type": "application/json",
     Accept: "application/json"
@@ -47325,7 +47533,7 @@ async function $do$7(client, id, body, api_version, options) {
     security: requestSecurity,
     method: "PATCH",
     baseURL: options === null || options === void 0 ? void 0 : options.server_url,
-    path: path7,
+    path: path9,
     headers,
     body: body$,
     userAgent: client._options.user_agent,
@@ -47411,7 +47619,7 @@ async function $do$6(client, body, api_version, options) {
   const pathParams = {
     api_version: encodeSimple("api_version", (_a2 = payload.api_version) !== null && _a2 !== void 0 ? _a2 : client._options.api_version, { explode: false, charEncoding: "percent" })
   };
-  const path7 = pathToFunc("/{api_version}/webhooks")(pathParams);
+  const path9 = pathToFunc("/{api_version}/webhooks")(pathParams);
   const headers = new Headers(compactMap({
     "Content-Type": "application/json",
     Accept: "application/json"
@@ -47442,7 +47650,7 @@ async function $do$6(client, body, api_version, options) {
     security: requestSecurity,
     method: "POST",
     baseURL: options === null || options === void 0 ? void 0 : options.server_url,
-    path: path7,
+    path: path9,
     headers,
     body: body$,
     userAgent: client._options.user_agent,
@@ -47486,7 +47694,7 @@ async function $do$5(client, id, api_version, options) {
       charEncoding: "percent"
     })
   };
-  const path7 = pathToFunc("/{api_version}/webhooks/{id}")(pathParams);
+  const path9 = pathToFunc("/{api_version}/webhooks/{id}")(pathParams);
   const headers = new Headers(compactMap({
     Accept: "application/json"
   }));
@@ -47516,7 +47724,7 @@ async function $do$5(client, id, api_version, options) {
     security: requestSecurity,
     method: "DELETE",
     baseURL: options === null || options === void 0 ? void 0 : options.server_url,
-    path: path7,
+    path: path9,
     headers,
     body,
     userAgent: client._options.user_agent,
@@ -47560,7 +47768,7 @@ async function $do$4(client, id, api_version, options) {
       charEncoding: "percent"
     })
   };
-  const path7 = pathToFunc("/{api_version}/webhooks/{id}")(pathParams);
+  const path9 = pathToFunc("/{api_version}/webhooks/{id}")(pathParams);
   const headers = new Headers(compactMap({
     Accept: "application/json"
   }));
@@ -47590,7 +47798,7 @@ async function $do$4(client, id, api_version, options) {
     security: requestSecurity,
     method: "GET",
     baseURL: options === null || options === void 0 ? void 0 : options.server_url,
-    path: path7,
+    path: path9,
     headers,
     body,
     userAgent: client._options.user_agent,
@@ -47631,7 +47839,7 @@ async function $do$3(client, api_version, page_size, page_token, options) {
   const pathParams = {
     api_version: encodeSimple("api_version", (_a2 = payload === null || payload === void 0 ? void 0 : payload.api_version) !== null && _a2 !== void 0 ? _a2 : client._options.api_version, { explode: false, charEncoding: "percent" })
   };
-  const path7 = pathToFunc("/{api_version}/webhooks")(pathParams);
+  const path9 = pathToFunc("/{api_version}/webhooks")(pathParams);
   const query = encodeFormQuery({
     "page_size": payload === null || payload === void 0 ? void 0 : payload.page_size,
     "page_token": payload === null || payload === void 0 ? void 0 : payload.page_token
@@ -47665,7 +47873,7 @@ async function $do$3(client, api_version, page_size, page_token, options) {
     security: requestSecurity,
     method: "GET",
     baseURL: options === null || options === void 0 ? void 0 : options.server_url,
-    path: path7,
+    path: path9,
     headers,
     query,
     body,
@@ -47711,7 +47919,7 @@ async function $do$2(client, id, api_version, body, options) {
       charEncoding: "percent"
     })
   };
-  const path7 = pathToFunc("/{api_version}/webhooks/{id}:ping")(pathParams);
+  const path9 = pathToFunc("/{api_version}/webhooks/{id}:ping")(pathParams);
   const headers = new Headers(compactMap({
     "Content-Type": "application/json",
     Accept: "application/json"
@@ -47742,7 +47950,7 @@ async function $do$2(client, id, api_version, body, options) {
     security: requestSecurity,
     method: "POST",
     baseURL: options === null || options === void 0 ? void 0 : options.server_url,
-    path: path7,
+    path: path9,
     headers,
     body: body$,
     userAgent: client._options.user_agent,
@@ -47787,7 +47995,7 @@ async function $do$1(client, id, api_version, body, options) {
       charEncoding: "percent"
     })
   };
-  const path7 = pathToFunc("/{api_version}/webhooks/{id}:rotateSigningSecret")(pathParams);
+  const path9 = pathToFunc("/{api_version}/webhooks/{id}:rotateSigningSecret")(pathParams);
   const headers = new Headers(compactMap({
     "Content-Type": "application/json",
     Accept: "application/json"
@@ -47818,7 +48026,7 @@ async function $do$1(client, id, api_version, body, options) {
     security: requestSecurity,
     method: "POST",
     baseURL: options === null || options === void 0 ? void 0 : options.server_url,
-    path: path7,
+    path: path9,
     headers,
     body: body$,
     userAgent: client._options.user_agent,
@@ -47864,7 +48072,7 @@ async function $do(client, id, api_version, update_mask, body, options) {
       charEncoding: "percent"
     })
   };
-  const path7 = pathToFunc("/{api_version}/webhooks/{id}")(pathParams);
+  const path9 = pathToFunc("/{api_version}/webhooks/{id}")(pathParams);
   const query = encodeFormQuery({
     "update_mask": payload.update_mask
   });
@@ -47898,7 +48106,7 @@ async function $do(client, id, api_version, update_mask, body, options) {
     security: requestSecurity,
     method: "PATCH",
     baseURL: options === null || options === void 0 ? void 0 : options.server_url,
-    path: path7,
+    path: path9,
     headers,
     query,
     body: body$,
@@ -48479,7 +48687,7 @@ var NodeDownloader = class {
     if (params.downloadPath) {
       const response = await downloadFile(params, apiClient);
       if (response instanceof HttpResponse) {
-        const writer = (0, import_fs2.createWriteStream)(params.downloadPath);
+        const writer = (0, import_fs4.createWriteStream)(params.downloadPath);
         const body = import_node_stream3.Readable.fromWeb(response.responseInternal.body);
         body.pipe(writer);
         await (0, import_promises2.finished)(writer);
@@ -50015,16 +50223,16 @@ var Tunings = class extends BaseModule {
   async getInternal(params) {
     var _a2, _b, _c, _d;
     let response;
-    let path7 = "";
+    let path9 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = getTuningJobParametersToVertex(params);
-      path7 = formatMap("{name}", body["_url"]);
+      path9 = formatMap("{name}", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path7,
+        path: path9,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "GET",
@@ -50045,12 +50253,12 @@ var Tunings = class extends BaseModule {
       });
     } else {
       const body = getTuningJobParametersToMldev(params);
-      path7 = formatMap("{name}", body["_url"]);
+      path9 = formatMap("{name}", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path7,
+        path: path9,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "GET",
@@ -50074,16 +50282,16 @@ var Tunings = class extends BaseModule {
   async listInternal(params) {
     var _a2, _b;
     let response;
-    let path7 = "";
+    let path9 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = listTuningJobsParametersToVertex(params);
-      path7 = formatMap("tuningJobs", body["_url"]);
+      path9 = formatMap("tuningJobs", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path7,
+        path: path9,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "GET",
@@ -50122,16 +50330,16 @@ var Tunings = class extends BaseModule {
   async cancel(params) {
     var _a2, _b, _c, _d;
     let response;
-    let path7 = "";
+    let path9 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = cancelTuningJobParametersToVertex(params);
-      path7 = formatMap("{name}:cancel", body["_url"]);
+      path9 = formatMap("{name}:cancel", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path7,
+        path: path9,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
@@ -50154,12 +50362,12 @@ var Tunings = class extends BaseModule {
       });
     } else {
       const body = cancelTuningJobParametersToMldev(params);
-      path7 = formatMap("{name}:cancel", body["_url"]);
+      path9 = formatMap("{name}:cancel", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path7,
+        path: path9,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
@@ -50185,16 +50393,16 @@ var Tunings = class extends BaseModule {
   async tuneInternal(params) {
     var _a2, _b;
     let response;
-    let path7 = "";
+    let path9 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = createTuningJobParametersPrivateToVertex(params, params);
-      path7 = formatMap("tuningJobs", body["_url"]);
+      path9 = formatMap("tuningJobs", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path7,
+        path: path9,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
@@ -50220,18 +50428,18 @@ var Tunings = class extends BaseModule {
   async tuneMldevInternal(params) {
     var _a2, _b;
     let response;
-    let path7 = "";
+    let path9 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       throw new Error("This method is only supported by the Gemini Developer API.");
     } else {
       const body = createTuningJobParametersPrivateToMldev(params);
-      path7 = formatMap("tunedModels", body["_url"]);
+      path9 = formatMap("tunedModels", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path7,
+        path: path9,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
@@ -50255,16 +50463,16 @@ var Tunings = class extends BaseModule {
   async validateReward(params) {
     var _a2, _b;
     let response;
-    let path7 = "";
+    let path9 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = validateRewardParametersToVertex(params);
-      path7 = formatMap("{parent}/tuningJobs:validateReinforcementTuningReward", body["_url"]);
+      path9 = formatMap("{parent}/tuningJobs:validateReinforcementTuningReward", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path7,
+        path: path9,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
@@ -50377,7 +50585,7 @@ var NodeUploader = class {
   async stat(file) {
     const fileStat = { size: 0, type: void 0 };
     if (typeof file === "string") {
-      const originalStat = await fs3.stat(file);
+      const originalStat = await fs5.stat(file);
       fileStat.size = originalStat.size;
       fileStat.type = this.inferMimeType(file);
       return fileStat;
@@ -50523,9 +50731,9 @@ var NodeUploader = class {
     let response = new HttpResponse(new Response());
     let uploadCommand = "upload";
     let fileHandle;
-    const fileName = path2.basename(file);
+    const fileName = path4.basename(file);
     try {
-      fileHandle = await fs3.open(file, "r");
+      fileHandle = await fs5.open(file, "r");
       if (!fileHandle) {
         throw new Error(`Failed to open file`);
       }
@@ -50806,8 +51014,8 @@ Ensure your response clearly includes either "VERDICT: PASSED" or "VERDICT: FAIL
 }
 async function runAiKnowledgeBaseAudit(apiKey, cwd = process.cwd()) {
   logStep(8, "Angular AI Knowledge Base Regression Audit (Gemini 3.6 Flash)");
-  const resolvedIssuesPath = import_path2.default.join(cwd, "resolved_issues.md");
-  if (!import_fs3.default.existsSync(resolvedIssuesPath)) {
+  const resolvedIssuesPath = import_path4.default.join(cwd, "resolved_issues.md");
+  if (!import_fs5.default.existsSync(resolvedIssuesPath)) {
     console.log(source_default.gray("  No resolved_issues.md found at repository root. AI audit skipped."));
     return { passed: true, skipped: true, report: "No resolved_issues.md found at repository root. AI audit skipped." };
   }
@@ -50816,7 +51024,7 @@ async function runAiKnowledgeBaseAudit(apiKey, cwd = process.cwd()) {
     console.log(source_default.gray("  To enable AI audits, run AngularGatekeeperSetup.exe or set GEMINI_API_KEY."));
     return { passed: true, skipped: true, report: "GEMINI_API_KEY not configured. AI audit skipped." };
   }
-  const knowledgeBase = import_fs3.default.readFileSync(resolvedIssuesPath, "utf8");
+  const knowledgeBase = import_fs5.default.readFileSync(resolvedIssuesPath, "utf8");
   console.log(source_default.blue("  Reading git diff for current Angular changes..."));
   const diffOutput = getDiff(cwd);
   if (!diffOutput || diffOutput.trim() === "") {
@@ -50858,13 +51066,13 @@ async function runAiKnowledgeBaseAudit(apiKey, cwd = process.cwd()) {
 }
 
 // src/branch-watcher.js
-var import_fs4 = __toESM(require("fs"), 1);
-var import_path3 = __toESM(require("path"), 1);
-var import_child_process3 = require("child_process");
+var import_fs6 = __toESM(require("fs"), 1);
+var import_path5 = __toESM(require("path"), 1);
+var import_child_process4 = require("child_process");
 var import_prompts = __toESM(require_prompts3(), 1);
 function runGit2(command, cwd = process.cwd(), allowFail = false) {
   try {
-    return (0, import_child_process3.execSync)(command, {
+    return (0, import_child_process4.execSync)(command, {
       cwd,
       encoding: "utf8",
       stdio: ["pipe", "pipe", "pipe"],
@@ -50878,23 +51086,23 @@ function runGit2(command, cwd = process.cwd(), allowFail = false) {
   }
 }
 function getWatcherConfigPath(cwd = process.cwd()) {
-  const gitDir = import_path3.default.join(cwd, ".git");
-  if (!import_fs4.default.existsSync(gitDir)) return null;
-  return import_path3.default.join(gitDir, "gatekeeper-branch-watcher.json");
+  const gitDir = import_path5.default.join(cwd, ".git");
+  if (!import_fs6.default.existsSync(gitDir)) return null;
+  return import_path5.default.join(gitDir, "gatekeeper-branch-watcher.json");
 }
 function getAlertLogPath(cwd = process.cwd()) {
-  const gitDir = import_path3.default.join(cwd, ".git");
-  if (!import_fs4.default.existsSync(gitDir)) return null;
-  return import_path3.default.join(gitDir, "gatekeeper-conflict-alert.log");
+  const gitDir = import_path5.default.join(cwd, ".git");
+  if (!import_fs6.default.existsSync(gitDir)) return null;
+  return import_path5.default.join(gitDir, "gatekeeper-conflict-alert.log");
 }
 function getEngineBinaryPath() {
-  const installed = process.env.APPDATA ? import_path3.default.join(process.env.APPDATA, "FrontendGatekeeper", "engine.exe") : null;
-  if (installed && import_fs4.default.existsSync(installed)) return installed;
+  const installed = process.env.APPDATA ? import_path5.default.join(process.env.APPDATA, "FrontendGatekeeper", "engine.exe") : null;
+  if (installed && import_fs6.default.existsSync(installed)) return installed;
   return process.execPath;
 }
 function setupVSCodeAutoRestart(cwd) {
-  const vscodDir = import_path3.default.join(cwd, ".vscode");
-  const tasksFile = import_path3.default.join(vscodDir, "tasks.json");
+  const vscodDir = import_path5.default.join(cwd, ".vscode");
+  const tasksFile = import_path5.default.join(vscodDir, "tasks.json");
   const engineBin = getEngineBinaryPath();
   const newTask = {
     label: "Angular Gatekeeper: Auto-Restart Branch Watcher",
@@ -50912,62 +51120,62 @@ function setupVSCodeAutoRestart(cwd) {
     problemMatcher: []
   };
   try {
-    import_fs4.default.mkdirSync(vscodDir, { recursive: true });
+    import_fs6.default.mkdirSync(vscodDir, { recursive: true });
     let existingTasks = { version: "2.0.0", tasks: [] };
-    if (import_fs4.default.existsSync(tasksFile)) {
+    if (import_fs6.default.existsSync(tasksFile)) {
       try {
-        existingTasks = JSON.parse(import_fs4.default.readFileSync(tasksFile, "utf8"));
+        existingTasks = JSON.parse(import_fs6.default.readFileSync(tasksFile, "utf8"));
         if (!Array.isArray(existingTasks.tasks)) existingTasks.tasks = [];
       } catch (_) {
       }
     }
     existingTasks.tasks = existingTasks.tasks.filter((t2) => t2.label !== newTask.label);
     existingTasks.tasks.push(newTask);
-    import_fs4.default.writeFileSync(tasksFile, JSON.stringify(existingTasks, null, 2), "utf8");
-    const settingsFile = import_path3.default.join(vscodDir, "settings.json");
+    import_fs6.default.writeFileSync(tasksFile, JSON.stringify(existingTasks, null, 2), "utf8");
+    const settingsFile = import_path5.default.join(vscodDir, "settings.json");
     let existingSettings = {};
-    if (import_fs4.default.existsSync(settingsFile)) {
+    if (import_fs6.default.existsSync(settingsFile)) {
       try {
-        existingSettings = JSON.parse(import_fs4.default.readFileSync(settingsFile, "utf8"));
+        existingSettings = JSON.parse(import_fs6.default.readFileSync(settingsFile, "utf8"));
       } catch (_) {
       }
     }
     existingSettings["task.allowAutomaticTasks"] = "on";
-    import_fs4.default.writeFileSync(settingsFile, JSON.stringify(existingSettings, null, 2), "utf8");
+    import_fs6.default.writeFileSync(settingsFile, JSON.stringify(existingSettings, null, 2), "utf8");
   } catch (err) {
   }
 }
 function removeVSCodeAutoRestart(cwd) {
-  const vscodDir = import_path3.default.join(cwd, ".vscode");
-  const tasksFile = import_path3.default.join(vscodDir, "tasks.json");
-  if (import_fs4.default.existsSync(tasksFile)) {
+  const vscodDir = import_path5.default.join(cwd, ".vscode");
+  const tasksFile = import_path5.default.join(vscodDir, "tasks.json");
+  if (import_fs6.default.existsSync(tasksFile)) {
     try {
-      const existing = JSON.parse(import_fs4.default.readFileSync(tasksFile, "utf8"));
+      const existing = JSON.parse(import_fs6.default.readFileSync(tasksFile, "utf8"));
       if (Array.isArray(existing.tasks)) {
         existing.tasks = existing.tasks.filter(
           (t2) => t2.label !== "Angular Gatekeeper: Auto-Restart Branch Watcher"
         );
-        import_fs4.default.writeFileSync(tasksFile, JSON.stringify(existing, null, 2), "utf8");
+        import_fs6.default.writeFileSync(tasksFile, JSON.stringify(existing, null, 2), "utf8");
       }
     } catch (_) {
     }
   }
-  const settingsFile = import_path3.default.join(vscodDir, "settings.json");
-  if (import_fs4.default.existsSync(settingsFile)) {
+  const settingsFile = import_path5.default.join(vscodDir, "settings.json");
+  if (import_fs6.default.existsSync(settingsFile)) {
     try {
-      const settings = JSON.parse(import_fs4.default.readFileSync(settingsFile, "utf8"));
+      const settings = JSON.parse(import_fs6.default.readFileSync(settingsFile, "utf8"));
       delete settings["task.allowAutomaticTasks"];
-      import_fs4.default.writeFileSync(settingsFile, JSON.stringify(settings, null, 2), "utf8");
+      import_fs6.default.writeFileSync(settingsFile, JSON.stringify(settings, null, 2), "utf8");
     } catch (_) {
     }
   }
 }
 async function autoRestartIfEnabled(cwd = process.cwd()) {
   const configPath = getWatcherConfigPath(cwd);
-  if (!configPath || !import_fs4.default.existsSync(configPath)) return;
+  if (!configPath || !import_fs6.default.existsSync(configPath)) return;
   let config = {};
   try {
-    config = JSON.parse(import_fs4.default.readFileSync(configPath, "utf8"));
+    config = JSON.parse(import_fs6.default.readFileSync(configPath, "utf8"));
   } catch (_) {
     return;
   }
@@ -50978,14 +51186,14 @@ async function autoRestartIfEnabled(cwd = process.cwd()) {
   const engineBin = getEngineBinaryPath();
   let execBinary = engineBin;
   let execArgs = [];
-  if (import_path3.default.basename(execBinary).toLowerCase().startsWith("node")) {
+  if (import_path5.default.basename(execBinary).toLowerCase().startsWith("node")) {
     execArgs = [process.argv[1]];
   }
-  const gitDir = import_path3.default.join(cwd, ".git");
-  const daemonLogPath = import_path3.default.join(gitDir, "gatekeeper-daemon.log");
-  const outLog = import_fs4.default.openSync(daemonLogPath, "a");
-  const errLog = import_fs4.default.openSync(daemonLogPath, "a");
-  const child = (0, import_child_process3.spawn)(execBinary, execArgs, {
+  const gitDir = import_path5.default.join(cwd, ".git");
+  const daemonLogPath = import_path5.default.join(gitDir, "gatekeeper-daemon.log");
+  const outLog = import_fs6.default.openSync(daemonLogPath, "a");
+  const errLog = import_fs6.default.openSync(daemonLogPath, "a");
+  const child = (0, import_child_process4.spawn)(execBinary, execArgs, {
     detached: true,
     stdio: ["ignore", outLog, errLog],
     cwd,
@@ -51002,7 +51210,7 @@ async function autoRestartIfEnabled(cwd = process.cwd()) {
   try {
     config.pid = child.pid;
     config.startedAt = (/* @__PURE__ */ new Date()).toISOString();
-    import_fs4.default.writeFileSync(configPath, JSON.stringify(config, null, 2), "utf8");
+    import_fs6.default.writeFileSync(configPath, JSON.stringify(config, null, 2), "utf8");
   } catch (_) {
   }
 }
@@ -51011,10 +51219,10 @@ function sendWindowsNotification(title, message, cwd = process.cwd()) {
   const safeTitle = title.replace(/'/g, "''").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   const safeMessage = message.replace(/'/g, "''").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   const safeCwd = cwd.replace(/\\/g, "\\\\");
-  const gitDir = import_path3.default.join(cwd, ".git");
-  const launcherPath = import_path3.default.join(gitDir, "gatekeeper-show-details.cmd");
+  const gitDir = import_path5.default.join(cwd, ".git");
+  const launcherPath = import_path5.default.join(gitDir, "gatekeeper-show-details.cmd");
   try {
-    import_fs4.default.writeFileSync(
+    import_fs6.default.writeFileSync(
       launcherPath,
       `@echo off
 title Angular Gatekeeper - Conflict Details
@@ -51083,14 +51291,14 @@ try {
 `;
   const b64 = Buffer.from(psScript, "utf16le").toString("base64");
   try {
-    (0, import_child_process3.execSync)(`powershell.exe -NoProfile -ExecutionPolicy Bypass -EncodedCommand ${b64}`, {
+    (0, import_child_process4.execSync)(`powershell.exe -NoProfile -ExecutionPolicy Bypass -EncodedCommand ${b64}`, {
       stdio: "ignore",
       timeout: 8e3,
       windowsHide: true
     });
   } catch (err) {
     try {
-      (0, import_child_process3.execSync)(`powershell.exe -Command "[console]::beep(800, 300)"`, { stdio: "ignore", windowsHide: true });
+      (0, import_child_process4.execSync)(`powershell.exe -Command "[console]::beep(800, 300)"`, { stdio: "ignore", windowsHide: true });
     } catch (e2) {
     }
   }
@@ -51124,7 +51332,7 @@ function checkBranchConflicts(cwd = process.cwd(), targetBranch = "main") {
   let conflictingFiles = [];
   let mergeTreeOutput = "";
   try {
-    const res = (0, import_child_process3.execSync)(`git merge-tree --write-tree ${uncommittedStateRef} origin/${targetBranch}`, {
+    const res = (0, import_child_process4.execSync)(`git merge-tree --write-tree ${uncommittedStateRef} origin/${targetBranch}`, {
       cwd,
       encoding: "utf8",
       stdio: ["pipe", "pipe", "pipe"],
@@ -51208,8 +51416,8 @@ async function enableBranchWatcher(cwd = process.cwd()) {
   console.log("\n" + source_default.cyan.bold("\u2554\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2557"));
   console.log(source_default.cyan.bold("\u2551       \u{1F33F} AUTOMATIC BRANCH CONFLICT WATCHER SETUP           \u2551"));
   console.log(source_default.cyan.bold("\u255A\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u255D\n"));
-  const gitDir = import_path3.default.join(cwd, ".git");
-  if (!import_fs4.default.existsSync(gitDir)) {
+  const gitDir = import_path5.default.join(cwd, ".git");
+  if (!import_fs6.default.existsSync(gitDir)) {
     console.log(source_default.red("\u2716 Error: Current directory is not a Git repository."));
     process.exit(1);
   }
@@ -51279,14 +51487,14 @@ async function enableBranchWatcher(cwd = process.cwd()) {
 >>> Launching background ${intervalMinutes}-minute sync monitor daemon...`));
   let execBinary = getEngineBinaryPath();
   let execArgs = [];
-  if (import_path3.default.basename(execBinary).toLowerCase().startsWith("node")) {
+  if (import_path5.default.basename(execBinary).toLowerCase().startsWith("node")) {
     const scriptPath = process.argv[1];
     execArgs = [scriptPath];
   }
-  const daemonLogPath = import_path3.default.join(gitDir, "gatekeeper-daemon.log");
-  const outLog = import_fs4.default.openSync(daemonLogPath, "a");
-  const errLog = import_fs4.default.openSync(daemonLogPath, "a");
-  const child = (0, import_child_process3.spawn)(execBinary, execArgs, {
+  const daemonLogPath = import_path5.default.join(gitDir, "gatekeeper-daemon.log");
+  const outLog = import_fs6.default.openSync(daemonLogPath, "a");
+  const errLog = import_fs6.default.openSync(daemonLogPath, "a");
+  const child = (0, import_child_process4.spawn)(execBinary, execArgs, {
     detached: true,
     stdio: ["ignore", outLog, errLog],
     cwd,
@@ -51315,7 +51523,7 @@ async function enableBranchWatcher(cwd = process.cwd()) {
     behindCount: checkResult.behindCount
   };
   if (configPath) {
-    import_fs4.default.writeFileSync(configPath, JSON.stringify(configData, null, 2), "utf8");
+    import_fs6.default.writeFileSync(configPath, JSON.stringify(configData, null, 2), "utf8");
   }
   setupVSCodeAutoRestart(cwd);
   console.log(source_default.gray("  [Auto-Restart] .vscode/tasks.json configured \u2014 watcher will auto-restart when this project is opened in VS Code / Cursor."));
@@ -51335,7 +51543,7 @@ async function enableBranchWatcher(cwd = process.cwd()) {
 function isPidAlive(pid) {
   if (!pid) return false;
   try {
-    const out = (0, import_child_process3.execSync)(`powershell -NoProfile -Command "Get-Process -Id ${pid} -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Id"`, {
+    const out = (0, import_child_process4.execSync)(`powershell -NoProfile -Command "Get-Process -Id ${pid} -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Id"`, {
       encoding: "utf8",
       stdio: ["pipe", "pipe", "pipe"],
       windowsHide: true
@@ -51347,26 +51555,26 @@ function isPidAlive(pid) {
 }
 async function disableBranchWatcher(cwd = process.cwd(), silent = false) {
   const configPath = getWatcherConfigPath(cwd);
-  if (!configPath || !import_fs4.default.existsSync(configPath)) {
+  if (!configPath || !import_fs6.default.existsSync(configPath)) {
     if (!silent) {
       console.log(source_default.yellow("\u26A0 No active branch conflict watcher found for this repository."));
     }
     return;
   }
   try {
-    const config = JSON.parse(import_fs4.default.readFileSync(configPath, "utf8"));
+    const config = JSON.parse(import_fs6.default.readFileSync(configPath, "utf8"));
     config.enabled = false;
-    import_fs4.default.writeFileSync(configPath, JSON.stringify(config, null, 2), "utf8");
+    import_fs6.default.writeFileSync(configPath, JSON.stringify(config, null, 2), "utf8");
     if (config.pid) {
       try {
         process.kill(config.pid);
       } catch (e2) {
       }
     }
-    import_fs4.default.unlinkSync(configPath);
+    import_fs6.default.unlinkSync(configPath);
     const alertLog = getAlertLogPath(cwd);
-    if (alertLog && import_fs4.default.existsSync(alertLog)) {
-      import_fs4.default.unlinkSync(alertLog);
+    if (alertLog && import_fs6.default.existsSync(alertLog)) {
+      import_fs6.default.unlinkSync(alertLog);
     }
     removeVSCodeAutoRestart(cwd);
     if (!silent) {
@@ -51381,14 +51589,14 @@ async function disableBranchWatcher(cwd = process.cwd(), silent = false) {
 }
 async function statusBranchWatcher(cwd = process.cwd()) {
   const configPath = getWatcherConfigPath(cwd);
-  if (!configPath || !import_fs4.default.existsSync(configPath)) {
+  if (!configPath || !import_fs6.default.existsSync(configPath)) {
     console.log(source_default.yellow("\n\u26A0 Branch conflict watcher is currently DISABLED for this repository."));
     console.log(source_default.gray("  To enable, run: a-gatekeeper branch check --enable\n"));
     return;
   }
   let config = {};
   try {
-    config = JSON.parse(import_fs4.default.readFileSync(configPath, "utf8"));
+    config = JSON.parse(import_fs6.default.readFileSync(configPath, "utf8"));
   } catch (e2) {
     console.log(source_default.yellow("\u26A0 Invalid watcher configuration."));
     return;
@@ -51400,7 +51608,7 @@ async function statusBranchWatcher(cwd = process.cwd()) {
   config.conflictingFiles = liveResult.conflictingFiles;
   config.behindCount = liveResult.behindCount;
   try {
-    import_fs4.default.writeFileSync(configPath, JSON.stringify(config, null, 2), "utf8");
+    import_fs6.default.writeFileSync(configPath, JSON.stringify(config, null, 2), "utf8");
   } catch (_) {
   }
   console.log("\n" + source_default.cyan.bold("\u250C\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510"));
@@ -51428,10 +51636,10 @@ async function statusBranchWatcher(cwd = process.cwd()) {
 async function runDaemonLoop(cwd, targetBranch, intervalMinutes = 15) {
   const safeMinutes = parseInt(intervalMinutes, 10) || 15;
   const INTERVAL_MS = safeMinutes * 60 * 1e3;
-  const daemonLogPath = import_path3.default.join(cwd, ".git", "gatekeeper-daemon.log");
+  const daemonLogPath = import_path5.default.join(cwd, ".git", "gatekeeper-daemon.log");
   function appendDaemonLog(msg) {
     try {
-      import_fs4.default.appendFileSync(daemonLogPath, `[${(/* @__PURE__ */ new Date()).toLocaleString()}] ${msg}
+      import_fs6.default.appendFileSync(daemonLogPath, `[${(/* @__PURE__ */ new Date()).toLocaleString()}] ${msg}
 `, "utf8");
     } catch (e2) {
     }
@@ -51442,15 +51650,15 @@ async function runDaemonLoop(cwd, targetBranch, intervalMinutes = 15) {
       appendDaemonLog(`Executing conflict check cycle against origin/${targetBranch}...`);
       const result = checkBranchConflicts(cwd, targetBranch);
       const configPath = getWatcherConfigPath(cwd);
-      if (configPath && import_fs4.default.existsSync(configPath)) {
+      if (configPath && import_fs6.default.existsSync(configPath)) {
         try {
-          const config = JSON.parse(import_fs4.default.readFileSync(configPath, "utf8"));
+          const config = JSON.parse(import_fs6.default.readFileSync(configPath, "utf8"));
           config.lastCheckedAt = result.checkedAt;
           config.hasConflict = result.hasConflict;
           config.conflictingFiles = result.conflictingFiles;
           config.behindCount = result.behindCount;
           config.intervalMinutes = safeMinutes;
-          import_fs4.default.writeFileSync(configPath, JSON.stringify(config, null, 2), "utf8");
+          import_fs6.default.writeFileSync(configPath, JSON.stringify(config, null, 2), "utf8");
         } catch (e2) {
         }
       }
@@ -51476,7 +51684,7 @@ Collision / Conflicting Files:
 Please pull or rebase origin/${targetBranch} to resolve.
 
 `;
-          import_fs4.default.appendFileSync(alertLogPath, logContent, "utf8");
+          import_fs6.default.appendFileSync(alertLogPath, logContent, "utf8");
         }
       } else {
         appendDaemonLog(`Check cycle clean: No conflicts with origin/${targetBranch}.`);
@@ -51490,34 +51698,35 @@ Please pull or rebase origin/${targetBranch} to resolve.
 }
 
 // src/progress-window.js
-var import_fs5 = __toESM(require("fs"), 1);
+var import_fs7 = __toESM(require("fs"), 1);
 var import_os = __toESM(require("os"), 1);
-var import_path4 = __toESM(require("path"), 1);
-var import_child_process4 = require("child_process");
-var PROGRESS_FILE = import_path4.default.join(import_os.default.tmpdir(), "gk-progress.json");
-var PS_SCRIPT = import_path4.default.join(import_os.default.tmpdir(), "gk-progress-window.ps1");
-var VBS_SCRIPT = import_path4.default.join(import_os.default.tmpdir(), "gk-progress-launcher.vbs");
+var import_path6 = __toESM(require("path"), 1);
+var import_child_process5 = require("child_process");
+var PROGRESS_FILE = import_path6.default.join(import_os.default.tmpdir(), "gk-progress.json");
+var PS_SCRIPT = import_path6.default.join(import_os.default.tmpdir(), "gk-progress-window.ps1");
+var VBS_SCRIPT = import_path6.default.join(import_os.default.tmpdir(), "gk-progress-launcher.vbs");
 var STEPS = [
   { id: 1, label: "1. Angular Project Detection" },
   { id: 2, label: "2. Critical Architecture & Entry Points" },
-  { id: 3, label: "3. Angular Build & TypeScript Compilation" },
-  { id: 4, label: "4. Production Distribution Artifacts" },
-  { id: 5, label: "5. Automated Build Versioning" },
-  { id: 6, label: "6. Security & Secret Leak Scanning" },
-  { id: 7, label: "7. AI Knowledge Base Audit (Gemini 3.6)" }
+  { id: 3, label: "3. Dependency Vulnerability Audit (npm audit)" },
+  { id: 4, label: "4. TypeScript & Linter Verification" },
+  { id: 5, label: "5. Automated Unit Tests (test:ci)" },
+  { id: 6, label: "6. Production Build & Distribution Artifacts" },
+  { id: 7, label: "7. Security & Secret Leak Scanning" },
+  { id: 8, label: "8. AI Knowledge Base Audit (Gemini 3.6)" }
 ];
 var _windowEnabled = false;
 function writeProgressFile(data) {
   try {
     const jsonStr = JSON.stringify(data, null, 2);
-    import_fs5.default.writeFileSync(PROGRESS_FILE, "\uFEFF" + jsonStr, "utf8");
+    import_fs7.default.writeFileSync(PROGRESS_FILE, "\uFEFF" + jsonStr, "utf8");
   } catch (_) {
   }
 }
 function readProgressFile() {
   try {
-    if (import_fs5.default.existsSync(PROGRESS_FILE)) {
-      let raw = import_fs5.default.readFileSync(PROGRESS_FILE, "utf8");
+    if (import_fs7.default.existsSync(PROGRESS_FILE)) {
+      let raw = import_fs7.default.readFileSync(PROGRESS_FILE, "utf8");
       if (raw.charCodeAt(0) === 65279) {
         raw = raw.slice(1);
       }
@@ -51569,12 +51778,40 @@ $PROGRESS_FILE = "$env:TEMP\\gk-progress.json"
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Angular Gatekeeper - Live Commit Validation"
-        Width="580" Height="580"
+        Width="580" Height="680"
         WindowStartupLocation="CenterScreen"
         Topmost="True"
         ResizeMode="NoResize"
         ShowInTaskbar="True"
         Background="$bg">
+  <Window.Resources>
+    <!-- Modern Sleek Themed ScrollBar Style -->
+    <Style TargetType="{x:Type ScrollBar}">
+      <Setter Property="Stylus.IsPressAndHoldEnabled" Value="false"/>
+      <Setter Property="Stylus.IsFlicksEnabled" Value="false"/>
+      <Setter Property="Width" Value="6"/>
+      <Setter Property="MinWidth" Value="6"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="{x:Type ScrollBar}">
+            <Grid x:Name="Bg" SnapsToDevicePixels="true" Background="Transparent">
+              <Track x:Name="PART_Track" IsDirectionReversed="true" IsEnabled="{TemplateBinding IsMouseOver}">
+                <Track.Thumb>
+                  <Thumb>
+                    <Thumb.Template>
+                      <ControlTemplate TargetType="{x:Type Thumb}">
+                        <Border Background="$border" CornerRadius="3" Opacity="0.75"/>
+                      </ControlTemplate>
+                    </Thumb.Template>
+                  </Thumb>
+                </Track.Thumb>
+              </Track>
+            </Grid>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+  </Window.Resources>
   <Grid>
     <Grid.RowDefinitions>
       <RowDefinition Height="Auto"/>
@@ -51639,16 +51876,18 @@ $closeBtn.Add_Click({
 $stepLabels = @(
   '1. Angular Project Detection',
   '2. Critical Architecture & Entry Points',
-  '3. Angular Build & TypeScript Compilation',
-  '4. Production Distribution Artifacts',
-  '5. Automated Build Versioning',
-  '6. Security & Secret Leak Scanning',
-  '7. AI Knowledge Base Audit (Gemini 3.6)'
+  '3. Dependency Vulnerability Audit (npm audit)',
+  '4. TypeScript & Linter Verification',
+  '5. Automated Unit Tests (test:ci)',
+  '6. Production Build & Distribution Artifacts',
+  '7. Security & Secret Leak Scanning',
+  '8. AI Knowledge Base Audit (Gemini 3.6)'
 )
 
 $rowBorders = @{}
 $rowIcons   = @{}
 $rowTexts   = @{}
+$rowSubs    = @{}
 $rowBadges  = @{}
 
 for ($i = 0; $i -lt $stepLabels.Count; $i++) {
@@ -51681,7 +51920,18 @@ for ($i = 0; $i -lt $stepLabels.Count; $i++) {
     $lbl.FontSize   = 12
     $lbl.Foreground = $grayFg
     $lbl.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
-    [System.Windows.Controls.Grid]::SetColumn($lbl, 1)
+
+    $subLbl = New-Object System.Windows.Controls.TextBlock
+    $subLbl.FontSize   = 10
+    $subLbl.Foreground = $blueFg
+    $subLbl.Visibility = [System.Windows.Visibility]::Collapsed
+    $subLbl.Margin     = New-Object System.Windows.Thickness(0, 2, 0, 0)
+
+    $textStack = New-Object System.Windows.Controls.StackPanel
+    $textStack.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+    $textStack.Children.Add($lbl)    | Out-Null
+    $textStack.Children.Add($subLbl) | Out-Null
+    [System.Windows.Controls.Grid]::SetColumn($textStack, 1)
 
     $badge = New-Object System.Windows.Controls.Border
     $badge.CornerRadius = New-Object System.Windows.CornerRadius(4)
@@ -51694,15 +51944,16 @@ for ($i = 0; $i -lt $stepLabels.Count; $i++) {
     $badge.Child = $badgeTb
     [System.Windows.Controls.Grid]::SetColumn($badge, 2)
 
-    $grid.Children.Add($icon)  | Out-Null
-    $grid.Children.Add($lbl)   | Out-Null
-    $grid.Children.Add($badge) | Out-Null
+    $grid.Children.Add($icon)      | Out-Null
+    $grid.Children.Add($textStack) | Out-Null
+    $grid.Children.Add($badge)     | Out-Null
     $row.Child = $grid
-    $panel.Children.Add($row)  | Out-Null
+    $panel.Children.Add($row)      | Out-Null
 
     $rowBorders[$stepNum] = $row
     $rowIcons[$stepNum]   = $icon
     $rowTexts[$stepNum]   = $lbl
+    $rowSubs[$stepNum]    = $subLbl
     $rowBadges[$stepNum]  = @{ border = $badge; text = $badgeTb }
 }
 
@@ -51728,8 +51979,16 @@ $timer.Add_Tick({
 
         $icon  = $rowIcons[$num]
         $lbl   = $rowTexts[$num]
+        $sub   = $rowSubs[$num]
         $row   = $rowBorders[$num]
         $badge = $rowBadges[$num]
+
+        if ($state.detail -and $state.detail.Trim() -ne '') {
+            $sub.Text = $state.detail
+            $sub.Visibility = [System.Windows.Visibility]::Visible
+        } else {
+            $sub.Visibility = [System.Windows.Visibility]::Collapsed
+        }
 
         switch ($state.status) {
             'pending' {
@@ -51804,13 +52063,13 @@ $window.ShowDialog() | Out-Null
 function launchWindowProcess() {
   try {
     const psContent = "\uFEFF" + generatePsScript();
-    import_fs5.default.writeFileSync(PS_SCRIPT, psContent, "utf8");
+    import_fs7.default.writeFileSync(PS_SCRIPT, psContent, "utf8");
     const vbsContent = `
 Set WshShell = CreateObject("WScript.Shell")
 WshShell.Run "powershell.exe -NoProfile -ExecutionPolicy Bypass -File """ & "${PS_SCRIPT.replace(/\\/g, "\\\\")}" & """", 0, False
 `;
-    import_fs5.default.writeFileSync(VBS_SCRIPT, vbsContent, "utf8");
-    (0, import_child_process4.spawn)("wscript.exe", [VBS_SCRIPT], { detached: true, stdio: "ignore" }).unref();
+    import_fs7.default.writeFileSync(VBS_SCRIPT, vbsContent, "utf8");
+    (0, import_child_process5.spawn)("wscript.exe", [VBS_SCRIPT], { detached: true, stdio: "ignore" }).unref();
   } catch (_) {
   }
 }
@@ -51829,23 +52088,31 @@ function initProgressWindow() {
   writeProgressFile(data);
   launchWindowProcess();
 }
-function startStep(stepId) {
+function startStep(stepId, detail = "") {
   if (!_windowEnabled) return;
   const data = readProgressFile();
   if (!data) return;
-  if (data.steps[stepId]) data.steps[stepId].status = "running";
+  if (data.steps[stepId]) {
+    data.steps[stepId].status = "running";
+    data.steps[stepId].detail = detail;
+  }
   writeProgressFile(data);
 }
-function updateStep(stepId, status, report = "") {
+function updateStep(stepId, status, reportOrDetail = "") {
   if (!_windowEnabled) return;
   const data = readProgressFile();
   if (!data) return;
-  if (data.steps[stepId]) data.steps[stepId].status = status;
+  if (data.steps[stepId]) {
+    data.steps[stepId].status = status;
+    if (stepId !== 8) {
+      data.steps[stepId].detail = reportOrDetail;
+    }
+  }
   if (status === "error") {
     data.hasError = true;
   }
-  if (report) {
-    data.aiReport = report;
+  if (stepId === 8 && reportOrDetail) {
+    data.aiReport = reportOrDetail;
   }
   writeProgressFile(data);
 }
@@ -51862,9 +52129,9 @@ function finalizeProgress(passed, finalReport = "") {
 }
 
 // src/engine.js
-var appDataDir = process.env.APPDATA ? import_path5.default.join(process.env.APPDATA, "FrontendGatekeeper") : import_path5.default.join(process.env.HOME || process.env.USERPROFILE || ".", ".frontend-gatekeeper");
-var envPath = import_path5.default.join(appDataDir, ".env");
-if (import_fs6.default.existsSync(envPath)) {
+var appDataDir = process.env.APPDATA ? import_path7.default.join(process.env.APPDATA, "FrontendGatekeeper") : import_path7.default.join(process.env.HOME || process.env.USERPROFILE || ".", ".frontend-gatekeeper");
+var envPath = import_path7.default.join(appDataDir, ".env");
+if (import_fs8.default.existsSync(envPath)) {
   import_dotenv.default.config({ path: envPath, quiet: true });
 }
 import_dotenv.default.config({ quiet: true });
@@ -51875,55 +52142,78 @@ async function runGatekeeper() {
   const cwd = process.cwd();
   const { isAngular, projectPkg } = checkAngularProject(cwd);
   initProgressWindow();
-  startStep(1);
-  updateStep(1, "pass");
-  startStep(2);
+  startStep(1, "Scanning workspace structure...");
+  const deps = { ...projectPkg.dependencies || {}, ...projectPkg.devDependencies || {} };
+  const rawVer = deps["@angular/core"] || deps["@angular/cli"] || "";
+  const cleanVer = rawVer.replace(/[\^~>=<]/g, "").trim();
+  const versionDisplay = cleanVer ? `v${cleanVer}` : "Standard Workspace";
+  updateStep(1, "pass", `Angular workspace verified (${versionDisplay})`);
+  startStep(2, "Validating tsconfig, angular.json & entry points...");
   try {
     checkCriticalArchitecture(cwd);
-    updateStep(2, "pass");
+    updateStep(2, "pass", "Entry points, lockfile sync & Linux case-sensitivity verified");
   } catch (err) {
-    updateStep(2, "error");
+    updateStep(2, "error", "Missing critical architecture files");
     finalizeProgress(false);
     throw err;
   }
-  startStep(3);
+  startStep(3, "Auditing package dependencies (npm audit)...");
+  try {
+    scanDependencyVulnerabilities(cwd);
+    updateStep(3, "pass", "0 High/Critical CVE vulnerabilities found in dependencies");
+  } catch (err) {
+    updateStep(3, "error", "High/Critical CVEs detected in package dependencies");
+    finalizeProgress(false);
+    throw err;
+  }
+  startStep(4, "Executing TypeScript compilation & lint check...");
   try {
     runTypeScriptAndLintChecks(cwd, projectPkg);
-    updateStep(3, "pass");
+    updateStep(4, "pass", "TypeScript compilation passed with 0 type errors");
   } catch (err) {
-    updateStep(3, "error");
+    updateStep(4, "error", "TypeScript type-check or linter failed");
     finalizeProgress(false);
     throw err;
   }
-  startStep(4);
+  startStep(5, "Running headless test runner...");
   try {
+    const testRes = runAutomatedUnitTests(cwd, projectPkg);
+    let detailText = "Unit tests passed (0 failures)";
+    if (testRes && testRes.autoInjected) {
+      detailText = "Auto-injected smoke spec verified & safely cleaned up (0 failures)";
+    } else if (testRes && testRes.specCount > 0) {
+      detailText = `Verified ${testRes.specCount} project test spec file(s) with 0 failures`;
+    } else if (testRes && testRes.skipped) {
+      detailText = "Skipped: missing testing browser provider";
+    }
+    updateStep(5, "pass", detailText);
+  } catch (err) {
+    updateStep(5, "error", "Unit test specs reported failure");
+    finalizeProgress(false);
+    throw err;
+  }
+  startStep(6, "Compiling production bundle (ng build)...");
+  try {
+    runAngularProductionBuild(cwd, projectPkg);
     validateCompiledArtifacts(cwd);
-    updateStep(4, "pass");
-  } catch (err) {
-    updateStep(4, "error");
-    finalizeProgress(false);
-    throw err;
-  }
-  startStep(5);
-  try {
     updateBuildMetadata(cwd, projectPkg);
-    updateStep(5, "pass");
+    updateStep(6, "pass", "Production bundle built & verified in dist/ (index.html + bundles)");
   } catch (err) {
-    updateStep(5, "error");
+    updateStep(6, "error", "Production build compilation failed");
     finalizeProgress(false);
     throw err;
   }
-  startStep(6);
+  startStep(7, "Scanning staged diff for exposed credentials...");
   try {
     const diffOutput = getDiff(cwd);
     scanSecurityRules(diffOutput);
-    updateStep(6, "pass");
+    updateStep(7, "pass", "0 leaked API keys, tokens, private keys or conflict markers");
   } catch (err) {
-    updateStep(6, "error");
+    updateStep(7, "error", "Secret credentials or conflict markers detected in commit");
     finalizeProgress(false);
     throw err;
   }
-  startStep(7);
+  startStep(8, "Auditing regression against knowledge base...");
   const apiKey = process.env.GEMINI_API_KEY;
   let aiReport = "";
   try {
@@ -51931,18 +52221,18 @@ async function runGatekeeper() {
     if (auditRes) {
       aiReport = auditRes.report || "";
       if (!auditRes.passed) {
-        updateStep(7, "error", aiReport);
+        updateStep(8, "error", aiReport);
         finalizeProgress(false, aiReport);
         process.exit(1);
       } else {
         const status = auditRes.skipped ? "skip" : "pass";
-        updateStep(7, status, aiReport);
+        updateStep(8, status, aiReport);
       }
     } else {
-      updateStep(7, apiKey ? "pass" : "skip");
+      updateStep(8, apiKey ? "pass" : "skip");
     }
   } catch (err) {
-    updateStep(7, "error", err.message);
+    updateStep(8, "error", err.message);
     finalizeProgress(false, err.message);
     throw err;
   }

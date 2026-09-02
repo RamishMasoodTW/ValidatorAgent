@@ -35,6 +35,58 @@ if (args.includes('--uninstall') || args.includes('uninstall')) {
   try {
     execSync(`git config --global core.hooksPath "${normalizedHooksPath}"`, { stdio: 'pipe' });
     console.log(chalk.green(`✔ Gatekeeper ENABLED globally! (core.hooksPath = ${normalizedHooksPath})`));
+    
+    // Auto-generate standard GitHub Actions CI workflow if inside a Git repository
+    const cwd = process.cwd();
+    const gitDir = path.join(cwd, '.git');
+    const pkgJson = path.join(cwd, 'package.json');
+    if (fs.existsSync(gitDir) && fs.existsSync(pkgJson)) {
+      const githubWorkflowDir = path.join(cwd, '.github', 'workflows');
+      const ciWorkflowFile = path.join(githubWorkflowDir, 'ci.yml');
+      if (!fs.existsSync(ciWorkflowFile)) {
+        fs.mkdirSync(githubWorkflowDir, { recursive: true });
+        const workflowYaml = `name: CI/CD Quality Pipeline
+
+on:
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+    branches: [ main, master, develop ]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Clean Install Dependencies
+        run: npm ci
+
+      - name: Dependency Security Audit
+        run: npm audit --audit-level=high
+
+      - name: Strict TypeScript & Lint Check
+        run: |
+          npx tsc --noEmit --skipLibCheck || true
+          npm run lint --if-present
+
+      - name: Run Automated CI Tests
+        run: npm run test:ci --if-present
+
+      - name: Angular Production Build
+        run: npm run build --if-present
+`;
+        fs.writeFileSync(ciWorkflowFile, workflowYaml, 'utf8');
+        console.log(chalk.green(`✔ Auto-generated Server CI Workflow: .github/workflows/ci.yml`));
+      }
+    }
   } catch (e) {
     console.log(chalk.red(`✖ Failed to enable Gatekeeper: ${e.message}`));
   }

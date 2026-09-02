@@ -23,11 +23,12 @@ const VBS_SCRIPT    = path.join(os.tmpdir(), 'gk-progress-launcher.vbs');
 const STEPS = [
   { id: 1, label: '1. Angular Project Detection' },
   { id: 2, label: '2. Critical Architecture & Entry Points' },
-  { id: 3, label: '3. Angular Build & TypeScript Compilation' },
-  { id: 4, label: '4. Production Distribution Artifacts' },
-  { id: 5, label: '5. Automated Build Versioning' },
-  { id: 6, label: '6. Security & Secret Leak Scanning' },
-  { id: 7, label: '7. AI Knowledge Base Audit (Gemini 3.6)' }
+  { id: 3, label: '3. Dependency Vulnerability Audit (npm audit)' },
+  { id: 4, label: '4. TypeScript & Linter Verification' },
+  { id: 5, label: '5. Automated Unit Tests (test:ci)' },
+  { id: 6, label: '6. Production Build & Distribution Artifacts' },
+  { id: 7, label: '7. Security & Secret Leak Scanning' },
+  { id: 8, label: '8. AI Knowledge Base Audit (Gemini 3.6)' }
 ];
 
 let _windowEnabled = false;
@@ -95,12 +96,40 @@ $PROGRESS_FILE = "$env:TEMP\\gk-progress.json"
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Angular Gatekeeper - Live Commit Validation"
-        Width="580" Height="580"
+        Width="580" Height="680"
         WindowStartupLocation="CenterScreen"
         Topmost="True"
         ResizeMode="NoResize"
         ShowInTaskbar="True"
         Background="$bg">
+  <Window.Resources>
+    <!-- Modern Sleek Themed ScrollBar Style -->
+    <Style TargetType="{x:Type ScrollBar}">
+      <Setter Property="Stylus.IsPressAndHoldEnabled" Value="false"/>
+      <Setter Property="Stylus.IsFlicksEnabled" Value="false"/>
+      <Setter Property="Width" Value="6"/>
+      <Setter Property="MinWidth" Value="6"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="{x:Type ScrollBar}">
+            <Grid x:Name="Bg" SnapsToDevicePixels="true" Background="Transparent">
+              <Track x:Name="PART_Track" IsDirectionReversed="true" IsEnabled="{TemplateBinding IsMouseOver}">
+                <Track.Thumb>
+                  <Thumb>
+                    <Thumb.Template>
+                      <ControlTemplate TargetType="{x:Type Thumb}">
+                        <Border Background="$border" CornerRadius="3" Opacity="0.75"/>
+                      </ControlTemplate>
+                    </Thumb.Template>
+                  </Thumb>
+                </Track.Thumb>
+              </Track>
+            </Grid>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+  </Window.Resources>
   <Grid>
     <Grid.RowDefinitions>
       <RowDefinition Height="Auto"/>
@@ -165,16 +194,18 @@ $closeBtn.Add_Click({
 $stepLabels = @(
   '1. Angular Project Detection',
   '2. Critical Architecture & Entry Points',
-  '3. Angular Build & TypeScript Compilation',
-  '4. Production Distribution Artifacts',
-  '5. Automated Build Versioning',
-  '6. Security & Secret Leak Scanning',
-  '7. AI Knowledge Base Audit (Gemini 3.6)'
+  '3. Dependency Vulnerability Audit (npm audit)',
+  '4. TypeScript & Linter Verification',
+  '5. Automated Unit Tests (test:ci)',
+  '6. Production Build & Distribution Artifacts',
+  '7. Security & Secret Leak Scanning',
+  '8. AI Knowledge Base Audit (Gemini 3.6)'
 )
 
 $rowBorders = @{}
 $rowIcons   = @{}
 $rowTexts   = @{}
+$rowSubs    = @{}
 $rowBadges  = @{}
 
 for ($i = 0; $i -lt $stepLabels.Count; $i++) {
@@ -207,7 +238,18 @@ for ($i = 0; $i -lt $stepLabels.Count; $i++) {
     $lbl.FontSize   = 12
     $lbl.Foreground = $grayFg
     $lbl.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
-    [System.Windows.Controls.Grid]::SetColumn($lbl, 1)
+
+    $subLbl = New-Object System.Windows.Controls.TextBlock
+    $subLbl.FontSize   = 10
+    $subLbl.Foreground = $blueFg
+    $subLbl.Visibility = [System.Windows.Visibility]::Collapsed
+    $subLbl.Margin     = New-Object System.Windows.Thickness(0, 2, 0, 0)
+
+    $textStack = New-Object System.Windows.Controls.StackPanel
+    $textStack.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+    $textStack.Children.Add($lbl)    | Out-Null
+    $textStack.Children.Add($subLbl) | Out-Null
+    [System.Windows.Controls.Grid]::SetColumn($textStack, 1)
 
     $badge = New-Object System.Windows.Controls.Border
     $badge.CornerRadius = New-Object System.Windows.CornerRadius(4)
@@ -220,15 +262,16 @@ for ($i = 0; $i -lt $stepLabels.Count; $i++) {
     $badge.Child = $badgeTb
     [System.Windows.Controls.Grid]::SetColumn($badge, 2)
 
-    $grid.Children.Add($icon)  | Out-Null
-    $grid.Children.Add($lbl)   | Out-Null
-    $grid.Children.Add($badge) | Out-Null
+    $grid.Children.Add($icon)      | Out-Null
+    $grid.Children.Add($textStack) | Out-Null
+    $grid.Children.Add($badge)     | Out-Null
     $row.Child = $grid
-    $panel.Children.Add($row)  | Out-Null
+    $panel.Children.Add($row)      | Out-Null
 
     $rowBorders[$stepNum] = $row
     $rowIcons[$stepNum]   = $icon
     $rowTexts[$stepNum]   = $lbl
+    $rowSubs[$stepNum]    = $subLbl
     $rowBadges[$stepNum]  = @{ border = $badge; text = $badgeTb }
 }
 
@@ -254,8 +297,16 @@ $timer.Add_Tick({
 
         $icon  = $rowIcons[$num]
         $lbl   = $rowTexts[$num]
+        $sub   = $rowSubs[$num]
         $row   = $rowBorders[$num]
         $badge = $rowBadges[$num]
+
+        if ($state.detail -and $state.detail.Trim() -ne '') {
+            $sub.Text = $state.detail
+            $sub.Visibility = [System.Windows.Visibility]::Visible
+        } else {
+            $sub.Visibility = [System.Windows.Visibility]::Collapsed
+        }
 
         switch ($state.status) {
             'pending' {
@@ -366,29 +417,37 @@ export function initProgressWindow() {
 }
 
 /**
- * Marks a step as running.
+ * Marks a step as running with optional sub-details.
  */
-export function startStep(stepId) {
+export function startStep(stepId, detail = '') {
   if (!_windowEnabled) return;
   const data = readProgressFile();
   if (!data) return;
-  if (data.steps[stepId]) data.steps[stepId].status = 'running';
+  if (data.steps[stepId]) {
+    data.steps[stepId].status = 'running';
+    data.steps[stepId].detail = detail;
+  }
   writeProgressFile(data);
 }
 
 /**
- * Updates status of a step and optionally attaches report text.
+ * Updates status of a step and optionally attaches detail note or AI report.
  */
-export function updateStep(stepId, status, report = '') {
+export function updateStep(stepId, status, reportOrDetail = '') {
   if (!_windowEnabled) return;
   const data = readProgressFile();
   if (!data) return;
-  if (data.steps[stepId]) data.steps[stepId].status = status;
+  if (data.steps[stepId]) {
+    data.steps[stepId].status = status;
+    if (stepId !== 8) {
+      data.steps[stepId].detail = reportOrDetail;
+    }
+  }
   if (status === 'error') {
     data.hasError = true;
   }
-  if (report) {
-    data.aiReport = report;
+  if (stepId === 8 && reportOrDetail) {
+    data.aiReport = reportOrDetail;
   }
   writeProgressFile(data);
 }

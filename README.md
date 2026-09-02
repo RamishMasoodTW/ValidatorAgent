@@ -22,18 +22,19 @@
 ## 🛡️ Core Features
 
 ### 1. Pre-Commit Code Quality & AI Validator
-Intercepts every `git commit` in Angular projects and runs **7 validation steps**:
+Intercepts every `git commit` in Angular projects and runs **8 validation steps**:
 
 1. **Angular Detection** — Auto-detects Angular projects. Safely bypasses non-Angular repos (Python, Node, etc.) with no popups.
 2. **File Integrity Check** — Ensures `tsconfig.json`, `angular.json`, `src/main.ts`, `src/index.html` are present.
-3. **Staged-Only Analysis** — Inspects only the files you are committing (fast, under 3 seconds).
-4. **TypeScript Compilation** — `tsc --noEmit` to catch type errors and broken imports before they enter Git history.
-5. **Angular Architecture Scan** — RxJS memory leaks (`takeUntilDestroyed`), XSS risks (`nativeElement.innerHTML`).
-6. **Security Scan** — Detects API keys, passwords, and secrets in staged files.
-7. **Gemini 3.6 Flash AI Audit** — Reads `resolved_issues.md` and checks if historical bugs are being reintroduced.
+3. **Dependency Security Audit** — Runs `npm audit --audit-level=high` to block high/critical CVE vulnerabilities before commit.
+4. **TypeScript & Linting Check** — `tsc --noEmit` & `eslint` catch type errors and broken imports before they enter Git history.
+5. **Automated Unit Tests** — Executes CI test suite (`npm run test:ci`) to ensure zero business logic regressions.
+6. **Production Build & Artifacts** — `ng build` compilation and verifies `index.html`, bundles & assets exist in `dist/`.
+7. **Security Scan** — Detects API keys, passwords, bearer tokens, and secrets in staged files.
+8. **Gemini 3.6 Flash AI Audit** — Reads `resolved_issues.md` and checks if historical bugs are being reintroduced.
 
 **Live Progress Window** (optional, enabled during install):
-- Floating dark-themed WPF window showing each step in real time
+- Floating dark-themed WPF window showing each of the 8 steps in real time
 - Stays open on error (never auto-closes), shows AI Report Card on success
 - Only appears for Angular projects
 

@@ -232,9 +232,6 @@ Angular Gatekeeper Suite
 │    └─ Gemini 3.6 Flash AI Regression Audit + Report Card
 │
 ├─ 2. Live Background Branch Conflict Watcher
-│    ├─ Uncommitted Live Edits In-Memory Snapshot
-│    ├─ In-Memory 3-Way Merge Test (git merge-tree)
-│    ├─ Customizable Timer Interval (e.g. 1m, 15m)
 │    ├─ Windows Desktop Toast Notification + Audio Chime
 │    └─ One-Click Terminal Conflict Inspector
 │
@@ -249,17 +246,18 @@ Angular Gatekeeper Suite
 
 ## 🛡️ 3. Feature A — Pre-Commit Code Quality & AI Validator
 
-Whenever you run \`git commit\`, Gatekeeper intercepts the process and runs **7 validation steps**:
+Whenever you run \`git commit\`, Gatekeeper intercepts the process and runs **8 validation steps**:
 
 | Step | Check | Details |
 | :--- | :--- | :--- |
 | 1 | **Angular Detection** | Auto-detects Angular. Safely bypasses non-Angular repos (Python, Node, etc.) with no popups |
 | 2 | **File Integrity** | Ensures \`tsconfig.json\`, \`angular.json\`, \`src/main.ts\`, \`src/index.html\` are present |
-| 3 | **Staged-Only Analysis** | Inspects only the files you are committing — fast, under 3 seconds |
-| 4 | **TypeScript Compilation** | \`tsc --noEmit\` to catch type errors and broken imports before they enter Git history |
-| 5 | **Architecture Scan** | RxJS memory leaks (\`takeUntilDestroyed\`), XSS risks (\`nativeElement.innerHTML\`) |
-| 6 | **Security Scan** | Detects API keys, passwords, and secrets in staged files |
-| 7 | **Gemini AI Audit** | Reads \`resolved_issues.md\` and flags if historical bugs are being reintroduced |
+| 3 | **Dependency Security Audit** | \`npm audit --audit-level=high\` checks package dependencies for High/Critical CVEs |
+| 4 | **TypeScript & Linting** | \`tsc --noEmit\` & \`eslint\` catch type errors and broken imports before Git history |
+| 5 | **Automated Unit Tests** | Runs CI test suite (\`npm run test:ci\`) to ensure zero test regressions |
+| 6 | **Production Build & Artifacts** | \`ng build\` compilation and verifies \`index.html\`, bundles & assets exist in \`dist/\` |
+| 7 | **Security & Secret Scan** | Scans staged diff for exposed API keys, passwords, tokens, and private keys |
+| 8 | **Gemini AI Audit** | Reads \`resolved_issues.md\` and flags if historical bugs are being reintroduced |
 
 ### 🖥️ Live Commit Progress Window (WPF GUI)
 

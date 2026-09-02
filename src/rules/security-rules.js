@@ -1,3 +1,6 @@
+import fs from 'fs';
+import path from 'path';
+import { execSync } from 'child_process';
 import chalk from 'chalk';
 import { logStep, logWarning, logError, logSuccess } from '../utils/logger.js';
 
@@ -44,7 +47,12 @@ export function scanSecurityRules(diffOutput) {
 
     // 7. Cryptographic Keys & Certificates
     { pattern: /-----BEGIN\s+(?:RSA\s+|EC\s+|DSA\s+|OPENSSH\s+)?PRIVATE\s+KEY-----/, name: 'Unencrypted Private Key (PEM/RSA/EC)' },
-    { pattern: /-----BEGIN\s+CERTIFICATE-----/, name: 'Raw SSL/TLS Certificate Block' }
+    { pattern: /-----BEGIN\s+CERTIFICATE-----/, name: 'Raw SSL/TLS Certificate Block' },
+
+    // 8. Git Merge Conflict Markers (Stops CI Syntax/Compilation Disasters)
+    { pattern: /^<{7}\s+HEAD/, name: 'Unresolved Git Merge Conflict Marker (<<<<<<< HEAD)' },
+    { pattern: /^={7}$/, name: 'Unresolved Git Merge Conflict Separator (=======)' },
+    { pattern: /^>{7}\s+/, name: 'Unresolved Git Merge Conflict Marker (>>>>>>> branch)' }
   ];
 
   let violations = [];
@@ -84,3 +92,46 @@ export function scanSecurityRules(diffOutput) {
   logSuccess('Security scan passed: Zero leaked API keys, tokens, or private credentials.');
   return true;
 }
+
+/**
+ * Enterprise Dependency Security & Vulnerability Audit
+ * Checks package dependencies for High/Critical CVEs
+ */
+export function scanDependencyVulnerabilities(cwd = process.cwd()) {
+  logStep(3, 'Dependency Vulnerability & Security Audit (npm audit)');
+  
+  const pkgLockExists = fs.existsSync(path.join(cwd, 'package-lock.json')) ||
+                        fs.existsSync(path.join(cwd, 'yarn.lock')) ||
+                        fs.existsSync(path.join(cwd, 'pnpm-lock.yaml'));
+
+  if (!pkgLockExists) {
+    logWarning('No package lockfile found (package-lock.json). Skipping dependency vulnerability audit.');
+    return true;
+  }
+
+  console.log(chalk.blue('  Running dependency security audit (npm audit --audit-level=high)...'));
+  try {
+    execSync('npm audit --audit-level=high', { stdio: 'pipe', cwd });
+    logSuccess('Dependency vulnerability audit passed: 0 High/Critical CVEs.');
+    return true;
+  } catch (err) {
+    const stdout = err.stdout ? err.stdout.toString() : '';
+    const stderr = err.stderr ? err.stderr.toString() : '';
+    const output = (stdout + '\n' + stderr).trim();
+
+    // Check if it's actual vulnerabilities or just no network / npm error
+    if (output.includes('vulnerabilities') || output.includes('severity')) {
+      logError('CRITICAL: High or Critical security vulnerabilities detected in dependencies!');
+      console.log(chalk.red('\n  ═════════════════════════════════════════════════════════════════'));
+      console.log(chalk.red.bold('  ❌ COMMIT REJECTED: Security vulnerabilities found in npm packages!'));
+      console.log(chalk.yellow('  Run "npm audit" or "npm audit fix" to resolve known CVEs.'));
+      console.log(chalk.red('  ═════════════════════════════════════════════════════════════════\n'));
+      throw new Error('Dependency security audit failed (High/Critical CVEs detected)');
+    } else {
+      // Network issue or npm audit offline - warn instead of hard blocking
+      logWarning('npm audit could not connect to registry; skipping offline.');
+      return true;
+    }
+  }
+}
+

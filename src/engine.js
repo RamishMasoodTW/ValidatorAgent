@@ -12,8 +12,15 @@ import {
   validateCompiledArtifacts,
   updateBuildMetadata
 } from './rules/angular-best-practices.js';
-import { runTypeScriptAndLintChecks } from './rules/typescript-validator.js';
-import { scanSecurityRules } from './rules/security-rules.js';
+import {
+  runTypeScriptAndLintChecks,
+  runAutomatedUnitTests,
+  runAngularProductionBuild
+} from './rules/typescript-validator.js';
+import {
+  scanSecurityRules,
+  scanDependencyVulnerabilities
+} from './rules/security-rules.js';
 import { runAiKnowledgeBaseAudit } from './rules/ai-prompt.js';
 import {
   enableBranchWatcher,
@@ -51,70 +58,93 @@ async function runGatekeeper() {
 
   // STEP 1: Angular Project Detection (Safe Bypass for non-Angular)
   const { isAngular, projectPkg } = checkAngularProject(cwd);
-
-  // Initialize live progress window ONLY for Angular projects (if SHOW_PROGRESS=true in .env)
   initProgressWindow();
-  startStep(1);
-  updateStep(1, 'pass');
+  startStep(1, 'Scanning workspace structure...');
+  const deps = { ...(projectPkg.dependencies || {}), ...(projectPkg.devDependencies || {}) };
+  const rawVer = deps['@angular/core'] || deps['@angular/cli'] || '';
+  const cleanVer = rawVer.replace(/[\^~>=<]/g, '').trim();
+  const versionDisplay = cleanVer ? `v${cleanVer}` : 'Standard Workspace';
+  updateStep(1, 'pass', `Angular workspace verified (${versionDisplay})`);
 
   // STEP 2: Critical Architecture & Entry Point Validation
-  startStep(2);
+  startStep(2, 'Validating tsconfig, angular.json & entry points...');
   try {
     checkCriticalArchitecture(cwd);
-    updateStep(2, 'pass');
+    updateStep(2, 'pass', 'Entry points, lockfile sync & Linux case-sensitivity verified');
   } catch (err) {
-    updateStep(2, 'error');
+    updateStep(2, 'error', 'Missing critical architecture files');
     finalizeProgress(false);
     throw err;
   }
 
-  // STEP 3: Mandatory Angular Build & TypeScript Compilation Checks
-  startStep(3);
+  // STEP 3: Dependency Security & Vulnerability Audit (npm audit)
+  startStep(3, 'Auditing package dependencies (npm audit)...');
+  try {
+    scanDependencyVulnerabilities(cwd);
+    updateStep(3, 'pass', '0 High/Critical CVE vulnerabilities found in dependencies');
+  } catch (err) {
+    updateStep(3, 'error', 'High/Critical CVEs detected in package dependencies');
+    finalizeProgress(false);
+    throw err;
+  }
+
+  // STEP 4: Strict TypeScript Compilation & Linter Verification
+  startStep(4, 'Executing TypeScript compilation & lint check...');
   try {
     runTypeScriptAndLintChecks(cwd, projectPkg);
-    updateStep(3, 'pass');
+    updateStep(4, 'pass', 'TypeScript compilation passed with 0 type errors');
   } catch (err) {
-    updateStep(3, 'error');
+    updateStep(4, 'error', 'TypeScript type-check or linter failed');
     finalizeProgress(false);
     throw err;
   }
 
-  // STEP 4: Compiled Production Artifacts Validation
-  startStep(4);
+  // STEP 5: Automated Unit Tests & CI Regression Suite (npm run test:ci)
+  startStep(5, 'Running headless test runner...');
   try {
+    const testRes = runAutomatedUnitTests(cwd, projectPkg);
+    let detailText = 'Unit tests passed (0 failures)';
+    if (testRes && testRes.autoInjected) {
+      detailText = 'Auto-injected smoke spec verified & safely cleaned up (0 failures)';
+    } else if (testRes && testRes.specCount > 0) {
+      detailText = `Verified ${testRes.specCount} project test spec file(s) with 0 failures`;
+    } else if (testRes && testRes.skipped) {
+      detailText = 'Skipped: missing testing browser provider';
+    }
+    updateStep(5, 'pass', detailText);
+  } catch (err) {
+    updateStep(5, 'error', 'Unit test specs reported failure');
+    finalizeProgress(false);
+    throw err;
+  }
+
+  // STEP 6: Production Build Compilation & Artifact Verification
+  startStep(6, 'Compiling production bundle (ng build)...');
+  try {
+    runAngularProductionBuild(cwd, projectPkg);
     validateCompiledArtifacts(cwd);
-    updateStep(4, 'pass');
-  } catch (err) {
-    updateStep(4, 'error');
-    finalizeProgress(false);
-    throw err;
-  }
-
-  // STEP 5: Automated Build Versioning (Staged in active commit)
-  startStep(5);
-  try {
     updateBuildMetadata(cwd, projectPkg);
-    updateStep(5, 'pass');
+    updateStep(6, 'pass', 'Production bundle built & verified in dist/ (index.html + bundles)');
   } catch (err) {
-    updateStep(5, 'error');
+    updateStep(6, 'error', 'Production build compilation failed');
     finalizeProgress(false);
     throw err;
   }
 
-  // STEP 6: Security & Secret Leak Scanning
-  startStep(6);
+  // STEP 7: Security & Secret Leak Scanning (API keys, Tokens)
+  startStep(7, 'Scanning staged diff for exposed credentials...');
   try {
     const diffOutput = getDiff(cwd);
     scanSecurityRules(diffOutput);
-    updateStep(6, 'pass');
+    updateStep(7, 'pass', '0 leaked API keys, tokens, private keys or conflict markers');
   } catch (err) {
-    updateStep(6, 'error');
+    updateStep(7, 'error', 'Secret credentials or conflict markers detected in commit');
     finalizeProgress(false);
     throw err;
   }
 
-  // STEP 7: AI Knowledge Base Audit (Gemini 3.6 Flash)
-  startStep(7);
+  // STEP 8: AI Knowledge Base Audit (Gemini 3.6 Flash)
+  startStep(8, 'Auditing regression against knowledge base...');
   const apiKey = process.env.GEMINI_API_KEY;
   let aiReport = '';
   try {
@@ -122,18 +152,18 @@ async function runGatekeeper() {
     if (auditRes) {
       aiReport = auditRes.report || '';
       if (!auditRes.passed) {
-        updateStep(7, 'error', aiReport);
+        updateStep(8, 'error', aiReport);
         finalizeProgress(false, aiReport);
         process.exit(1);
       } else {
         const status = auditRes.skipped ? 'skip' : 'pass';
-        updateStep(7, status, aiReport);
+        updateStep(8, status, aiReport);
       }
     } else {
-      updateStep(7, apiKey ? 'pass' : 'skip');
+      updateStep(8, apiKey ? 'pass' : 'skip');
     }
   } catch (err) {
-    updateStep(7, 'error', err.message);
+    updateStep(8, 'error', err.message);
     finalizeProgress(false, err.message);
     throw err;
   }

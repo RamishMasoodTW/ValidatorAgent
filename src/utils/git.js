@@ -36,3 +36,9 @@ export function getDiff(cwd = process.cwd()) {
   }
   return diff || '';
 }
+
+export function getStagedFiles(cwd = process.cwd()) {
+  const output = runGit('git diff --cached --name-only --diff-filter=ACM', true, cwd);
+  if (!output) return [];
+  return output.split('\n').map(f => f.trim()).filter(Boolean);
+}

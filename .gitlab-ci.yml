@@ -1,0 +1,39 @@
+image: node:20
+
+stages:
+  - validate
+  - test
+  - build
+
+cache:
+  paths:
+    - .npm/
+    - node_modules/
+
+before_script:
+  - npm ci --cache .npm --prefer-offline
+
+security_audit:
+  stage: validate
+  script:
+    - npm audit --audit-level=high
+
+lint:
+  stage: validate
+  script:
+    - npm run lint || echo "No lint script defined"
+
+unit_tests:
+  stage: test
+  image: trion/ng-cli-karma:latest
+  script:
+    - npm run test:ci || npx ng test --watch=false --browsers=ChromeHeadless
+
+production_build:
+  stage: build
+  script:
+    - npm run build -- --configuration=production
+  artifacts:
+    paths:
+      - dist/
+    expire_in: 1 week

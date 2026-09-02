@@ -123,7 +123,86 @@ export function checkCriticalArchitecture(cwd = process.cwd()) {
     console.log(chalk.red('  Commit rejected: Ensure your project structure adheres to Angular CLI standards.\n'));
     throw new Error(`Missing critical Angular file(s)/directory: ${missingItems.join(', ')}`);
   }
-  logSuccess('All critical Angular architecture files, tsconfig, and entry points verified.');
+
+  // 1. Lockfile Sync Integrity Check (Stops CI npm ci breaks)
+  const stagedFiles = runGit('git diff --cached --name-only', true, cwd).split('\n').map(f => f.trim());
+  const packageJsonStaged = stagedFiles.includes('package.json');
+  const lockfileStaged = stagedFiles.includes('package-lock.json') || stagedFiles.includes('yarn.lock') || stagedFiles.includes('pnpm-lock.yaml');
+  
+  if (packageJsonStaged && !lockfileStaged) {
+    const lockfilePath = path.join(cwd, 'package-lock.json');
+    if (fs.existsSync(lockfilePath)) {
+      logError('CI Integrity Violation: package.json is staged for commit, but package-lock.json is NOT staged!');
+      console.log(chalk.red('\n  ═════════════════════════════════════════════════════════════════'));
+      console.log(chalk.red.bold('  ❌ COMMIT REJECTED: Lockfile out of sync!'));
+      console.log(chalk.yellow('  CI pipelines use "npm ci", which will FAIL if package-lock.json is not updated.'));
+      console.log(chalk.yellow('  Action: Run "git add package-lock.json" and commit again.'));
+      console.log(chalk.red('  ═════════════════════════════════════════════════════════════════\n'));
+      throw new Error('Lockfile out of sync: package.json is staged without package-lock.json');
+    }
+  }
+
+  // 2. Linux Case-Sensitivity & File Path Integrity Check (Stops Linux CI "Module not found" errors)
+  validateCaseSensitiveImports(cwd, stagedFiles);
+
+  logSuccess('All critical Angular architecture files, lockfile sync, and entry points verified.');
+}
+
+/**
+ * Validates that all relative TypeScript/JavaScript imports match the exact disk casing (Linux/Ubuntu CI Safe)
+ */
+export function validateCaseSensitiveImports(cwd = process.cwd(), stagedFiles = []) {
+  const tsFiles = stagedFiles.filter(f => f.endsWith('.ts') && !f.endsWith('.d.ts') && fs.existsSync(path.join(cwd, f)));
+  if (tsFiles.length === 0) return;
+
+  const importRegex = /(?:import|from)\s+['"](\.[^'"]+)['"]/g;
+  const casingErrors = [];
+
+  for (const relFile of tsFiles) {
+    const fullFilePath = path.join(cwd, relFile);
+    const fileDir = path.dirname(fullFilePath);
+    const content = fs.readFileSync(fullFilePath, 'utf8');
+
+    let match;
+    while ((match = importRegex.exec(content)) !== null) {
+      const importPath = match[1];
+      const targetBase = path.resolve(fileDir, importPath);
+      const targetDir = path.dirname(targetBase);
+      const targetFileName = path.basename(targetBase);
+
+      if (fs.existsSync(targetDir)) {
+        const actualDiskFiles = fs.readdirSync(targetDir);
+        // Look for exact match or extension variants (.ts, .d.ts, /index.ts)
+        const matchedExact = actualDiskFiles.find(f => {
+          const noExt = f.replace(/\.(ts|js|d\.ts)$/, '');
+          return f === targetFileName || noExt === targetFileName;
+        });
+
+        const matchedCaseInsensitive = actualDiskFiles.find(f => {
+          const noExt = f.replace(/\.(ts|js|d\.ts)$/, '');
+          return f.toLowerCase() === targetFileName.toLowerCase() || noExt.toLowerCase() === targetFileName.toLowerCase();
+        });
+
+        if (!matchedExact && matchedCaseInsensitive) {
+          casingErrors.push({
+            file: relFile,
+            imported: importPath,
+            actual: path.join(path.dirname(importPath), matchedCaseInsensitive).replace(/\\/g, '/')
+          });
+        }
+      }
+    }
+  }
+
+  if (casingErrors.length > 0) {
+    logError('CRITICAL: Linux CI Path Incompatibility! Case-sensitivity mismatch detected in imports:');
+    casingErrors.forEach(err => {
+      console.log(chalk.red(`    • In ${chalk.bold(err.file)}: Imported "${chalk.yellow(err.imported)}" but file on disk is "${chalk.green(err.actual)}"`));
+    });
+    console.log(chalk.yellow('\n  While Windows is case-insensitive, Linux CI servers will FAIL with "Module not found".'));
+    console.log(chalk.yellow('  Fix the casing of the import statement to match the actual file name.\n'));
+    throw new Error('Case-sensitive import mismatch detected (Linux CI incompatibility)');
+  }
 }
 
 /**

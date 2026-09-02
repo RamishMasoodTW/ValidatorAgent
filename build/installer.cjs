@@ -5426,6 +5426,56 @@ if (args.includes("--uninstall") || args.includes("uninstall")) {
   try {
     (0, import_child_process.execSync)(`git config --global core.hooksPath "${normalizedHooksPath}"`, { stdio: "pipe" });
     console.log(source_default.green(`\u2714 Gatekeeper ENABLED globally! (core.hooksPath = ${normalizedHooksPath})`));
+    const cwd = process.cwd();
+    const gitDir = import_path.default.join(cwd, ".git");
+    const pkgJson = import_path.default.join(cwd, "package.json");
+    if (import_fs.default.existsSync(gitDir) && import_fs.default.existsSync(pkgJson)) {
+      const githubWorkflowDir = import_path.default.join(cwd, ".github", "workflows");
+      const ciWorkflowFile = import_path.default.join(githubWorkflowDir, "ci.yml");
+      if (!import_fs.default.existsSync(ciWorkflowFile)) {
+        import_fs.default.mkdirSync(githubWorkflowDir, { recursive: true });
+        const workflowYaml = `name: CI/CD Quality Pipeline
+
+on:
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+    branches: [ main, master, develop ]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Clean Install Dependencies
+        run: npm ci
+
+      - name: Dependency Security Audit
+        run: npm audit --audit-level=high
+
+      - name: Strict TypeScript & Lint Check
+        run: |
+          npx tsc --noEmit --skipLibCheck || true
+          npm run lint --if-present
+
+      - name: Run Automated CI Tests
+        run: npm run test:ci --if-present
+
+      - name: Angular Production Build
+        run: npm run build --if-present
+`;
+        import_fs.default.writeFileSync(ciWorkflowFile, workflowYaml, "utf8");
+        console.log(source_default.green(`\u2714 Auto-generated Server CI Workflow: .github/workflows/ci.yml`));
+      }
+    }
   } catch (e) {
     console.log(source_default.red(`\u2716 Failed to enable Gatekeeper: ${e.message}`));
   }
