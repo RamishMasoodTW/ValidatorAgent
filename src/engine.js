@@ -147,12 +147,20 @@ async function runGatekeeper() {
     throw err;
   }
 
-  // STEP 8: AI Knowledge Base Audit (Gemini 3.7 / 3.6 Flash)
+  // STEP 8: AI Knowledge Base Audit (Gemini, Ollama, vLLM / OpenAI-compatible)
   startStep(8, 'Auditing regression against knowledge base...');
-  const apiKey = process.env.GEMINI_API_KEY;
+  const aiConfig = {
+    AI_PROVIDER: process.env.AI_PROVIDER,
+    GEMINI_API_KEY: process.env.GEMINI_API_KEY,
+    OLLAMA_BASE_URL: process.env.OLLAMA_BASE_URL,
+    OLLAMA_MODEL: process.env.OLLAMA_MODEL,
+    OPENAI_BASE_URL: process.env.OPENAI_BASE_URL,
+    OPENAI_API_KEY: process.env.OPENAI_API_KEY,
+    OPENAI_MODEL: process.env.OPENAI_MODEL
+  };
   let aiReport = '';
   try {
-    const auditRes = await runAiKnowledgeBaseAudit(apiKey, cwd);
+    const auditRes = await runAiKnowledgeBaseAudit(aiConfig, cwd);
     if (auditRes) {
       aiReport = auditRes.report || '';
       if (!auditRes.passed) {
@@ -164,7 +172,7 @@ async function runGatekeeper() {
         updateStep(8, status, aiReport);
       }
     } else {
-      updateStep(8, apiKey ? 'pass' : 'skip');
+      updateStep(8, 'skip');
     }
   } catch (err) {
     updateStep(8, 'error', err.message);

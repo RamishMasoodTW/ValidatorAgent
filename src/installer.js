@@ -213,23 +213,89 @@ async function runInstaller() {
   console.log(chalk.white('  This installer configures a global Git pre-commit hook for all your Angular repositories,'));
   console.log(chalk.white('  enforcing strict quality, Angular build checks, and Gemini 3.6 Flash AI regression audits.\n'));
 
-  // 1. Prompt for Gemini API Key (Optional)
+  // 1. Interactive AI Provider Selection
   console.log(chalk.yellow('┌─────────────────────────────────────────────────────────────┐'));
-  console.log(chalk.yellow('│ ') + chalk.bold.white('Gemini AI API Configuration (Optional)') + chalk.yellow('                    │'));
+  console.log(chalk.yellow('│ ') + chalk.bold.white('AI Knowledge Base Auditor Configuration') + chalk.yellow('                   │'));
   console.log(chalk.yellow('└─────────────────────────────────────────────────────────────┘'));
+  console.log(chalk.gray('  Select the AI engine to audit your commits against resolved_issues.md:\n'));
 
-  const response = await prompts({
-    type: 'password',
-    name: 'apiKey',
-    message: 'Enter your Google AI (Gemini) API Key (Press Enter to skip):'
+  const providerPrompt = await prompts({
+    type: 'select',
+    name: 'aiProvider',
+    message: 'Select AI Provider:',
+    choices: [
+      { title: 'Google Gemini (Cloud — Gemini 3.7 / 3.6 Flash) [Recommended]', value: 'gemini' },
+      { title: 'Ollama (Local Offline AI — llama3, qwen2.5-coder, mistral, deepseek)', value: 'ollama' },
+      { title: 'vLLM / LM Studio / LocalAI (OpenAI-Compatible Endpoint)', value: 'openai_compat' },
+      { title: 'Skip AI Audit (Rule-based & CI checks only)', value: 'none' }
+    ],
+    initial: 0
   });
 
-  const apiKey = response.apiKey ? response.apiKey.trim() : '';
-  if (!apiKey) {
-    console.log(chalk.gray('\nℹ No API Key provided: AI Knowledge Base regression audits will be skipped.'));
-    console.log(chalk.gray('  All other validations (TypeScript, Architecture, Security, Branch Watcher) will work normally.\n'));
+  const aiProvider = providerPrompt.aiProvider || 'none';
+  let geminiKey = '';
+  let ollamaEndpoint = 'http://localhost:11434';
+  let ollamaModel = 'qwen2.5-coder:latest';
+  let openAiEndpoint = 'http://localhost:8000/v1';
+  let openAiApiKey = '';
+  let openAiModel = 'default';
+
+  if (aiProvider === 'gemini') {
+    const geminiPrompt = await prompts({
+      type: 'password',
+      name: 'key',
+      message: 'Enter your Google Gemini API Key:'
+    });
+    geminiKey = geminiPrompt.key ? geminiPrompt.key.trim() : '';
+    if (geminiKey) {
+      console.log(chalk.green('✔ Google Gemini configured as primary AI engine.'));
+    } else {
+      console.log(chalk.gray('ℹ No key provided: Gemini audit will be skipped until key is added.'));
+    }
+  } else if (aiProvider === 'ollama') {
+    const ollamaConfig = await prompts([
+      {
+        type: 'text',
+        name: 'endpoint',
+        message: 'Enter Ollama Base URL:',
+        initial: 'http://localhost:11434'
+      },
+      {
+        type: 'text',
+        name: 'model',
+        message: 'Enter Ollama Model Name (e.g. qwen2.5-coder, llama3.2, codellama):',
+        initial: 'qwen2.5-coder:latest'
+      }
+    ]);
+    ollamaEndpoint = ollamaConfig.endpoint ? ollamaConfig.endpoint.trim() : 'http://localhost:11434';
+    ollamaModel = ollamaConfig.model ? ollamaConfig.model.trim() : 'qwen2.5-coder:latest';
+    console.log(chalk.green(`✔ Ollama configured locally (${ollamaEndpoint} -> ${ollamaModel}).`));
+  } else if (aiProvider === 'openai_compat') {
+    const vllmConfig = await prompts([
+      {
+        type: 'text',
+        name: 'endpoint',
+        message: 'Enter vLLM / LM Studio / OpenAI-Compatible Endpoint URL:',
+        initial: 'http://localhost:8000/v1'
+      },
+      {
+        type: 'password',
+        name: 'apiKey',
+        message: 'Enter API Key (Optional for local servers, press Enter to skip):'
+      },
+      {
+        type: 'text',
+        name: 'model',
+        message: 'Enter Model Name / ID:',
+        initial: 'default'
+      }
+    ]);
+    openAiEndpoint = vllmConfig.endpoint ? vllmConfig.endpoint.trim() : 'http://localhost:8000/v1';
+    openAiApiKey = vllmConfig.apiKey ? vllmConfig.apiKey.trim() : '';
+    openAiModel = vllmConfig.model ? vllmConfig.model.trim() : 'default';
+    console.log(chalk.green(`✔ Local vLLM/OpenAI-compatible server configured (${openAiEndpoint} -> ${openAiModel}).`));
   } else {
-    console.log(chalk.green('\n✔ Gemini AI Key configured successfully.'));
+    console.log(chalk.gray('ℹ AI Audit disabled. All other quality, architecture & CI checks remain active.'));
   }
 
   // 2. Prompt for Live Progress Window preference (Optional)
@@ -273,14 +339,17 @@ async function runInstaller() {
   const envFilePath = path.join(targetDir, '.env');
   try {
     let envContent = '# Angular Gatekeeper Environment Configuration\n';
-    envContent += apiKey ? `GEMINI_API_KEY=${apiKey}\n` : `# GEMINI_API_KEY=\n`;
+    envContent += `AI_PROVIDER=${aiProvider}\n`;
+    if (geminiKey) envContent += `GEMINI_API_KEY=${geminiKey}\n`;
+    if (ollamaEndpoint) envContent += `OLLAMA_BASE_URL=${ollamaEndpoint}\n`;
+    if (ollamaModel) envContent += `OLLAMA_MODEL=${ollamaModel}\n`;
+    if (openAiEndpoint) envContent += `OPENAI_BASE_URL=${openAiEndpoint}\n`;
+    if (openAiApiKey) envContent += `OPENAI_API_KEY=${openAiApiKey}\n`;
+    if (openAiModel) envContent += `OPENAI_MODEL=${openAiModel}\n`;
     envContent += `SHOW_PROGRESS=${showProgress ? 'true' : 'false'}\n`;
+
     fs.writeFileSync(envFilePath, envContent, 'utf8');
-    if (apiKey) {
-      console.log(chalk.green('✔ AI credentials saved to configuration file.'));
-    } else {
-      console.log(chalk.green('✔ Configuration file initialized.'));
-    }
+    console.log(chalk.green('✔ AI provider & Gatekeeper configurations saved to config file.'));
   } catch (err) {
     console.log(chalk.red(`✖ Failed to save configuration: ${err.message}`));
     await waitPrompt();

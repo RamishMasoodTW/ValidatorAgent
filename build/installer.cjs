@@ -5589,19 +5589,84 @@ async function runInstaller() {
   console.log(source_default.white("  This installer configures a global Git pre-commit hook for all your Angular repositories,"));
   console.log(source_default.white("  enforcing strict quality, Angular build checks, and Gemini 3.6 Flash AI regression audits.\n"));
   console.log(source_default.yellow("\u250C\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510"));
-  console.log(source_default.yellow("\u2502 ") + source_default.bold.white("Gemini AI API Configuration (Optional)") + source_default.yellow("                    \u2502"));
+  console.log(source_default.yellow("\u2502 ") + source_default.bold.white("AI Knowledge Base Auditor Configuration") + source_default.yellow("                   \u2502"));
   console.log(source_default.yellow("\u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518"));
-  const response = await (0, import_prompts.default)({
-    type: "password",
-    name: "apiKey",
-    message: "Enter your Google AI (Gemini) API Key (Press Enter to skip):"
+  console.log(source_default.gray("  Select the AI engine to audit your commits against resolved_issues.md:\n"));
+  const providerPrompt = await (0, import_prompts.default)({
+    type: "select",
+    name: "aiProvider",
+    message: "Select AI Provider:",
+    choices: [
+      { title: "Google Gemini (Cloud \u2014 Gemini 3.7 / 3.6 Flash) [Recommended]", value: "gemini" },
+      { title: "Ollama (Local Offline AI \u2014 llama3, qwen2.5-coder, mistral, deepseek)", value: "ollama" },
+      { title: "vLLM / LM Studio / LocalAI (OpenAI-Compatible Endpoint)", value: "openai_compat" },
+      { title: "Skip AI Audit (Rule-based & CI checks only)", value: "none" }
+    ],
+    initial: 0
   });
-  const apiKey = response.apiKey ? response.apiKey.trim() : "";
-  if (!apiKey) {
-    console.log(source_default.gray("\n\u2139 No API Key provided: AI Knowledge Base regression audits will be skipped."));
-    console.log(source_default.gray("  All other validations (TypeScript, Architecture, Security, Branch Watcher) will work normally.\n"));
+  const aiProvider = providerPrompt.aiProvider || "none";
+  let geminiKey = "";
+  let ollamaEndpoint = "http://localhost:11434";
+  let ollamaModel = "qwen2.5-coder:latest";
+  let openAiEndpoint = "http://localhost:8000/v1";
+  let openAiApiKey = "";
+  let openAiModel = "default";
+  if (aiProvider === "gemini") {
+    const geminiPrompt = await (0, import_prompts.default)({
+      type: "password",
+      name: "key",
+      message: "Enter your Google Gemini API Key:"
+    });
+    geminiKey = geminiPrompt.key ? geminiPrompt.key.trim() : "";
+    if (geminiKey) {
+      console.log(source_default.green("\u2714 Google Gemini configured as primary AI engine."));
+    } else {
+      console.log(source_default.gray("\u2139 No key provided: Gemini audit will be skipped until key is added."));
+    }
+  } else if (aiProvider === "ollama") {
+    const ollamaConfig = await (0, import_prompts.default)([
+      {
+        type: "text",
+        name: "endpoint",
+        message: "Enter Ollama Base URL:",
+        initial: "http://localhost:11434"
+      },
+      {
+        type: "text",
+        name: "model",
+        message: "Enter Ollama Model Name (e.g. qwen2.5-coder, llama3.2, codellama):",
+        initial: "qwen2.5-coder:latest"
+      }
+    ]);
+    ollamaEndpoint = ollamaConfig.endpoint ? ollamaConfig.endpoint.trim() : "http://localhost:11434";
+    ollamaModel = ollamaConfig.model ? ollamaConfig.model.trim() : "qwen2.5-coder:latest";
+    console.log(source_default.green(`\u2714 Ollama configured locally (${ollamaEndpoint} -> ${ollamaModel}).`));
+  } else if (aiProvider === "openai_compat") {
+    const vllmConfig = await (0, import_prompts.default)([
+      {
+        type: "text",
+        name: "endpoint",
+        message: "Enter vLLM / LM Studio / OpenAI-Compatible Endpoint URL:",
+        initial: "http://localhost:8000/v1"
+      },
+      {
+        type: "password",
+        name: "apiKey",
+        message: "Enter API Key (Optional for local servers, press Enter to skip):"
+      },
+      {
+        type: "text",
+        name: "model",
+        message: "Enter Model Name / ID:",
+        initial: "default"
+      }
+    ]);
+    openAiEndpoint = vllmConfig.endpoint ? vllmConfig.endpoint.trim() : "http://localhost:8000/v1";
+    openAiApiKey = vllmConfig.apiKey ? vllmConfig.apiKey.trim() : "";
+    openAiModel = vllmConfig.model ? vllmConfig.model.trim() : "default";
+    console.log(source_default.green(`\u2714 Local vLLM/OpenAI-compatible server configured (${openAiEndpoint} -> ${openAiModel}).`));
   } else {
-    console.log(source_default.green("\n\u2714 Gemini AI Key configured successfully."));
+    console.log(source_default.gray("\u2139 AI Audit disabled. All other quality, architecture & CI checks remain active."));
   }
   console.log(source_default.yellow("\n\u250C\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510"));
   console.log(source_default.yellow("\u2502 ") + source_default.bold.white("Live Commit Progress Window (Optional)") + source_default.yellow("                    \u2502"));
@@ -5636,17 +5701,24 @@ async function runInstaller() {
   const envFilePath = import_path.default.join(targetDir, ".env");
   try {
     let envContent = "# Angular Gatekeeper Environment Configuration\n";
-    envContent += apiKey ? `GEMINI_API_KEY=${apiKey}
-` : `# GEMINI_API_KEY=
+    envContent += `AI_PROVIDER=${aiProvider}
+`;
+    if (geminiKey) envContent += `GEMINI_API_KEY=${geminiKey}
+`;
+    if (ollamaEndpoint) envContent += `OLLAMA_BASE_URL=${ollamaEndpoint}
+`;
+    if (ollamaModel) envContent += `OLLAMA_MODEL=${ollamaModel}
+`;
+    if (openAiEndpoint) envContent += `OPENAI_BASE_URL=${openAiEndpoint}
+`;
+    if (openAiApiKey) envContent += `OPENAI_API_KEY=${openAiApiKey}
+`;
+    if (openAiModel) envContent += `OPENAI_MODEL=${openAiModel}
 `;
     envContent += `SHOW_PROGRESS=${showProgress ? "true" : "false"}
 `;
     import_fs.default.writeFileSync(envFilePath, envContent, "utf8");
-    if (apiKey) {
-      console.log(source_default.green("\u2714 AI credentials saved to configuration file."));
-    } else {
-      console.log(source_default.green("\u2714 Configuration file initialized."));
-    }
+    console.log(source_default.green("\u2714 AI provider & Gatekeeper configurations saved to config file."));
   } catch (err) {
     console.log(source_default.red(`\u2716 Failed to save configuration: ${err.message}`));
     await waitPrompt();

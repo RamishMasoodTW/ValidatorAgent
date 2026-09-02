@@ -28,7 +28,7 @@ const STEPS = [
   { id: 5, label: '5. Automated Unit Tests (test:ci)' },
   { id: 6, label: '6. Production Build & Distribution Artifacts' },
   { id: 7, label: '7. Security & Secret Leak Scanning' },
-  { id: 8, label: '8. AI Knowledge Base Audit (Gemini 3.7)' }
+  { id: 8, label: '8. AI Knowledge Base Audit (Gemini / Local AI)' }
 ];
 
 let _windowEnabled = false;
@@ -199,7 +199,7 @@ $stepLabels = @(
   '5. Automated Unit Tests (test:ci)',
   '6. Production Build & Distribution Artifacts',
   '7. Security & Secret Leak Scanning',
-  '8. AI Knowledge Base Audit (Gemini 3.7)'
+  '8. AI Knowledge Base Audit (Gemini / Local AI)'
 )
 
 $rowBorders = @{}
