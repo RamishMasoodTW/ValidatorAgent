@@ -51117,7 +51117,16 @@ Ensure your response clearly includes either "VERDICT: PASSED" or "VERDICT: FAIL
 }
 async function runAiKnowledgeBaseAudit(config = {}, cwd = process.cwd()) {
   const provider = (config.AI_PROVIDER || (config.GEMINI_API_KEY ? "gemini" : "none")).toLowerCase();
-  const providerName = provider === "ollama" ? "Local Ollama" : provider === "openai_compat" ? "Local vLLM / OpenAI-Compatible" : "Google Gemini 3.8";
+  const providerTitles = {
+    gemini: "Google Gemini 3.8",
+    openai: 'OpenAI (${config.OPENAI_MODEL || "gpt-4o-mini"})',
+    anthropic: 'Anthropic Claude (${config.ANTHROPIC_MODEL || "claude-3-7-sonnet"})',
+    deepseek: 'DeepSeek (${config.DEEPSEEK_MODEL || "deepseek-chat"})',
+    groq: 'Groq Ultra-Fast (${config.GROQ_MODEL || "llama-3.3-70b"})',
+    openrouter: 'OpenRouter (${config.OPENROUTER_MODEL || "universal"})',
+    ollama: 'Local Ollama (${config.OLLAMA_MODEL || "local"})'
+  };
+  const providerName = providerTitles[provider] || provider;
   logStep(8, `Angular AI Knowledge Base Regression Audit (${providerName})`);
   const resolvedIssuesPath = import_path4.default.join(cwd, "resolved_issues.md");
   if (!import_fs5.default.existsSync(resolvedIssuesPath)) {
@@ -51155,57 +51164,173 @@ async function runAiKnowledgeBaseAudit(config = {}, cwd = process.cwd()) {
       return { passed: true, skipped: true, report: `Ollama Local Error: ${err.message}` };
     }
   }
-  if (provider === "openai_compat" || provider === "vllm") {
-    const rawBaseUrl = (config.OPENAI_BASE_URL || "http://localhost:8000/v1").replace(/\/$/, "");
-    const model = config.OPENAI_MODEL || "default";
-    const apiKey = config.OPENAI_API_KEY || "not-needed";
-    console.log(source_default.cyan(`  Consulting Local vLLM/OpenAI-Compatible Server (${rawBaseUrl} - ${model})...`));
-    const urlCandidates = [rawBaseUrl];
-    if (rawBaseUrl.includes("localhost")) {
-      urlCandidates.push(rawBaseUrl.replace("localhost", "127.0.0.1"));
-    } else if (rawBaseUrl.includes("127.0.0.1")) {
-      urlCandidates.push(rawBaseUrl.replace("127.0.0.1", "localhost"));
+  if (provider === "openai") {
+    const apiKey = config.OPENAI_API_KEY || process.env.OPENAI_API_KEY;
+    const model = config.OPENAI_MODEL || "gpt-4o-mini";
+    if (!apiKey) {
+      logWarning("OPENAI_API_KEY not configured.");
+      return { passed: true, skipped: true, report: "OPENAI_API_KEY not configured. AI audit skipped." };
     }
-    let lastVllmErr = null;
-    let response = null;
-    for (const targetUrl of urlCandidates) {
-      try {
-        response = await fetch(`${targetUrl}/chat/completions`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${apiKey}`
-          },
-          body: JSON.stringify({
-            model,
-            messages: [
-              { role: "system", content: "You are a Principal Angular Architect and DevSecOps Gatekeeper." },
-              { role: "user", content: prompt }
-            ],
-            temperature: 0.2
-          })
-        });
-        if (response && response.ok) {
-          lastVllmErr = null;
-          break;
-        }
-      } catch (err) {
-        lastVllmErr = err;
-      }
-    }
-    if (!response || !response.ok) {
-      const errMsg = lastVllmErr ? lastVllmErr.message : response ? `${response.status} ${response.statusText}` : "Connection failed";
-      logError(`vLLM AI Audit Error: ${errMsg}`);
-      console.log(source_default.yellow("  Ensure local vLLM/LM Studio server is running. Allowing commit with warning."));
-      return { passed: true, skipped: true, report: `vLLM Local Error: ${errMsg}` };
-    }
+    console.log(source_default.cyan(`  Consulting OpenAI (${model}) to audit Angular code...`));
     try {
-      const resData = await response.json();
-      const resultText = resData.choices?.[0]?.message?.content || "";
-      return evaluateAiResult(resultText, `vLLM (${model})`);
-    } catch (parseErr) {
-      logError(`vLLM Response Parse Error: ${parseErr.message}`);
-      return { passed: true, skipped: true, report: `vLLM Parse Error: ${parseErr.message}` };
+      const res = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({
+          model,
+          messages: [{ role: "user", content: prompt }],
+          temperature: 0.2
+        })
+      });
+      if (!res.ok) {
+        const errData = await res.text();
+        throw new Error(`${res.status} ${res.statusText}: ${errData}`);
+      }
+      const data = await res.json();
+      const resultText = data.choices?.[0]?.message?.content || "";
+      return evaluateAiResult(resultText, `OpenAI (${model})`);
+    } catch (err) {
+      logError(`OpenAI AI Audit Error: ${err.message}`);
+      return { passed: true, skipped: true, report: `OpenAI Error: ${err.message}` };
+    }
+  }
+  if (provider === "anthropic") {
+    const apiKey = config.ANTHROPIC_API_KEY || process.env.ANTHROPIC_API_KEY;
+    const model = config.ANTHROPIC_MODEL || "claude-3-7-sonnet-20250219";
+    if (!apiKey) {
+      logWarning("ANTHROPIC_API_KEY not configured.");
+      return { passed: true, skipped: true, report: "ANTHROPIC_API_KEY not configured. AI audit skipped." };
+    }
+    console.log(source_default.cyan(`  Consulting Anthropic Claude (${model}) to audit Angular code...`));
+    try {
+      const res = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": apiKey,
+          "anthropic-version": "2023-06-01"
+        },
+        body: JSON.stringify({
+          model,
+          max_tokens: 4096,
+          messages: [{ role: "user", content: prompt }],
+          temperature: 0.2
+        })
+      });
+      if (!res.ok) {
+        const errData = await res.text();
+        throw new Error(`${res.status} ${res.statusText}: ${errData}`);
+      }
+      const data = await res.json();
+      const resultText = data.content?.[0]?.text || "";
+      return evaluateAiResult(resultText, `Anthropic (${model})`);
+    } catch (err) {
+      logError(`Anthropic AI Audit Error: ${err.message}`);
+      return { passed: true, skipped: true, report: `Anthropic Error: ${err.message}` };
+    }
+  }
+  if (provider === "deepseek") {
+    const apiKey = config.DEEPSEEK_API_KEY || process.env.DEEPSEEK_API_KEY;
+    const model = config.DEEPSEEK_MODEL || "deepseek-chat";
+    if (!apiKey) {
+      logWarning("DEEPSEEK_API_KEY not configured.");
+      return { passed: true, skipped: true, report: "DEEPSEEK_API_KEY not configured. AI audit skipped." };
+    }
+    console.log(source_default.cyan(`  Consulting DeepSeek (${model}) to audit Angular code...`));
+    try {
+      const res = await fetch("https://api.deepseek.com/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({
+          model,
+          messages: [{ role: "user", content: prompt }],
+          temperature: 0.2
+        })
+      });
+      if (!res.ok) {
+        const errData = await res.text();
+        throw new Error(`${res.status} ${res.statusText}: ${errData}`);
+      }
+      const data = await res.json();
+      const resultText = data.choices?.[0]?.message?.content || "";
+      return evaluateAiResult(resultText, `DeepSeek (${model})`);
+    } catch (err) {
+      logError(`DeepSeek AI Audit Error: ${err.message}`);
+      return { passed: true, skipped: true, report: `DeepSeek Error: ${err.message}` };
+    }
+  }
+  if (provider === "groq") {
+    const apiKey = config.GROQ_API_KEY || process.env.GROQ_API_KEY;
+    const model = config.GROQ_MODEL || "llama-3.3-70b-versatile";
+    if (!apiKey) {
+      logWarning("GROQ_API_KEY not configured.");
+      return { passed: true, skipped: true, report: "GROQ_API_KEY not configured. AI audit skipped." };
+    }
+    console.log(source_default.cyan(`  Consulting Groq (${model}) to audit Angular code...`));
+    try {
+      const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({
+          model,
+          messages: [{ role: "user", content: prompt }],
+          temperature: 0.2
+        })
+      });
+      if (!res.ok) {
+        const errData = await res.text();
+        throw new Error(`${res.status} ${res.statusText}: ${errData}`);
+      }
+      const data = await res.json();
+      const resultText = data.choices?.[0]?.message?.content || "";
+      return evaluateAiResult(resultText, `Groq (${model})`);
+    } catch (err) {
+      logError(`Groq AI Audit Error: ${err.message}`);
+      return { passed: true, skipped: true, report: `Groq Error: ${err.message}` };
+    }
+  }
+  if (provider === "openrouter") {
+    const apiKey = config.OPENROUTER_API_KEY || process.env.OPENROUTER_API_KEY;
+    const model = config.OPENROUTER_MODEL || "anthropic/claude-3.7-sonnet";
+    if (!apiKey) {
+      logWarning("OPENROUTER_API_KEY not configured.");
+      return { passed: true, skipped: true, report: "OPENROUTER_API_KEY not configured. AI audit skipped." };
+    }
+    console.log(source_default.cyan(`  Consulting OpenRouter (${model}) to audit Angular code...`));
+    try {
+      const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${apiKey}`,
+          "HTTP-Referer": "https://github.com/angular-gatekeeper",
+          "X-Title": "Angular Gatekeeper"
+        },
+        body: JSON.stringify({
+          model,
+          messages: [{ role: "user", content: prompt }],
+          temperature: 0.2
+        })
+      });
+      if (!res.ok) {
+        const errData = await res.text();
+        throw new Error(`${res.status} ${res.statusText}: ${errData}`);
+      }
+      const data = await res.json();
+      const resultText = data.choices?.[0]?.message?.content || "";
+      return evaluateAiResult(resultText, `OpenRouter (${model})`);
+    } catch (err) {
+      logError(`OpenRouter AI Audit Error: ${err.message}`);
+      return { passed: true, skipped: true, report: `OpenRouter Error: ${err.message}` };
     }
   }
   const geminiKey = config.GEMINI_API_KEY || process.env.GEMINI_API_KEY;
@@ -51215,7 +51340,14 @@ async function runAiKnowledgeBaseAudit(config = {}, cwd = process.cwd()) {
     return { passed: true, skipped: true, report: "GEMINI_API_KEY not configured. AI audit skipped." };
   }
   console.log(source_default.cyan("  Consulting Gemini AI to audit Angular code against known issues..."));
-  const candidateModels = ["gemini-3.8-flash", "gemini-3.7-flash", "gemini-3.6-flash", "gemini-flash-latest"];
+  const candidateModels = [
+    "gemini-3.8-flash",
+    "gemini-3.7-flash",
+    "gemini-3.6-flash",
+    "gemini-3.5-flash",
+    "gemini-3.5-flash-lite",
+    "gemini-flash-lite-latest"
+  ];
   let lastError = null;
   for (const modelName of candidateModels) {
     try {
@@ -52487,9 +52619,16 @@ async function runGatekeeper() {
     GEMINI_API_KEY: process.env.GEMINI_API_KEY,
     OLLAMA_BASE_URL: process.env.OLLAMA_BASE_URL,
     OLLAMA_MODEL: process.env.OLLAMA_MODEL,
-    OPENAI_BASE_URL: process.env.OPENAI_BASE_URL,
     OPENAI_API_KEY: process.env.OPENAI_API_KEY,
-    OPENAI_MODEL: process.env.OPENAI_MODEL
+    OPENAI_MODEL: process.env.OPENAI_MODEL,
+    ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY,
+    ANTHROPIC_MODEL: process.env.ANTHROPIC_MODEL,
+    DEEPSEEK_API_KEY: process.env.DEEPSEEK_API_KEY,
+    DEEPSEEK_MODEL: process.env.DEEPSEEK_MODEL,
+    GROQ_API_KEY: process.env.GROQ_API_KEY,
+    GROQ_MODEL: process.env.GROQ_MODEL,
+    OPENROUTER_API_KEY: process.env.OPENROUTER_API_KEY,
+    OPENROUTER_MODEL: process.env.OPENROUTER_MODEL
   };
   let aiReport = "";
   try {

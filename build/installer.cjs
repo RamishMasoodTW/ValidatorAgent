@@ -5597,20 +5597,31 @@ async function runInstaller() {
     name: "aiProvider",
     message: "Select AI Provider:",
     choices: [
-      { title: "Google Gemini (Cloud \u2014 Gemini 3.8 / 3.7 / 3.6 Flash) [Recommended]", value: "gemini" },
-      { title: "Ollama (Local Offline AI \u2014 llama3, qwen2.5-coder, mistral, deepseek)", value: "ollama" },
-      { title: "vLLM / LM Studio / LocalAI (OpenAI-Compatible Endpoint)", value: "openai_compat" },
+      { title: "Google Gemini (Cloud - Gemini 3.8 / 3.7 / 3.6 Flash) [Recommended]", value: "gemini" },
+      { title: "OpenAI (Cloud - GPT-4o, GPT-4o-mini, o3-mini)", value: "openai" },
+      { title: "Anthropic Claude (Cloud - Claude 3.7 Sonnet, Claude 3.5 Haiku)", value: "anthropic" },
+      { title: "DeepSeek (Cloud - DeepSeek-V3, DeepSeek-R1)", value: "deepseek" },
+      { title: "Groq (Ultra-Fast Cloud - Llama-3.3-70b-versatile, Qwen-2.5-Coder)", value: "groq" },
+      { title: "OpenRouter (Universal Cloud - 300+ models)", value: "openrouter" },
+      { title: "Ollama (Local Offline AI - llama3, qwen2.5-coder, mistral, deepseek)", value: "ollama" },
       { title: "Skip AI Audit (Rule-based & CI checks only)", value: "none" }
     ],
     initial: 0
   });
   const aiProvider = providerPrompt.aiProvider || "none";
   let geminiKey = "";
-  let ollamaEndpoint = "http://localhost:11434";
-  let ollamaModel = "qwen2.5-coder:latest";
-  let openAiEndpoint = "http://localhost:8000/v1";
-  let openAiApiKey = "";
-  let openAiModel = "default";
+  let ollamaEndpoint = "http://127.0.0.1:11434";
+  let ollamaModel = "gemma4:e4b";
+  let openAiKey = "";
+  let openAiModel = "gpt-4o-mini";
+  let anthropicKey = "";
+  let anthropicModel = "claude-3-7-sonnet-20250219";
+  let deepseekKey = "";
+  let deepseekModel = "deepseek-chat";
+  let groqKey = "";
+  let groqModel = "llama-3.3-70b-versatile";
+  let openRouterKey = "";
+  let openRouterModel = "anthropic/claude-3.7-sonnet";
   if (aiProvider === "gemini") {
     const geminiPrompt = await (0, import_prompts.default)({
       type: "password",
@@ -5623,48 +5634,109 @@ async function runInstaller() {
     } else {
       console.log(source_default.gray("\u2139 No key provided: Gemini audit will be skipped until key is added."));
     }
+  } else if (aiProvider === "openai") {
+    const openAiPrompt = await (0, import_prompts.default)([
+      {
+        type: "password",
+        name: "key",
+        message: "Enter your OpenAI API Key (sk-...):"
+      },
+      {
+        type: "text",
+        name: "model",
+        message: "Enter OpenAI Model Name:",
+        initial: "gpt-4o-mini"
+      }
+    ]);
+    openAiKey = openAiPrompt.key ? openAiPrompt.key.trim() : "";
+    openAiModel = openAiPrompt.model ? openAiPrompt.model.trim() : "gpt-4o-mini";
+    console.log(source_default.green(`\u2714 OpenAI configured (${openAiModel}).`));
+  } else if (aiProvider === "anthropic") {
+    const anthropicPrompt = await (0, import_prompts.default)([
+      {
+        type: "password",
+        name: "key",
+        message: "Enter your Anthropic API Key (sk-ant-...):"
+      },
+      {
+        type: "text",
+        name: "model",
+        message: "Enter Claude Model Name:",
+        initial: "claude-3-7-sonnet-20250219"
+      }
+    ]);
+    anthropicKey = anthropicPrompt.key ? anthropicPrompt.key.trim() : "";
+    anthropicModel = anthropicPrompt.model ? anthropicPrompt.model.trim() : "claude-3-7-sonnet-20250219";
+    console.log(source_default.green(`\u2714 Anthropic Claude configured (${anthropicModel}).`));
+  } else if (aiProvider === "deepseek") {
+    const deepseekPrompt = await (0, import_prompts.default)([
+      {
+        type: "password",
+        name: "key",
+        message: "Enter your DeepSeek API Key (sk-...):"
+      },
+      {
+        type: "text",
+        name: "model",
+        message: "Enter DeepSeek Model Name (deepseek-chat / deepseek-reasoner):",
+        initial: "deepseek-chat"
+      }
+    ]);
+    deepseekKey = deepseekPrompt.key ? deepseekPrompt.key.trim() : "";
+    deepseekModel = deepseekPrompt.model ? deepseekPrompt.model.trim() : "deepseek-chat";
+    console.log(source_default.green(`\u2714 DeepSeek configured (${deepseekModel}).`));
+  } else if (aiProvider === "groq") {
+    const groqPrompt = await (0, import_prompts.default)([
+      {
+        type: "password",
+        name: "key",
+        message: "Enter your Groq API Key (gsk_...):"
+      },
+      {
+        type: "text",
+        name: "model",
+        message: "Enter Groq Model Name (e.g. llama-3.3-70b-versatile):",
+        initial: "llama-3.3-70b-versatile"
+      }
+    ]);
+    groqKey = groqPrompt.key ? groqPrompt.key.trim() : "";
+    groqModel = groqPrompt.model ? groqPrompt.model.trim() : "llama-3.3-70b-versatile";
+    console.log(source_default.green(`\u2714 Groq Ultra-Fast AI configured (${groqModel}).`));
+  } else if (aiProvider === "openrouter") {
+    const openRouterPrompt = await (0, import_prompts.default)([
+      {
+        type: "password",
+        name: "key",
+        message: "Enter your OpenRouter API Key (sk-or-...):"
+      },
+      {
+        type: "text",
+        name: "model",
+        message: "Enter OpenRouter Model Identifier (e.g. anthropic/claude-3.7-sonnet, deepseek/deepseek-r1):",
+        initial: "anthropic/claude-3.7-sonnet"
+      }
+    ]);
+    openRouterKey = openRouterPrompt.key ? openRouterPrompt.key.trim() : "";
+    openRouterModel = openRouterPrompt.model ? openRouterPrompt.model.trim() : "anthropic/claude-3.7-sonnet";
+    console.log(source_default.green(`\u2714 OpenRouter configured (${openRouterModel}).`));
   } else if (aiProvider === "ollama") {
     const ollamaConfig = await (0, import_prompts.default)([
       {
         type: "text",
         name: "endpoint",
         message: "Enter Ollama Base URL:",
-        initial: "http://localhost:11434"
+        initial: "http://127.0.0.1:11434"
       },
       {
         type: "text",
         name: "model",
-        message: "Enter Ollama Model Name (e.g. qwen2.5-coder, llama3.2, codellama):",
-        initial: "qwen2.5-coder:latest"
+        message: "Enter Ollama Model Name (e.g. gemma4:e4b, qwen2.5-coder:latest, llama3):",
+        initial: "gemma4:e4b"
       }
     ]);
-    ollamaEndpoint = ollamaConfig.endpoint ? ollamaConfig.endpoint.trim() : "http://localhost:11434";
-    ollamaModel = ollamaConfig.model ? ollamaConfig.model.trim() : "qwen2.5-coder:latest";
+    ollamaEndpoint = ollamaConfig.endpoint ? ollamaConfig.endpoint.trim() : "http://127.0.0.1:11434";
+    ollamaModel = ollamaConfig.model ? ollamaConfig.model.trim() : "gemma4:e4b";
     console.log(source_default.green(`\u2714 Ollama configured locally (${ollamaEndpoint} -> ${ollamaModel}).`));
-  } else if (aiProvider === "openai_compat") {
-    const vllmConfig = await (0, import_prompts.default)([
-      {
-        type: "text",
-        name: "endpoint",
-        message: "Enter vLLM / LM Studio / OpenAI-Compatible Endpoint URL:",
-        initial: "http://localhost:8000/v1"
-      },
-      {
-        type: "password",
-        name: "apiKey",
-        message: "Enter API Key (Optional for local servers, press Enter to skip):"
-      },
-      {
-        type: "text",
-        name: "model",
-        message: "Enter Model Name / ID:",
-        initial: "default"
-      }
-    ]);
-    openAiEndpoint = vllmConfig.endpoint ? vllmConfig.endpoint.trim() : "http://localhost:8000/v1";
-    openAiApiKey = vllmConfig.apiKey ? vllmConfig.apiKey.trim() : "";
-    openAiModel = vllmConfig.model ? vllmConfig.model.trim() : "default";
-    console.log(source_default.green(`\u2714 Local vLLM/OpenAI-compatible server configured (${openAiEndpoint} -> ${openAiModel}).`));
   } else {
     console.log(source_default.gray("\u2139 AI Audit disabled. All other quality, architecture & CI checks remain active."));
   }
@@ -5709,11 +5781,25 @@ async function runInstaller() {
 `;
     if (ollamaModel) envContent += `OLLAMA_MODEL=${ollamaModel}
 `;
-    if (openAiEndpoint) envContent += `OPENAI_BASE_URL=${openAiEndpoint}
-`;
-    if (openAiApiKey) envContent += `OPENAI_API_KEY=${openAiApiKey}
+    if (openAiKey) envContent += `OPENAI_API_KEY=${openAiKey}
 `;
     if (openAiModel) envContent += `OPENAI_MODEL=${openAiModel}
+`;
+    if (anthropicKey) envContent += `ANTHROPIC_API_KEY=${anthropicKey}
+`;
+    if (anthropicModel) envContent += `ANTHROPIC_MODEL=${anthropicModel}
+`;
+    if (deepseekKey) envContent += `DEEPSEEK_API_KEY=${deepseekKey}
+`;
+    if (deepseekModel) envContent += `DEEPSEEK_MODEL=${deepseekModel}
+`;
+    if (groqKey) envContent += `GROQ_API_KEY=${groqKey}
+`;
+    if (groqModel) envContent += `GROQ_MODEL=${groqModel}
+`;
+    if (openRouterKey) envContent += `OPENROUTER_API_KEY=${openRouterKey}
+`;
+    if (openRouterModel) envContent += `OPENROUTER_MODEL=${openRouterModel}
 `;
     envContent += `SHOW_PROGRESS=${showProgress ? "true" : "false"}
 `;
