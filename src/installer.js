@@ -211,7 +211,7 @@ async function runInstaller() {
   console.log(BANNER);
   console.log(chalk.red.bold('  Welcome to the Angular Git Quality & AI Gatekeeper Setup Wizard!\n'));
   console.log(chalk.white('  This installer configures a global Git pre-commit hook for all your Angular repositories,'));
-  console.log(chalk.white('  enforcing strict quality, Angular build checks, and Gemini 3.6 Flash AI regression audits.\n'));
+  console.log(chalk.white('  enforcing strict quality, Angular build checks, and Gemini 3.8 Flash AI regression audits.\n'));
 
   // 1. Interactive AI Provider Selection
   console.log(chalk.yellow('┌─────────────────────────────────────────────────────────────┐'));
@@ -224,7 +224,7 @@ async function runInstaller() {
     name: 'aiProvider',
     message: 'Select AI Provider:',
     choices: [
-      { title: 'Google Gemini (Cloud — Gemini 3.7 / 3.6 Flash) [Recommended]', value: 'gemini' },
+      { title: 'Google Gemini (Cloud — Gemini 3.8 / 3.7 / 3.6 Flash) [Recommended]', value: 'gemini' },
       { title: 'Ollama (Local Offline AI — llama3, qwen2.5-coder, mistral, deepseek)', value: 'ollama' },
       { title: 'vLLM / LM Studio / LocalAI (OpenAI-Compatible Endpoint)', value: 'openai_compat' },
       { title: 'Skip AI Audit (Rule-based & CI checks only)', value: 'none' }

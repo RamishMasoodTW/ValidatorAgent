@@ -5587,7 +5587,7 @@ async function runInstaller() {
   console.log(BANNER);
   console.log(source_default.red.bold("  Welcome to the Angular Git Quality & AI Gatekeeper Setup Wizard!\n"));
   console.log(source_default.white("  This installer configures a global Git pre-commit hook for all your Angular repositories,"));
-  console.log(source_default.white("  enforcing strict quality, Angular build checks, and Gemini 3.6 Flash AI regression audits.\n"));
+  console.log(source_default.white("  enforcing strict quality, Angular build checks, and Gemini 3.8 Flash AI regression audits.\n"));
   console.log(source_default.yellow("\u250C\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510"));
   console.log(source_default.yellow("\u2502 ") + source_default.bold.white("AI Knowledge Base Auditor Configuration") + source_default.yellow("                   \u2502"));
   console.log(source_default.yellow("\u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518"));
@@ -5597,7 +5597,7 @@ async function runInstaller() {
     name: "aiProvider",
     message: "Select AI Provider:",
     choices: [
-      { title: "Google Gemini (Cloud \u2014 Gemini 3.7 / 3.6 Flash) [Recommended]", value: "gemini" },
+      { title: "Google Gemini (Cloud \u2014 Gemini 3.8 / 3.7 / 3.6 Flash) [Recommended]", value: "gemini" },
       { title: "Ollama (Local Offline AI \u2014 llama3, qwen2.5-coder, mistral, deepseek)", value: "ollama" },
       { title: "vLLM / LM Studio / LocalAI (OpenAI-Compatible Endpoint)", value: "openai_compat" },
       { title: "Skip AI Audit (Rule-based & CI checks only)", value: "none" }

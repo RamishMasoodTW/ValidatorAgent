@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import http from 'http';
 import chalk from 'chalk';
 import { GoogleGenAI } from '@google/genai';
 import { logStep, logSuccess, logError, logWarning } from '../utils/logger.js';
@@ -48,7 +49,7 @@ Ensure your response clearly includes either "VERDICT: PASSED" or "VERDICT: FAIL
  */
 export async function runAiKnowledgeBaseAudit(config = {}, cwd = process.cwd()) {
   const provider = (config.AI_PROVIDER || (config.GEMINI_API_KEY ? 'gemini' : 'none')).toLowerCase();
-  const providerName = provider === 'ollama' ? 'Local Ollama' : (provider === 'openai_compat' ? 'Local vLLM / OpenAI-Compatible' : 'Google Gemini 3.7');
+  const providerName = provider === 'ollama' ? 'Local Ollama' : (provider === 'openai_compat' ? 'Local vLLM / OpenAI-Compatible' : 'Google Gemini 3.8');
   
   logStep(8, `Angular AI Knowledge Base Regression Audit (${providerName})`);
   const resolvedIssuesPath = path.join(cwd, 'resolved_issues.md');
@@ -78,28 +79,19 @@ export async function runAiKnowledgeBaseAudit(config = {}, cwd = process.cwd()) 
 
   // 1. OLLAMA LOCAL AI PROVIDER
   if (provider === 'ollama') {
-    const ollamaUrl = (config.OLLAMA_BASE_URL || 'http://localhost:11434').replace(/\/$/, '');
+    const rawOllamaUrl = (config.OLLAMA_BASE_URL || 'http://127.0.0.1:11434').replace(/\/$/, '');
     const model = config.OLLAMA_MODEL || 'qwen2.5-coder:latest';
-    console.log(chalk.cyan(`  Consulting Local Ollama (${ollamaUrl} - ${model}) to audit Angular code...`));
+    console.log(chalk.cyan(`  Consulting Local Ollama (${rawOllamaUrl} - ${model}) to audit Angular code...`));
+
+    // Tailor prompt for local models: keep critical rules & diff, without flooding CPU with 150-file tree
+    const localPrompt = buildGeminiAuditPrompt(
+      knowledgeBase.slice(0, 8000),
+      diffOutput.slice(0, 10000),
+      projectTree ? projectTree.slice(0, 800) : ''
+    );
 
     try {
-      const response = await fetch(`${ollamaUrl}/api/generate`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model,
-          prompt,
-          stream: false,
-          options: { temperature: 0.2 }
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error(`Ollama HTTP Error: ${response.status} ${response.statusText}`);
-      }
-
-      const resData = await response.json();
-      const resultText = resData.response || '';
+      const resultText = await callOllamaViaHttp(rawOllamaUrl, model, localPrompt);
       return evaluateAiResult(resultText, `Ollama (${model})`);
     } catch (err) {
       logError(`Ollama AI Audit Error: ${err.message}`);
@@ -110,39 +102,61 @@ export async function runAiKnowledgeBaseAudit(config = {}, cwd = process.cwd()) 
 
   // 2. vLLM / LOCALAI / OPENAI-COMPATIBLE PROVIDER
   if (provider === 'openai_compat' || provider === 'vllm') {
-    const baseUrl = (config.OPENAI_BASE_URL || 'http://localhost:8000/v1').replace(/\/$/, '');
+    const rawBaseUrl = (config.OPENAI_BASE_URL || 'http://localhost:8000/v1').replace(/\/$/, '');
     const model = config.OPENAI_MODEL || 'default';
     const apiKey = config.OPENAI_API_KEY || 'not-needed';
-    console.log(chalk.cyan(`  Consulting Local vLLM/OpenAI-Compatible Server (${baseUrl} - ${model})...`));
+    console.log(chalk.cyan(`  Consulting Local vLLM/OpenAI-Compatible Server (${rawBaseUrl} - ${model})...`));
+
+    const urlCandidates = [rawBaseUrl];
+    if (rawBaseUrl.includes('localhost')) {
+      urlCandidates.push(rawBaseUrl.replace('localhost', '127.0.0.1'));
+    } else if (rawBaseUrl.includes('127.0.0.1')) {
+      urlCandidates.push(rawBaseUrl.replace('127.0.0.1', 'localhost'));
+    }
+
+    let lastVllmErr = null;
+    let response = null;
+
+    for (const targetUrl of urlCandidates) {
+      try {
+        response = await fetch(`${targetUrl}/chat/completions`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}`
+          },
+          body: JSON.stringify({
+            model,
+            messages: [
+              { role: 'system', content: 'You are a Principal Angular Architect and DevSecOps Gatekeeper.' },
+              { role: 'user', content: prompt }
+            ],
+            temperature: 0.2
+          })
+        });
+        if (response && response.ok) {
+          lastVllmErr = null;
+          break;
+        }
+      } catch (err) {
+        lastVllmErr = err;
+      }
+    }
+
+    if (!response || !response.ok) {
+      const errMsg = lastVllmErr ? lastVllmErr.message : (response ? `${response.status} ${response.statusText}` : 'Connection failed');
+      logError(`vLLM AI Audit Error: ${errMsg}`);
+      console.log(chalk.yellow('  Ensure local vLLM/LM Studio server is running. Allowing commit with warning.'));
+      return { passed: true, skipped: true, report: `vLLM Local Error: ${errMsg}` };
+    }
 
     try {
-      const response = await fetch(`${baseUrl}/chat/completions`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`
-        },
-        body: JSON.stringify({
-          model,
-          messages: [
-            { role: 'system', content: 'You are a Principal Angular Architect and DevSecOps Gatekeeper.' },
-            { role: 'user', content: prompt }
-          ],
-          temperature: 0.2
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error(`vLLM HTTP Error: ${response.status} ${response.statusText}`);
-      }
-
       const resData = await response.json();
       const resultText = resData.choices?.[0]?.message?.content || '';
       return evaluateAiResult(resultText, `vLLM (${model})`);
-    } catch (err) {
-      logError(`vLLM AI Audit Error: ${err.message}`);
-      console.log(chalk.yellow('  Ensure local vLLM/LM Studio server is running. Allowing commit with warning.'));
-      return { passed: true, skipped: true, report: `vLLM Local Error: ${err.message}` };
+    } catch (parseErr) {
+      logError(`vLLM Response Parse Error: ${parseErr.message}`);
+      return { passed: true, skipped: true, report: `vLLM Parse Error: ${parseErr.message}` };
     }
   }
 
@@ -154,8 +168,8 @@ export async function runAiKnowledgeBaseAudit(config = {}, cwd = process.cwd()) 
     return { passed: true, skipped: true, report: 'GEMINI_API_KEY not configured. AI audit skipped.' };
   }
 
-  console.log(chalk.cyan('  Consulting Gemini 3.7 Flash to audit Angular code against known issues...'));
-  const candidateModels = ['gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-2.5-flash', 'gemini-flash-latest'];
+  console.log(chalk.cyan('  Consulting Gemini AI to audit Angular code against known issues...'));
+  const candidateModels = ['gemini-3.8-flash', 'gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-flash-latest'];
   let lastError = null;
 
   for (const modelName of candidateModels) {
@@ -178,6 +192,90 @@ export async function runAiKnowledgeBaseAudit(config = {}, cwd = process.cwd()) 
   logError(`AI Audit call error: ${lastError?.message || lastError}`);
   console.log(chalk.yellow('  Allowing commit/push with warning due to AI service error.'));
   return { passed: true, skipped: true, report: `AI Service Warning: ${lastError?.message || lastError}` };
+}
+
+/**
+ * Raw HTTP client for local Ollama API to bypass Undici headersTimeout and IPv6 ECONNREFUSED
+ */
+function callOllamaViaHttp(url, model, prompt) {
+  return new Promise((resolve, reject) => {
+    try {
+      const parsed = new URL(url);
+      const isLocalhost = parsed.hostname === 'localhost';
+      const hostname = isLocalhost ? '127.0.0.1' : parsed.hostname;
+      const port = parsed.port ? parseInt(parsed.port, 10) : 11434;
+
+      const postData = JSON.stringify({
+        model,
+        prompt,
+        stream: false,
+        options: { temperature: 0.2 }
+      });
+
+      const options = {
+        hostname,
+        port,
+        path: '/api/generate',
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Content-Length': Buffer.byteLength(postData)
+        }
+      };
+
+      const req = http.request(options, (res) => {
+        let rawData = '';
+        res.setEncoding('utf8');
+        res.on('data', (chunk) => { rawData += chunk; });
+        res.on('end', () => {
+          if (res.statusCode && res.statusCode >= 200 && res.statusCode < 300) {
+            try {
+              const json = JSON.parse(rawData);
+              resolve(json.response || '');
+            } catch (e) {
+              reject(new Error(`Failed to parse Ollama JSON response: ${e.message}`));
+            }
+          } else {
+            reject(new Error(`Ollama HTTP Error: ${res.statusCode} ${res.statusMessage || ''}`));
+          }
+        });
+      });
+
+      req.on('error', (err) => {
+        // If 127.0.0.1 failed, try localhost fallback
+        if (hostname === '127.0.0.1') {
+          const fallbackOptions = { ...options, hostname: 'localhost' };
+          const fallbackReq = http.request(fallbackOptions, (res) => {
+            let rawData = '';
+            res.setEncoding('utf8');
+            res.on('data', (chunk) => { rawData += chunk; });
+            res.on('end', () => {
+              if (res.statusCode && res.statusCode >= 200 && res.statusCode < 300) {
+                try {
+                  const json = JSON.parse(rawData);
+                  resolve(json.response || '');
+                } catch (e) {
+                  reject(new Error(`Failed to parse Ollama JSON response: ${e.message}`));
+                }
+              } else {
+                reject(new Error(`Ollama HTTP Error: ${res.statusCode} ${res.statusMessage || ''}`));
+              }
+            });
+          });
+          fallbackReq.on('error', () => reject(err));
+          fallbackReq.write(postData);
+          fallbackReq.end();
+        } else {
+          reject(err);
+        }
+      });
+
+      req.write(postData);
+      req.end();
+    } catch (err) {
+      reject(err);
+    }
+  });
 }
 
 /**

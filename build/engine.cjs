@@ -1917,7 +1917,7 @@ var require_helpers = __commonJS({
     };
     Object.defineProperty(exports2, "__esModule", { value: true });
     exports2.req = exports2.json = exports2.toBuffer = void 0;
-    var http3 = __importStar(require("http"));
+    var http4 = __importStar(require("http"));
     var https2 = __importStar(require("https"));
     async function toBuffer(stream) {
       let length = 0;
@@ -1943,7 +1943,7 @@ var require_helpers = __commonJS({
     exports2.json = json2;
     function req(url, opts = {}) {
       const href = typeof url === "string" ? url : url.href;
-      const req2 = (href.startsWith("https:") ? https2 : http3).request(url, opts);
+      const req2 = (href.startsWith("https:") ? https2 : http4).request(url, opts);
       const promise = new Promise((resolve, reject) => {
         req2.once("response", resolve).once("error", reject).end();
       });
@@ -1991,11 +1991,11 @@ var require_dist = __commonJS({
     Object.defineProperty(exports2, "__esModule", { value: true });
     exports2.Agent = void 0;
     var net = __importStar(require("net"));
-    var http3 = __importStar(require("http"));
+    var http4 = __importStar(require("http"));
     var https_1 = require("https");
     __exportStar(require_helpers(), exports2);
     var INTERNAL = /* @__PURE__ */ Symbol("AgentBaseInternalState");
-    var Agent = class extends http3.Agent {
+    var Agent = class extends http4.Agent {
       constructor(opts) {
         super(opts);
         this[INTERNAL] = {};
@@ -2067,7 +2067,7 @@ var require_dist = __commonJS({
         const fakeSocket = this.incrementSockets(name);
         Promise.resolve().then(() => this.connect(req, connectOpts)).then((socket) => {
           this.decrementSockets(name, fakeSocket);
-          if (socket instanceof http3.Agent) {
+          if (socket instanceof http4.Agent) {
             try {
               return socket.addRequest(req, connectOpts);
             } catch (err) {
@@ -21272,7 +21272,7 @@ var require_websocket = __commonJS({
     "use strict";
     var EventEmitter = require("events");
     var https2 = require("https");
-    var http3 = require("http");
+    var http4 = require("http");
     var net = require("net");
     var tls = require("tls");
     var { randomBytes, createHash } = require("crypto");
@@ -21814,7 +21814,7 @@ var require_websocket = __commonJS({
       }
       const defaultPort = isSecure ? 443 : 80;
       const key = randomBytes(16).toString("base64");
-      const request = isSecure ? https2.request : http3.request;
+      const request = isSecure ? https2.request : http4.request;
       const protocolSet = /* @__PURE__ */ new Set();
       let perMessageDeflate;
       opts.createConnection = opts.createConnection || (isSecure ? tlsConnect : netConnect);
@@ -22310,7 +22310,7 @@ var require_websocket_server = __commonJS({
   "node_modules/ws/lib/websocket-server.js"(exports2, module2) {
     "use strict";
     var EventEmitter = require("events");
-    var http3 = require("http");
+    var http4 = require("http");
     var { Duplex } = require("stream");
     var { createHash } = require("crypto");
     var extension2 = require_extension();
@@ -22391,8 +22391,8 @@ var require_websocket_server = __commonJS({
           );
         }
         if (options.port != null) {
-          this._server = http3.createServer((req, res) => {
-            const body = http3.STATUS_CODES[426];
+          this._server = http4.createServer((req, res) => {
+            const body = http4.STATUS_CODES[426];
             res.writeHead(426, {
               "Content-Length": body.length,
               "Content-Type": "text/plain"
@@ -22681,7 +22681,7 @@ var require_websocket_server = __commonJS({
       this.destroy();
     }
     function abortHandshake(socket, code, message, headers) {
-      message = message || http3.STATUS_CODES[code];
+      message = message || http4.STATUS_CODES[code];
       headers = {
         Connection: "close",
         "Content-Type": "text/html",
@@ -22690,7 +22690,7 @@ var require_websocket_server = __commonJS({
       };
       socket.once("finish", socket.destroy);
       socket.end(
-        `HTTP/1.1 ${code} ${http3.STATUS_CODES[code]}\r
+        `HTTP/1.1 ${code} ${http4.STATUS_CODES[code]}\r
 ` + Object.keys(headers).map((h2) => `${h2}: ${headers[h2]}`).join("\r\n") + "\r\n\r\n" + message
       );
     }
@@ -28731,6 +28731,7 @@ function scanDependencyVulnerabilities(cwd = process.cwd()) {
 // src/rules/ai-prompt.js
 var import_fs5 = __toESM(require("fs"), 1);
 var import_path4 = __toESM(require("path"), 1);
+var import_http = __toESM(require("http"), 1);
 
 // node_modules/@google/genai/dist/node/index.mjs
 var import_p_retry = __toESM(require_p_retry(), 1);
@@ -51116,7 +51117,7 @@ Ensure your response clearly includes either "VERDICT: PASSED" or "VERDICT: FAIL
 }
 async function runAiKnowledgeBaseAudit(config = {}, cwd = process.cwd()) {
   const provider = (config.AI_PROVIDER || (config.GEMINI_API_KEY ? "gemini" : "none")).toLowerCase();
-  const providerName = provider === "ollama" ? "Local Ollama" : provider === "openai_compat" ? "Local vLLM / OpenAI-Compatible" : "Google Gemini 3.7";
+  const providerName = provider === "ollama" ? "Local Ollama" : provider === "openai_compat" ? "Local vLLM / OpenAI-Compatible" : "Google Gemini 3.8";
   logStep(8, `Angular AI Knowledge Base Regression Audit (${providerName})`);
   const resolvedIssuesPath = import_path4.default.join(cwd, "resolved_issues.md");
   if (!import_fs5.default.existsSync(resolvedIssuesPath)) {
@@ -51137,25 +51138,16 @@ async function runAiKnowledgeBaseAudit(config = {}, cwd = process.cwd()) {
   }
   const prompt = buildGeminiAuditPrompt(knowledgeBase, diffOutput, projectTree);
   if (provider === "ollama") {
-    const ollamaUrl = (config.OLLAMA_BASE_URL || "http://localhost:11434").replace(/\/$/, "");
+    const rawOllamaUrl = (config.OLLAMA_BASE_URL || "http://127.0.0.1:11434").replace(/\/$/, "");
     const model = config.OLLAMA_MODEL || "qwen2.5-coder:latest";
-    console.log(source_default.cyan(`  Consulting Local Ollama (${ollamaUrl} - ${model}) to audit Angular code...`));
+    console.log(source_default.cyan(`  Consulting Local Ollama (${rawOllamaUrl} - ${model}) to audit Angular code...`));
+    const localPrompt = buildGeminiAuditPrompt(
+      knowledgeBase.slice(0, 8e3),
+      diffOutput.slice(0, 1e4),
+      projectTree ? projectTree.slice(0, 800) : ""
+    );
     try {
-      const response = await fetch(`${ollamaUrl}/api/generate`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model,
-          prompt,
-          stream: false,
-          options: { temperature: 0.2 }
-        })
-      });
-      if (!response.ok) {
-        throw new Error(`Ollama HTTP Error: ${response.status} ${response.statusText}`);
-      }
-      const resData = await response.json();
-      const resultText = resData.response || "";
+      const resultText = await callOllamaViaHttp(rawOllamaUrl, model, localPrompt);
       return evaluateAiResult(resultText, `Ollama (${model})`);
     } catch (err) {
       logError(`Ollama AI Audit Error: ${err.message}`);
@@ -51164,36 +51156,56 @@ async function runAiKnowledgeBaseAudit(config = {}, cwd = process.cwd()) {
     }
   }
   if (provider === "openai_compat" || provider === "vllm") {
-    const baseUrl = (config.OPENAI_BASE_URL || "http://localhost:8000/v1").replace(/\/$/, "");
+    const rawBaseUrl = (config.OPENAI_BASE_URL || "http://localhost:8000/v1").replace(/\/$/, "");
     const model = config.OPENAI_MODEL || "default";
     const apiKey = config.OPENAI_API_KEY || "not-needed";
-    console.log(source_default.cyan(`  Consulting Local vLLM/OpenAI-Compatible Server (${baseUrl} - ${model})...`));
-    try {
-      const response = await fetch(`${baseUrl}/chat/completions`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${apiKey}`
-        },
-        body: JSON.stringify({
-          model,
-          messages: [
-            { role: "system", content: "You are a Principal Angular Architect and DevSecOps Gatekeeper." },
-            { role: "user", content: prompt }
-          ],
-          temperature: 0.2
-        })
-      });
-      if (!response.ok) {
-        throw new Error(`vLLM HTTP Error: ${response.status} ${response.statusText}`);
+    console.log(source_default.cyan(`  Consulting Local vLLM/OpenAI-Compatible Server (${rawBaseUrl} - ${model})...`));
+    const urlCandidates = [rawBaseUrl];
+    if (rawBaseUrl.includes("localhost")) {
+      urlCandidates.push(rawBaseUrl.replace("localhost", "127.0.0.1"));
+    } else if (rawBaseUrl.includes("127.0.0.1")) {
+      urlCandidates.push(rawBaseUrl.replace("127.0.0.1", "localhost"));
+    }
+    let lastVllmErr = null;
+    let response = null;
+    for (const targetUrl of urlCandidates) {
+      try {
+        response = await fetch(`${targetUrl}/chat/completions`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${apiKey}`
+          },
+          body: JSON.stringify({
+            model,
+            messages: [
+              { role: "system", content: "You are a Principal Angular Architect and DevSecOps Gatekeeper." },
+              { role: "user", content: prompt }
+            ],
+            temperature: 0.2
+          })
+        });
+        if (response && response.ok) {
+          lastVllmErr = null;
+          break;
+        }
+      } catch (err) {
+        lastVllmErr = err;
       }
+    }
+    if (!response || !response.ok) {
+      const errMsg = lastVllmErr ? lastVllmErr.message : response ? `${response.status} ${response.statusText}` : "Connection failed";
+      logError(`vLLM AI Audit Error: ${errMsg}`);
+      console.log(source_default.yellow("  Ensure local vLLM/LM Studio server is running. Allowing commit with warning."));
+      return { passed: true, skipped: true, report: `vLLM Local Error: ${errMsg}` };
+    }
+    try {
       const resData = await response.json();
       const resultText = resData.choices?.[0]?.message?.content || "";
       return evaluateAiResult(resultText, `vLLM (${model})`);
-    } catch (err) {
-      logError(`vLLM AI Audit Error: ${err.message}`);
-      console.log(source_default.yellow("  Ensure local vLLM/LM Studio server is running. Allowing commit with warning."));
-      return { passed: true, skipped: true, report: `vLLM Local Error: ${err.message}` };
+    } catch (parseErr) {
+      logError(`vLLM Response Parse Error: ${parseErr.message}`);
+      return { passed: true, skipped: true, report: `vLLM Parse Error: ${parseErr.message}` };
     }
   }
   const geminiKey = config.GEMINI_API_KEY || process.env.GEMINI_API_KEY;
@@ -51202,8 +51214,8 @@ async function runAiKnowledgeBaseAudit(config = {}, cwd = process.cwd()) {
     console.log(source_default.gray("  To configure AI, run Install.bat or AngularGatekeeperSetup.exe."));
     return { passed: true, skipped: true, report: "GEMINI_API_KEY not configured. AI audit skipped." };
   }
-  console.log(source_default.cyan("  Consulting Gemini 3.7 Flash to audit Angular code against known issues..."));
-  const candidateModels = ["gemini-3.7-flash", "gemini-3.6-flash", "gemini-2.5-flash", "gemini-flash-latest"];
+  console.log(source_default.cyan("  Consulting Gemini AI to audit Angular code against known issues..."));
+  const candidateModels = ["gemini-3.8-flash", "gemini-3.7-flash", "gemini-3.6-flash", "gemini-flash-latest"];
   let lastError = null;
   for (const modelName of candidateModels) {
     try {
@@ -51223,6 +51235,84 @@ async function runAiKnowledgeBaseAudit(config = {}, cwd = process.cwd()) {
   logError(`AI Audit call error: ${lastError?.message || lastError}`);
   console.log(source_default.yellow("  Allowing commit/push with warning due to AI service error."));
   return { passed: true, skipped: true, report: `AI Service Warning: ${lastError?.message || lastError}` };
+}
+function callOllamaViaHttp(url, model, prompt) {
+  return new Promise((resolve, reject) => {
+    try {
+      const parsed = new URL(url);
+      const isLocalhost = parsed.hostname === "localhost";
+      const hostname = isLocalhost ? "127.0.0.1" : parsed.hostname;
+      const port = parsed.port ? parseInt(parsed.port, 10) : 11434;
+      const postData = JSON.stringify({
+        model,
+        prompt,
+        stream: false,
+        options: { temperature: 0.2 }
+      });
+      const options = {
+        hostname,
+        port,
+        path: "/api/generate",
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Content-Length": Buffer.byteLength(postData)
+        }
+      };
+      const req = import_http.default.request(options, (res) => {
+        let rawData = "";
+        res.setEncoding("utf8");
+        res.on("data", (chunk) => {
+          rawData += chunk;
+        });
+        res.on("end", () => {
+          if (res.statusCode && res.statusCode >= 200 && res.statusCode < 300) {
+            try {
+              const json2 = JSON.parse(rawData);
+              resolve(json2.response || "");
+            } catch (e2) {
+              reject(new Error(`Failed to parse Ollama JSON response: ${e2.message}`));
+            }
+          } else {
+            reject(new Error(`Ollama HTTP Error: ${res.statusCode} ${res.statusMessage || ""}`));
+          }
+        });
+      });
+      req.on("error", (err) => {
+        if (hostname === "127.0.0.1") {
+          const fallbackOptions = { ...options, hostname: "localhost" };
+          const fallbackReq = import_http.default.request(fallbackOptions, (res) => {
+            let rawData = "";
+            res.setEncoding("utf8");
+            res.on("data", (chunk) => {
+              rawData += chunk;
+            });
+            res.on("end", () => {
+              if (res.statusCode && res.statusCode >= 200 && res.statusCode < 300) {
+                try {
+                  const json2 = JSON.parse(rawData);
+                  resolve(json2.response || "");
+                } catch (e2) {
+                  reject(new Error(`Failed to parse Ollama JSON response: ${e2.message}`));
+                }
+              } else {
+                reject(new Error(`Ollama HTTP Error: ${res.statusCode} ${res.statusMessage || ""}`));
+              }
+            });
+          });
+          fallbackReq.on("error", () => reject(err));
+          fallbackReq.write(postData);
+          fallbackReq.end();
+        } else {
+          reject(err);
+        }
+      });
+      req.write(postData);
+      req.end();
+    } catch (err) {
+      reject(err);
+    }
+  });
 }
 function evaluateAiResult(resultText, modelIdentifier) {
   console.log("\n" + source_default.gray("\u2500".repeat(60)));
