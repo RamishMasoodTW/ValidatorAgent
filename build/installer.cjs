@@ -5589,7 +5589,7 @@ async function runInstaller() {
   console.log(source_default.white("  This installer configures a global Git pre-commit hook for all your Angular repositories,"));
   console.log(source_default.white("  enforcing strict quality, Angular build checks, and AI regression audits.\n"));
   console.log(source_default.yellow("\u250C\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510"));
-  console.log(source_default.yellow("\u2502 ") + source_default.bold.white("AI Knowledge Base Auditor Configuration") + source_default.yellow("                           \u2502"));
+  console.log(source_default.yellow("\u2502 ") + source_default.bold.white("AI Knowledge Base Auditor Configuration") + source_default.yellow("                   \u2502"));
   console.log(source_default.yellow("\u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518"));
   console.log(source_default.gray("  Select the AI engine to audit your commits against resolved_issues.md:\n"));
   const providerPrompt = await (0, import_prompts.default)({
@@ -6095,7 +6095,7 @@ esac
   console.log(source_default.white("  \u2714 Git Bash / Windows Terminal / CMD / PowerShell"));
   console.log(source_default.white("  \u2714 VS Code / Cursor / IntelliJ / WebStorm Git integrations"));
   console.log("\n" + source_default.yellow.bold("\u250C\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510"));
-  console.log(source_default.yellow.bold("\u2502 ") + source_default.bold.white("EASY TERMINAL COMMANDS                                    ") + source_default.yellow.bold("\u2502"));
+  console.log(source_default.yellow.bold("\u2502 ") + source_default.bold.white("EASY TERMINAL COMMANDS                                  ") + source_default.yellow.bold("\u2502"));
   console.log(source_default.yellow.bold("\u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518"));
   console.log(source_default.white.bold("\n  Commit Quality Gatekeeper:"));
   console.log(source_default.green.bold("    a-gatekeeper enable          ") + source_default.white("\u2192 Enable gatekeeper on all commits"));

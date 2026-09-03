@@ -52098,6 +52098,27 @@ var import_fs7 = __toESM(require("fs"), 1);
 var import_os = __toESM(require("os"), 1);
 var import_path6 = __toESM(require("path"), 1);
 var import_child_process5 = require("child_process");
+function getAiStepLabel() {
+  const provider = (process.env.AI_PROVIDER || "gemini").toLowerCase();
+  switch (provider) {
+    case "openai":
+      return "8. AI Knowledge Base Audit (OpenAI)";
+    case "anthropic":
+      return "8. AI Knowledge Base Audit (Anthropic Claude)";
+    case "deepseek":
+      return "8. AI Knowledge Base Audit (DeepSeek)";
+    case "groq":
+      return "8. AI Knowledge Base Audit (Groq)";
+    case "openrouter":
+      return "8. AI Knowledge Base Audit (OpenRouter)";
+    case "ollama":
+      return "8. AI Knowledge Base Audit (Local Ollama)";
+    case "none":
+      return "8. AI Knowledge Base Audit (Disabled)";
+    default:
+      return "8. AI Knowledge Base Audit (Google Gemini)";
+  }
+}
 var PROGRESS_FILE = import_path6.default.join(import_os.default.tmpdir(), "gk-progress.json");
 var PS_SCRIPT = import_path6.default.join(import_os.default.tmpdir(), "gk-progress-window.ps1");
 var VBS_SCRIPT = import_path6.default.join(import_os.default.tmpdir(), "gk-progress-launcher.vbs");
@@ -52109,7 +52130,7 @@ var STEPS = [
   { id: 5, label: "5. Automated Unit Tests (test:ci)" },
   { id: 6, label: "6. Production Build & Distribution Artifacts" },
   { id: 7, label: "7. Security & Secret Leak Scanning" },
-  { id: 8, label: "8. AI Knowledge Base Audit" }
+  { id: 8, label: getAiStepLabel() }
 ];
 var _windowEnabled = false;
 function writeProgressFile(data) {
@@ -52277,7 +52298,7 @@ $stepLabels = @(
   '5. Automated Unit Tests (test:ci)',
   '6. Production Build & Distribution Artifacts',
   '7. Security & Secret Leak Scanning',
-  '8. AI Knowledge Base Audit (Gemini / Local AI)'
+  '8. AI Knowledge Base Audit'
 )
 
 $rowBorders = @{}
@@ -52330,13 +52351,20 @@ for ($i = 0; $i -lt $stepLabels.Count; $i++) {
     [System.Windows.Controls.Grid]::SetColumn($textStack, 1)
 
     $badge = New-Object System.Windows.Controls.Border
-    $badge.CornerRadius = New-Object System.Windows.CornerRadius(4)
-    $badge.Padding      = New-Object System.Windows.Thickness(6, 2, 6, 2)
-    $badge.Visibility   = [System.Windows.Visibility]::Collapsed
+    $badge.CornerRadius      = New-Object System.Windows.CornerRadius(4)
+    $badge.Padding           = New-Object System.Windows.Thickness(10, 3, 10, 3)
+    $badge.MinWidth          = 62
+    $badge.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+    $badge.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Right
+    $badge.Visibility        = [System.Windows.Visibility]::Collapsed
+
     $badgeTb = New-Object System.Windows.Controls.TextBlock
-    $badgeTb.FontSize   = 10
-    $badgeTb.FontWeight = [System.Windows.FontWeights]::Bold
-    $badgeTb.Foreground = [System.Windows.Media.Brushes]::White
+    $badgeTb.FontSize            = 10
+    $badgeTb.FontWeight          = [System.Windows.FontWeights]::Bold
+    $badgeTb.Foreground          = [System.Windows.Media.Brushes]::White
+    $badgeTb.TextAlignment       = [System.Windows.TextAlignment]::Center
+    $badgeTb.VerticalAlignment   = [System.Windows.VerticalAlignment]::Center
+    $badgeTb.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Center
     $badge.Child = $badgeTb
     [System.Windows.Controls.Grid]::SetColumn($badge, 2)
 
