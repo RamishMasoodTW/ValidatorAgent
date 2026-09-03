@@ -17,8 +17,8 @@ import path from 'path';
 import { spawn } from 'child_process';
 
 const PROGRESS_FILE = path.join(os.tmpdir(), 'gk-progress.json');
-const PS_SCRIPT     = path.join(os.tmpdir(), 'gk-progress-window.ps1');
-const VBS_SCRIPT    = path.join(os.tmpdir(), 'gk-progress-launcher.vbs');
+const PS_SCRIPT = path.join(os.tmpdir(), 'gk-progress-window.ps1');
+const VBS_SCRIPT = path.join(os.tmpdir(), 'gk-progress-launcher.vbs');
 
 const STEPS = [
   { id: 1, label: '1. Angular Project Detection' },
@@ -28,7 +28,7 @@ const STEPS = [
   { id: 5, label: '5. Automated Unit Tests (test:ci)' },
   { id: 6, label: '6. Production Build & Distribution Artifacts' },
   { id: 7, label: '7. Security & Secret Leak Scanning' },
-  { id: 8, label: '8. AI Knowledge Base Audit (Gemini / Local AI)' }
+  { id: 8, label: '8. AI Knowledge Base Audit' }
 ];
 
 let _windowEnabled = false;
@@ -38,7 +38,7 @@ function writeProgressFile(data) {
     // Write with UTF-8 BOM so PowerShell parses cleanly
     const jsonStr = JSON.stringify(data, null, 2);
     fs.writeFileSync(PROGRESS_FILE, '\uFEFF' + jsonStr, 'utf8');
-  } catch (_) {}
+  } catch (_) { }
 }
 
 function readProgressFile() {
@@ -50,7 +50,7 @@ function readProgressFile() {
       }
       return JSON.parse(raw);
     }
-  } catch (_) {}
+  } catch (_) { }
   return null;
 }
 
@@ -391,7 +391,7 @@ WshShell.Run "powershell.exe -NoProfile -ExecutionPolicy Bypass -File """ & "${P
     fs.writeFileSync(VBS_SCRIPT, vbsContent, 'utf8');
 
     spawn('wscript.exe', [VBS_SCRIPT], { detached: true, stdio: 'ignore' }).unref();
-  } catch (_) {}
+  } catch (_) { }
 }
 
 /**

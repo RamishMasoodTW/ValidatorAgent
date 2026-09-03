@@ -558,6 +558,15 @@ async function build() {
   // 3. Compile standalone Windows binaries with @yao-pkg/pkg
   console.log('\n>>> [2/3] Compiling standalone Windows binaries (.exe) with pkg...');
   
+  // Gracefully terminate any running instances of AngularGatekeeperSetup.exe to avoid Windows EPERM file lock
+  try {
+    const { execSync } = await import('child_process');
+    execSync('taskkill /F /IM AngularGatekeeperSetup.exe /T 2>nul || exit 0', { shell: 'cmd.exe' });
+    execSync('taskkill /F /IM engine.exe /T 2>nul || exit 0', { shell: 'cmd.exe' });
+  } catch (e) {
+    // Ignore if not running
+  }
+  
   const targetPlatform = 'node22.23.2-win-x64';
   const engineCjsPath = path.join(buildDir, 'engine.cjs');
   const engineExePath = path.join(outputFolder, 'engine.exe');

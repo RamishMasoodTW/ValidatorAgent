@@ -52109,7 +52109,7 @@ var STEPS = [
   { id: 5, label: "5. Automated Unit Tests (test:ci)" },
   { id: 6, label: "6. Production Build & Distribution Artifacts" },
   { id: 7, label: "7. Security & Secret Leak Scanning" },
-  { id: 8, label: "8. AI Knowledge Base Audit (Gemini / Local AI)" }
+  { id: 8, label: "8. AI Knowledge Base Audit" }
 ];
 var _windowEnabled = false;
 function writeProgressFile(data) {

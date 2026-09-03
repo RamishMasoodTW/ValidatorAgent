@@ -35,7 +35,7 @@ if (args.includes('--uninstall') || args.includes('uninstall')) {
   try {
     execSync(`git config --global core.hooksPath "${normalizedHooksPath}"`, { stdio: 'pipe' });
     console.log(chalk.green(`✔ Gatekeeper ENABLED globally! (core.hooksPath = ${normalizedHooksPath})`));
-    
+
     // Auto-generate standard GitHub Actions CI workflow if inside a Git repository
     const cwd = process.cwd();
     const gitDir = path.join(cwd, '.git');
@@ -135,7 +135,7 @@ async function runUninstaller() {
   try {
     execSync('powershell -Command "Stop-Process -Name engine -Force -ErrorAction SilentlyContinue"', { stdio: 'ignore' });
     console.log(chalk.green('✔ Stopped active background monitoring processes.'));
-  } catch (e) {}
+  } catch (e) { }
 
   // 2. Unset global Git core.hooksPath if pointing to FrontendGatekeeper
   try {
@@ -144,7 +144,7 @@ async function runUninstaller() {
       execSync('git config --global --unset core.hooksPath', { stdio: 'pipe' });
       console.log(chalk.green('✔ Restored global Git hooks configuration.'));
     }
-  } catch (e) {}
+  } catch (e) { }
 
   // 3. Remove from User PATH
   try {
@@ -158,13 +158,13 @@ async function runUninstaller() {
       execSync(`powershell -Command "[Environment]::SetEnvironmentVariable('Path', '${newPath.replace(/'/g, "''")}', 'User')"`, { stdio: 'pipe' });
       console.log(chalk.green('✔ Removed FrontendGatekeeper from User PATH.'));
     }
-  } catch (e) {}
+  } catch (e) { }
 
   // 4. Remove Windows Registry Protocol (gatekeeper-details)
   try {
     execSync('powershell -Command "Remove-Item -Path \'HKCU:\\Software\\Classes\\gatekeeper-details\' -Recurse -Force -ErrorAction SilentlyContinue"', { stdio: 'ignore' });
     console.log(chalk.green('✔ Removed Windows Notification Protocol registration.'));
-  } catch (e) {}
+  } catch (e) { }
 
   // 5. Remove global npm shims if present
   const npmGlobalBin = path.join(appDataRoot, 'npm');
@@ -173,7 +173,7 @@ async function runUninstaller() {
     const npmBash = path.join(npmGlobalBin, 'a-gatekeeper');
     if (fs.existsSync(npmCmd)) fs.unlinkSync(npmCmd);
     if (fs.existsSync(npmBash)) fs.unlinkSync(npmBash);
-  } catch (e) {}
+  } catch (e) { }
 
   // 6. Remove target installation directory (%APPDATA%\FrontendGatekeeper)
   try {
@@ -211,7 +211,7 @@ async function runInstaller() {
   console.log(BANNER);
   console.log(chalk.red.bold('  Welcome to the Angular Git Quality & AI Gatekeeper Setup Wizard!\n'));
   console.log(chalk.white('  This installer configures a global Git pre-commit hook for all your Angular repositories,'));
-  console.log(chalk.white('  enforcing strict quality, Angular build checks, and Gemini 3.8 Flash AI regression audits.\n'));
+  console.log(chalk.white('  enforcing strict quality, Angular build checks, and AI regression audits.\n'));
 
   // 1. Interactive AI Provider Selection
   console.log(chalk.yellow('┌─────────────────────────────────────────────────────────────┐'));
@@ -224,32 +224,32 @@ async function runInstaller() {
     name: 'aiProvider',
     message: 'Select AI Provider:',
     choices: [
-        { title: 'Google Gemini (Cloud - Gemini 3.8 / 3.7 / 3.6 Flash) [Recommended]', value: 'gemini' },
-        { title: 'OpenAI (Cloud - GPT-4o, GPT-4o-mini, o3-mini)', value: 'openai' },
-        { title: 'Anthropic Claude (Cloud - Claude 3.7 Sonnet, Claude 3.5 Haiku)', value: 'anthropic' },
-        { title: 'DeepSeek (Cloud - DeepSeek-V3, DeepSeek-R1)', value: 'deepseek' },
-        { title: 'Groq (Ultra-Fast Cloud - Llama-3.3-70b-versatile, Qwen-2.5-Coder)', value: 'groq' },
-        { title: 'OpenRouter (Universal Cloud - 300+ models)', value: 'openrouter' },
-        { title: 'Ollama (Local Offline AI - llama3, qwen2.5-coder, mistral, deepseek)', value: 'ollama' },
-        { title: 'Skip AI Audit (Rule-based & CI checks only)', value: 'none' }
-      ],
-      initial: 0
+      { title: 'Google Gemini (Cloud - Gemini 3.8 / 3.7 / 3.6 Flash) [Recommended]', value: 'gemini' },
+      { title: 'OpenAI (Cloud - GPT-4o, GPT-4o-mini, o3-mini)', value: 'openai' },
+      { title: 'Anthropic Claude (Cloud - Claude 3.7 Sonnet, Claude 3.5 Haiku)', value: 'anthropic' },
+      { title: 'DeepSeek (Cloud - DeepSeek-V3, DeepSeek-R1)', value: 'deepseek' },
+      { title: 'Groq (Ultra-Fast Cloud - Llama-3.3-70b-versatile, Qwen-2.5-Coder)', value: 'groq' },
+      { title: 'OpenRouter (Universal Cloud - 300+ models)', value: 'openrouter' },
+      { title: 'Ollama (Local Offline AI - llama3, qwen2.5-coder, mistral, deepseek)', value: 'ollama' },
+      { title: 'Skip AI Audit (Rule-based & CI checks only)', value: 'none' }
+    ],
+    initial: 0
   });
 
   const aiProvider = providerPrompt.aiProvider || 'none';
   let geminiKey = '';
-    let ollamaEndpoint = 'http://127.0.0.1:11434';
-    let ollamaModel = 'gemma4:e4b';
-    let openAiKey = '';
-    let openAiModel = 'gpt-4o-mini';
-    let anthropicKey = '';
-    let anthropicModel = 'claude-3-7-sonnet-20250219';
-    let deepseekKey = '';
-    let deepseekModel = 'deepseek-chat';
-    let groqKey = '';
-    let groqModel = 'llama-3.3-70b-versatile';
-    let openRouterKey = '';
-    let openRouterModel = 'anthropic/claude-3.7-sonnet';
+  let ollamaEndpoint = 'http://127.0.0.1:11434';
+  let ollamaModel = 'gemma4:e4b';
+  let openAiKey = '';
+  let openAiModel = 'gpt-4o-mini';
+  let anthropicKey = '';
+  let anthropicModel = 'claude-3-7-sonnet-20250219';
+  let deepseekKey = '';
+  let deepseekModel = 'deepseek-chat';
+  let groqKey = '';
+  let groqModel = 'llama-3.3-70b-versatile';
+  let openRouterKey = '';
+  let openRouterModel = 'anthropic/claude-3.7-sonnet';
 
   if (aiProvider === 'gemini') {
     const geminiPrompt = await prompts({
@@ -415,16 +415,16 @@ async function runInstaller() {
     if (geminiKey) envContent += `GEMINI_API_KEY=${geminiKey}\n`;
     if (ollamaEndpoint) envContent += `OLLAMA_BASE_URL=${ollamaEndpoint}\n`;
     if (ollamaModel) envContent += `OLLAMA_MODEL=${ollamaModel}\n`;
-      if (openAiKey) envContent += `OPENAI_API_KEY=${openAiKey}\n`;
-      if (openAiModel) envContent += `OPENAI_MODEL=${openAiModel}\n`;
-      if (anthropicKey) envContent += `ANTHROPIC_API_KEY=${anthropicKey}\n`;
-      if (anthropicModel) envContent += `ANTHROPIC_MODEL=${anthropicModel}\n`;
-      if (deepseekKey) envContent += `DEEPSEEK_API_KEY=${deepseekKey}\n`;
-      if (deepseekModel) envContent += `DEEPSEEK_MODEL=${deepseekModel}\n`;
-      if (groqKey) envContent += `GROQ_API_KEY=${groqKey}\n`;
-      if (groqModel) envContent += `GROQ_MODEL=${groqModel}\n`;
-      if (openRouterKey) envContent += `OPENROUTER_API_KEY=${openRouterKey}\n`;
-      if (openRouterModel) envContent += `OPENROUTER_MODEL=${openRouterModel}\n`;
+    if (openAiKey) envContent += `OPENAI_API_KEY=${openAiKey}\n`;
+    if (openAiModel) envContent += `OPENAI_MODEL=${openAiModel}\n`;
+    if (anthropicKey) envContent += `ANTHROPIC_API_KEY=${anthropicKey}\n`;
+    if (anthropicModel) envContent += `ANTHROPIC_MODEL=${anthropicModel}\n`;
+    if (deepseekKey) envContent += `DEEPSEEK_API_KEY=${deepseekKey}\n`;
+    if (deepseekModel) envContent += `DEEPSEEK_MODEL=${deepseekModel}\n`;
+    if (groqKey) envContent += `GROQ_API_KEY=${groqKey}\n`;
+    if (groqModel) envContent += `GROQ_MODEL=${groqModel}\n`;
+    if (openRouterKey) envContent += `OPENROUTER_API_KEY=${openRouterKey}\n`;
+    if (openRouterModel) envContent += `OPENROUTER_MODEL=${openRouterModel}\n`;
     envContent += `SHOW_PROGRESS=${showProgress ? 'true' : 'false'}\n`;
 
     fs.writeFileSync(envFilePath, envContent, 'utf8');
@@ -748,7 +748,7 @@ esac
   console.log(chalk.white('  ✔ VS Code / Cursor / IntelliJ / WebStorm Git integrations'));
 
   console.log('\n' + chalk.yellow.bold('┌─────────────────────────────────────────────────────────────┐'));
-  console.log(chalk.yellow.bold('│ ') + chalk.bold.white('🎮 EASY TERMINAL COMMANDS                                  ') + chalk.yellow.bold('│'));
+  console.log(chalk.yellow.bold('│ ') + chalk.bold.white('EASY TERMINAL COMMANDS                                  ') + chalk.yellow.bold('│'));
   console.log(chalk.yellow.bold('└─────────────────────────────────────────────────────────────┘'));
 
   console.log(chalk.white.bold('\n  Commit Quality Gatekeeper:'));
