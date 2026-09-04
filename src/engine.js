@@ -72,8 +72,9 @@ async function runGatekeeper() {
     checkCriticalArchitecture(cwd);
     updateStep(2, 'pass', 'Entry points, lockfile sync & Linux case-sensitivity verified');
   } catch (err) {
-    updateStep(2, 'error', 'Missing critical architecture files');
-    finalizeProgress(false);
+    const errorMsg = err.message || 'Missing critical architecture files';
+    updateStep(2, 'error', errorMsg);
+    finalizeProgress(false, '', '[Step 2 Error] ' + errorMsg);
     throw err;
   }
 
@@ -83,8 +84,9 @@ async function runGatekeeper() {
     scanDependencyVulnerabilities(cwd);
     updateStep(3, 'pass', '0 High/Critical CVE vulnerabilities found in dependencies');
   } catch (err) {
+    const errorMsg = err.auditOutput || err.message || 'High/Critical CVEs detected in package dependencies';
     updateStep(3, 'error', 'High/Critical CVEs detected in package dependencies');
-    finalizeProgress(false);
+    finalizeProgress(false, '', '[Step 3: Dependency Security Audit]\n' + errorMsg);
     throw err;
   }
 
@@ -94,8 +96,9 @@ async function runGatekeeper() {
     runTypeScriptAndLintChecks(cwd, projectPkg);
     updateStep(4, 'pass', 'TypeScript compilation passed with 0 type errors');
   } catch (err) {
+    const errorMsg = err.stdout ? err.stdout.toString() : (err.stderr ? err.stderr.toString() : (err.message || 'TypeScript type-check or linter failed'));
     updateStep(4, 'error', 'TypeScript type-check or linter failed');
-    finalizeProgress(false);
+    finalizeProgress(false, '', '[Step 4: TypeScript / Lint Error]\n' + errorMsg);
     throw err;
   }
 
@@ -113,8 +116,9 @@ async function runGatekeeper() {
     }
     updateStep(5, 'pass', detailText);
   } catch (err) {
+    const errorMsg = err.testOutput || (err.stdout ? err.stdout.toString() : (err.stderr ? err.stderr.toString() : (err.message || 'Unit test specs reported failure')));
     updateStep(5, 'error', 'Unit test specs reported failure');
-    finalizeProgress(false);
+    finalizeProgress(false, '', '[Step 5: Automated Unit Tests Failure]\n' + errorMsg);
     throw err;
   }
 
@@ -130,8 +134,9 @@ async function runGatekeeper() {
     }
     updateStep(6, 'pass', cdDetail);
   } catch (err) {
+    const errorMsg = err.stdout ? err.stdout.toString() : (err.stderr ? err.stderr.toString() : (err.message || 'Production build compilation failed'));
     updateStep(6, 'error', 'Production build compilation or CD artifact verification failed');
-    finalizeProgress(false);
+    finalizeProgress(false, '', '[Step 6: Production Build Failure]\n' + errorMsg);
     throw err;
   }
 
@@ -142,8 +147,9 @@ async function runGatekeeper() {
     scanSecurityRules(diffOutput);
     updateStep(7, 'pass', '0 leaked secrets, 0 conflict markers, clean file stage (<10MB)');
   } catch (err) {
+    const errorMsg = err.message || 'Secret credentials, forbidden files, or conflict markers detected';
     updateStep(7, 'error', 'Secret credentials, forbidden files, or conflict markers detected');
-    finalizeProgress(false);
+    finalizeProgress(false, '', '[Step 7: Security & Secret Leak Warning]\n' + errorMsg);
     throw err;
   }
 

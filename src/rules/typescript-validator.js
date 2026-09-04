@@ -9,6 +9,7 @@ import { getAllFiles } from './angular-best-practices.js';
  * Step 4: Strict TypeScript Compilation & Linting (tsc --noEmit, eslint)
  */
 export function runTypeScriptAndLintChecks(cwd = process.cwd(), projectPkg = {}) {
+  let capturedErrorOutput = '';
   logStep(4, 'Strict TypeScript & Linter Verification');
   const scripts = projectPkg.scripts || {};
 
@@ -55,6 +56,7 @@ export function runTypeScriptAndLintChecks(cwd = process.cwd(), projectPkg = {})
  * Dynamically executes headless unit tests (auto-injects and restores test:ci if missing)
  */
 export function runAutomatedUnitTests(cwd = process.cwd(), projectPkg = {}) {
+  let capturedTestOutput = '';
   logStep(5, 'Automated Unit Tests & Regression Verification');
   const pkgPath = path.join(cwd, 'package.json');
   const scripts = projectPkg.scripts || {};
@@ -142,13 +144,26 @@ try {
     }
 
     console.log(chalk.blue(`  Executing Automated Unit Tests (${testCommand})...`));
-    execSync(testCommand, { stdio: 'inherit', cwd });
-    logSuccess('Automated unit tests & regression verification passed with 0 failures.');
-    return {
-      autoInjected: !!tempSpecPath,
-      specCount: specFiles.length,
-      command: testCommand
-    };
+    try {
+      const output = execSync(testCommand, { stdio: 'pipe', encoding: 'utf8', cwd });
+      process.stdout.write(output);
+      logSuccess('Automated unit tests & regression verification passed with 0 failures.');
+      return {
+        autoInjected: !!tempSpecPath,
+        specCount: specFiles.length,
+        command: testCommand
+      };
+    } catch (testExecErr) {
+      const stdout = testExecErr.stdout ? testExecErr.stdout.toString() : '';
+      const stderr = testExecErr.stderr ? testExecErr.stderr.toString() : '';
+      const combined = (stdout + '\n' + stderr).trim();
+      if (combined) {
+        process.stdout.write(combined + '\n');
+      }
+      capturedTestOutput = combined;
+      testExecErr.testOutput = combined;
+      throw testExecErr;
+    }
   } catch (err) {
     const errMsg = err.message || '';
     if (errMsg.includes('not found') || errMsg.includes('requires either')) {
@@ -161,7 +176,9 @@ try {
     console.log(chalk.red.bold('  ❌ COMMIT REJECTED: Unit test suite reported failures!'));
     console.log(chalk.yellow('  Please fix the failing unit test specs displayed above.'));
     console.log(chalk.red('  ═════════════════════════════════════════════════════════════════\n'));
-    throw new Error('Automated unit tests failed');
+    const failErr = new Error('Automated unit tests failed');
+    failErr.stepOutput = capturedTestOutput || (err ? (err.stdout ? err.stdout.toString() : '') + '\n' + (err.stderr ? err.stderr.toString() : '') : '') || err?.message || 'Unit test specs reported failure';
+    throw failErr;
   } finally {
     // 1. Clean up temporary test file immediately
     if (tempSpecPath && fs.existsSync(tempSpecPath)) {

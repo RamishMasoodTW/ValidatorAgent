@@ -40,6 +40,8 @@ ${diffOutput.slice(0, 25000)}
    - Output: "VERDICT: PASSED"
    - Provide a concise summary and constructive architectural insights.
 
+6. FORMATTING: Use clean, standard Markdown for headings and bullets. Never use LaTeX notation (e.g., do NOT output $\\rightarrow$ or \\rightarrow; use "→" or "->" instead). Never wrap heading lines in double asterisks.
+
 Ensure your response clearly includes either "VERDICT: PASSED" or "VERDICT: FAILED" in capital letters.
 `;
 }

@@ -21,8 +21,9 @@ function getAiStepLabel() {
  *  2. Real-time live status updates (Pending -> Running -> PASS / FAILED / SKIP).
  *  3. Adaptive System Dark/Light theme matching.
  *  4. Topmost window ensures visibility above IDEs / GitHub Desktop.
- *  5. Expandable AI Architect Report Card displaying Gemini 2.5 Flash reviews.
- *  6. Interactive Close button.
+ *  5. Rich Markdown Rendering (Styled Headings, Bold text, indented Bullet points, Inlines).
+ *  6. Interactive "Copy Error Log" button with clipboard integration.
+ *  7. Interactive Close button.
  */
 
 import fs from 'fs';
@@ -49,7 +50,6 @@ let _windowEnabled = false;
 
 function writeProgressFile(data) {
   try {
-    // Write with UTF-8 BOM so PowerShell parses cleanly
     const jsonStr = JSON.stringify(data, null, 2);
     fs.writeFileSync(PROGRESS_FILE, '\uFEFF' + jsonStr, 'utf8');
   } catch (_) { }
@@ -103,6 +103,10 @@ $redFg          = $brushConverter.ConvertFrom('#EF4444')
 $blueFg         = $brushConverter.ConvertFrom('#38BDF8')
 $grayFg         = $brushConverter.ConvertFrom('#94A3B8')
 $mainFg         = $brushConverter.ConvertFrom($fg)
+$cyanFg         = $brushConverter.ConvertFrom('#38BDF8')
+$amberFg        = $brushConverter.ConvertFrom('#FBBF24')
+$boldFg         = if ($isDark) { $brushConverter.ConvertFrom('#FFFFFF') } else { $brushConverter.ConvertFrom('#0F172A') }
+$bulletColor    = $brushConverter.ConvertFrom('#60A5FA')
 
 $PROGRESS_FILE = "$env:TEMP\\gk-progress.json"
 
@@ -110,7 +114,7 @@ $PROGRESS_FILE = "$env:TEMP\\gk-progress.json"
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Angular Gatekeeper - Live Commit Validation"
-        Width="580" Height="680"
+        Width="580" Height="700"
         WindowStartupLocation="CenterScreen"
         Topmost="True"
         ResizeMode="NoResize"
@@ -165,12 +169,21 @@ $PROGRESS_FILE = "$env:TEMP\\gk-progress.json"
       <StackPanel x:Name="StepsPanel"/>
     </ScrollViewer>
 
-    <!-- AI Architect Report Card (Dynamically shown) -->
+    <!-- AI Architect / Error Report Card (Dynamically shown) -->
     <Border Grid.Row="2" x:Name="AiReportBorder" Margin="14,0,14,8" Padding="12" Background="$aiBoxBg" BorderBrush="$aiBoxBdr" BorderThickness="1" CornerRadius="6" Visibility="Collapsed">
       <StackPanel>
-        <TextBlock Text="AI Knowledge Base Audit &amp; Insights:" FontWeight="Bold" FontSize="12" Foreground="$blueFg" Margin="0,0,0,6"/>
-        <ScrollViewer MaxHeight="130" VerticalScrollBarVisibility="Auto">
-          <TextBox x:Name="AiReportText" IsReadOnly="True" TextWrapping="Wrap" Background="Transparent" BorderThickness="0" Foreground="$fg" FontSize="11" FontFamily="Consolas, Segoe UI"/>
+        <Grid Margin="0,0,0,8">
+          <TextBlock x:Name="ReportTitleText" Text="AI Knowledge Base Audit &amp; Insights:" FontWeight="Bold" FontSize="12" Foreground="$blueFg" VerticalAlignment="Center"/>
+          <Button x:Name="CopyBtn" Content="Copy Error Log" HorizontalAlignment="Right" Width="110" Height="24" Cursor="Hand" Background="#334155" Foreground="White" BorderThickness="0" FontSize="11">
+            <Button.Resources>
+              <Style TargetType="Border">
+                <Setter Property="CornerRadius" Value="4"/>
+              </Style>
+            </Button.Resources>
+          </Button>
+        </Grid>
+        <ScrollViewer MaxHeight="180" VerticalScrollBarVisibility="Auto">
+          <RichTextBox x:Name="AiReportRtb" IsReadOnly="True" IsDocumentEnabled="True" Background="Transparent" BorderThickness="0" Foreground="$fg" FontSize="11" FontFamily="Segoe UI, Consolas"/>
         </ScrollViewer>
       </StackPanel>
     </Border>
@@ -199,11 +212,201 @@ $panel          = $window.FindName('StepsPanel')
 $statusTb       = $window.FindName('StatusText')
 $closeBtn       = $window.FindName('CloseBtn')
 $aiReportBorder = $window.FindName('AiReportBorder')
-$aiReportTb     = $window.FindName('AiReportText')
+$reportTitleTb  = $window.FindName('ReportTitleText')
+$copyBtn        = $window.FindName('CopyBtn')
+$aiReportRtb    = $window.FindName('AiReportRtb')
 
 $closeBtn.Add_Click({
     $window.Close()
 })
+
+$script:rawErrorText = ''
+if ($copyBtn) {
+    $copyBtn.Add_Click({
+        try {
+            if ($script:rawErrorText -and $script:rawErrorText.Trim() -ne '') {
+                [System.Windows.Forms.Clipboard]::SetText($script:rawErrorText)
+                $copyBtn.Content = "Copied!"
+                $resetTimer = New-Object System.Windows.Threading.DispatcherTimer
+                $resetTimer.Interval = [TimeSpan]::FromMilliseconds(1500)
+                $resetTimer.Add_Tick({
+                    $copyBtn.Content = "Copy Error Log"
+                    $resetTimer.Stop()
+                })
+                $resetTimer.Start()
+            }
+        } catch {}
+    })
+}
+
+function Convert-MarkdownToFlowDocument {
+    param(
+        [string]$text,
+        [System.Windows.Media.Brush]$normalBrush,
+        [System.Windows.Media.Brush]$boldBrush,
+        [System.Windows.Media.Brush]$h1Brush,
+        [System.Windows.Media.Brush]$h2Brush,
+        [System.Windows.Media.Brush]$bulletBrush
+    )
+
+    $doc = New-Object System.Windows.Documents.FlowDocument
+    $doc.PagePadding = New-Object System.Windows.Thickness(2, 2, 2, 2)
+
+    if ([string]::IsNullOrWhiteSpace($text)) {
+        return $doc
+    }
+
+    # Clean arrow notations
+    $arrow = " " + [char]0x2192 + " "
+    $text = $text.Replace('\\rightarrow', $arrow).Replace('$\\rightarrow$', $arrow).Replace('->', $arrow).Replace('\\to', $arrow)
+
+    function Add-InlinesToParagraph($p, [string]$lineContent, $baseFontSize) {
+        $escStar = [System.Text.RegularExpressions.Regex]::Escape('**')
+        $tick = [char]0x60
+        $pattern = '(' + $escStar + '[^*]+?' + $escStar + '|' + $tick + '[^' + $tick + ']+?' + $tick + ')'
+        $parts = [System.Text.RegularExpressions.Regex]::Split($lineContent, $pattern)
+
+        foreach ($part in $parts) {
+            if ([string]::IsNullOrEmpty($part)) { continue }
+
+            if ($part.StartsWith('**') -and $part.EndsWith('**') -and $part.Length -ge 4) {
+                $boldText = $part.Substring(2, $part.Length - 4)
+                $run = New-Object System.Windows.Documents.Run($boldText)
+                $run.FontWeight = [System.Windows.FontWeights]::Bold
+                $run.Foreground = $boldBrush
+                $run.FontSize = $baseFontSize
+                $p.Inlines.Add($run)
+            } elseif ($part.StartsWith($tick) -and $part.EndsWith($tick) -and $part.Length -ge 2) {
+                $codeText = $part.Substring(1, $part.Length - 2)
+                $run = New-Object System.Windows.Documents.Run($codeText)
+                $run.FontFamily = New-Object System.Windows.Media.FontFamily('Consolas')
+                $run.Foreground = $h1Brush
+                $run.FontSize = $baseFontSize
+                $p.Inlines.Add($run)
+            } else {
+                $run = New-Object System.Windows.Documents.Run($part)
+                $run.Foreground = $normalBrush
+                $run.FontSize = $baseFontSize
+                $p.Inlines.Add($run)
+            }
+        }
+    }
+
+    $lines = $text.Split([char]10)
+
+    foreach ($rawLine in $lines) {
+        $trimmed = $rawLine.Trim()
+        if ($trimmed -eq '' -or $trimmed -eq '---' -or $trimmed -eq '***') {
+            continue
+        }
+
+        # Level 4 Heading (####)
+        if ($trimmed.StartsWith('#### ')) {
+            $hText = $trimmed.Substring(5).Trim().TrimStart('*').TrimEnd('*').Trim()
+            $p = New-Object System.Windows.Documents.Paragraph
+            $p.Margin = New-Object System.Windows.Thickness(0, 6, 0, 2)
+            $run = New-Object System.Windows.Documents.Run($hText)
+            $run.FontSize = 12
+            $run.FontWeight = [System.Windows.FontWeights]::SemiBold
+            $run.Foreground = $h2Brush
+            $p.Inlines.Add($run)
+            $doc.Blocks.Add($p)
+            continue
+        }
+
+        # Level 3 Heading (###)
+        if ($trimmed.StartsWith('### ')) {
+            $hText = $trimmed.Substring(4).Trim().TrimStart('*').TrimEnd('*').Trim()
+            $p = New-Object System.Windows.Documents.Paragraph
+            $p.Margin = New-Object System.Windows.Thickness(0, 8, 0, 3)
+            $run = New-Object System.Windows.Documents.Run($hText)
+            $run.FontSize = 13.5
+            $run.FontWeight = [System.Windows.FontWeights]::Bold
+            $run.Foreground = $h1Brush
+            $p.Inlines.Add($run)
+            $doc.Blocks.Add($p)
+            continue
+        }
+
+        # Level 1 or 2 Heading (# or ##)
+        if ($trimmed.StartsWith('# ') -or $trimmed.StartsWith('## ')) {
+            $hText = $trimmed.TrimStart('#').Trim().TrimStart('*').TrimEnd('*').Trim()
+            $p = New-Object System.Windows.Documents.Paragraph
+            $p.Margin = New-Object System.Windows.Thickness(0, 10, 0, 4)
+            $run = New-Object System.Windows.Documents.Run($hText)
+            $run.FontSize = 14.5
+            $run.FontWeight = [System.Windows.FontWeights]::Bold
+            $run.Foreground = $h1Brush
+            $p.Inlines.Add($run)
+            $doc.Blocks.Add($p)
+            continue
+        }
+
+        # Standalone bold header line (e.g. **Remediation Steps:**)
+        if ($trimmed.StartsWith('**') -and ($trimmed.EndsWith('**') -or $trimmed.EndsWith('**:'))) {
+            $hText = $trimmed.Trim(':').Trim('*').Trim()
+            $p = New-Object System.Windows.Documents.Paragraph
+            $p.Margin = New-Object System.Windows.Thickness(0, 8, 0, 3)
+            $run = New-Object System.Windows.Documents.Run($hText)
+            $run.FontSize = 13
+            $run.FontWeight = [System.Windows.FontWeights]::Bold
+            $run.Foreground = $h1Brush
+            $p.Inlines.Add($run)
+            $doc.Blocks.Add($p)
+            continue
+        }
+
+        # Numbered list item (e.g. "1. Directory Convention Mismatches:")
+        if ($rawLine -match '^([ \\t]*)(\\d+\\.)\\s+(.*)$') {
+            $indentSpaces = $matches[1].Length
+            $numLabel = $matches[2]
+            $content = $matches[3]
+            $itemLeft = if ($indentSpaces -ge 2) { 20 } else { 4 }
+
+            $p = New-Object System.Windows.Documents.Paragraph
+            $p.Margin = New-Object System.Windows.Thickness($itemLeft, 3, 0, 2)
+
+            $nRun = New-Object System.Windows.Documents.Run("$numLabel ")
+            $nRun.FontWeight = [System.Windows.FontWeights]::Bold
+            $nRun.Foreground = $bulletBrush
+            $nRun.FontSize = 11.5
+            $p.Inlines.Add($nRun)
+
+            Add-InlinesToParagraph $p $content 11
+            $doc.Blocks.Add($p)
+            continue
+        }
+
+        # Bullet point (* or -)
+        if ($rawLine -match '^([ \\t]*)([*+-])\\s+(.*)$') {
+            $indentSpaces = $matches[1].Length
+            $bulletChar = if ($indentSpaces -ge 2) { [char]0x25E6 } else { [char]0x2022 }
+            $bulletLeft = if ($indentSpaces -ge 2) { 22 } else { 8 }
+            $content = $matches[3]
+
+            $p = New-Object System.Windows.Documents.Paragraph
+            $p.Margin = New-Object System.Windows.Thickness($bulletLeft, 2, 0, 2)
+
+            $bRun = New-Object System.Windows.Documents.Run("$bulletChar  ")
+            $bRun.FontWeight = [System.Windows.FontWeights]::Bold
+            $bRun.Foreground = $bulletBrush
+            $bRun.FontSize = 11
+            $p.Inlines.Add($bRun)
+
+            Add-InlinesToParagraph $p $content 11
+            $doc.Blocks.Add($p)
+            continue
+        }
+
+        # Standard paragraph line
+        $p = New-Object System.Windows.Documents.Paragraph
+        $p.Margin = New-Object System.Windows.Thickness(0, 2, 0, 2)
+        Add-InlinesToParagraph $p $trimmed 11
+        $doc.Blocks.Add($p)
+    }
+
+    return $doc
+}
 
 $stepLabels = @(
   '1. Angular Project Detection',
@@ -299,6 +502,7 @@ for ($i = 0; $i -lt $stepLabels.Count; $i++) {
 $timer = New-Object System.Windows.Threading.DispatcherTimer
 $timer.Interval = [TimeSpan]::FromMilliseconds(250)
 $autoCloseSeconds = 0
+$script:lastRenderedLog = ''
 
 $timer.Add_Tick({
     if (-not (Test-Path $PROGRESS_FILE)) { return }
@@ -375,10 +579,53 @@ $timer.Add_Tick({
         }
     }
 
-    # Show AI report if available
-    if ($json.aiReport -and $json.aiReport.Trim() -ne '') {
-        $aiReportTb.Text = $json.aiReport
-        $aiReportBorder.Visibility = [System.Windows.Visibility]::Visible
+    # Dynamically show Error Log or AI Report in the rich box
+    $displayLog = ''
+    $isFail = $false
+
+    if ($json.errorLog -and $json.errorLog.Trim() -ne '') {
+        $displayLog = $json.errorLog
+        $isFail = $true
+    } elseif ($json.aiReport -and $json.aiReport.Trim() -ne '') {
+        $displayLog = $json.aiReport
+        $isFail = ($hasError -or $json.hasError)
+    } elseif ($hasError) {
+        $msgList = @()
+        for ($k = 1; $k -le 8; $k++) {
+            $st = $json.steps["$k"]
+            if ($st -and $st.status -eq 'error' -and $st.detail) {
+                $msgList += "[$($st.label)] Error: $($st.detail)"
+            }
+        }
+        if ($msgList.Count -gt 0) {
+            $displayLog = $msgList -join [Environment]::NewLine
+            $isFail = $true
+        }
+    }
+
+    if ($displayLog -and $displayLog.Trim() -ne '') {
+        $script:rawErrorText = $displayLog
+
+        if ($script:lastRenderedLog -ne $displayLog) {
+            $script:lastRenderedLog = $displayLog
+            $doc = Convert-MarkdownToFlowDocument -text $displayLog -normalBrush $mainFg -boldBrush $boldFg -h1Brush $cyanFg -h2Brush $amberFg -bulletBrush $bulletColor
+            $aiReportRtb.Document = $doc
+            $aiReportBorder.Visibility = [System.Windows.Visibility]::Visible
+        }
+
+        if ($isFail) {
+            if ($reportTitleTb) {
+                $reportTitleTb.Text = 'Validation Failure Details (Select & Copy):'
+                $reportTitleTb.Foreground = $redFg
+            }
+            $aiReportBorder.BorderBrush = $errBrush
+        } else {
+            if ($reportTitleTb) {
+                $reportTitleTb.Text = 'AI Knowledge Base Audit & Insights:'
+                $reportTitleTb.Foreground = $blueFg
+            }
+            $aiReportBorder.BorderBrush = $cardBrush
+        }
     }
 
     if ($done -eq $true) {
@@ -426,6 +673,7 @@ export function initProgressWindow() {
     done: false,
     hasError: false,
     aiReport: '',
+    errorLog: '',
     steps: {}
   };
 
@@ -476,7 +724,7 @@ export function updateStep(stepId, status, reportOrDetail = '') {
 /**
  * Finalizes validation pipeline.
  */
-export function finalizeProgress(passed, finalReport = '') {
+export function finalizeProgress(passed, finalReport = '', errorLog = '') {
   if (!_windowEnabled) return;
   const data = readProgressFile();
   if (!data) return;
@@ -484,6 +732,9 @@ export function finalizeProgress(passed, finalReport = '') {
   data.hasError = !passed;
   if (finalReport) {
     data.aiReport = finalReport;
+  }
+  if (errorLog) {
+    data.errorLog = errorLog;
   }
   writeProgressFile(data);
 }
