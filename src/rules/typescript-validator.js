@@ -42,11 +42,18 @@ export function runTypeScriptAndLintChecks(cwd = process.cwd(), projectPkg = {})
     // Run direct tsc --noEmit check if tsconfig exists
     console.log(chalk.blue('  Running Type Safety Check (npx tsc --noEmit)...'));
     try {
-      execSync('npx tsc --noEmit --skipLibCheck', { stdio: 'inherit', cwd });
+      const tscOut = execSync('npx tsc --noEmit --skipLibCheck', { stdio: 'pipe', encoding: 'utf8', cwd });
+      process.stdout.write(tscOut);
       logSuccess('TypeScript compilation verification passed with zero type errors.');
     } catch (err) {
       logError('TypeScript type checking failed!');
-      throw new Error('TypeScript compilation failed');
+      const stdout = err.stdout ? err.stdout.toString() : '';
+      const stderr = err.stderr ? err.stderr.toString() : '';
+      const combined = (stdout + '\n' + stderr).trim();
+      if (combined) process.stdout.write(combined + '\n');
+      const failErr = new Error('TypeScript compilation failed');
+      failErr.stepOutput = combined || err.message;
+      throw failErr;
     }
   }
 }
@@ -177,7 +184,8 @@ try {
     console.log(chalk.yellow('  Please fix the failing unit test specs displayed above.'));
     console.log(chalk.red('  ═════════════════════════════════════════════════════════════════\n'));
     const failErr = new Error('Automated unit tests failed');
-    failErr.stepOutput = capturedTestOutput || (err ? (err.stdout ? err.stdout.toString() : '') + '\n' + (err.stderr ? err.stderr.toString() : '') : '') || err?.message || 'Unit test specs reported failure';
+    failErr.testOutput = capturedTestOutput || (err ? ((err.stdout ? err.stdout.toString() : '') + '\n' + (err.stderr ? err.stderr.toString() : '')) : '') || err?.stepOutput || err?.message || 'Unit test specs reported failure';
+    failErr.stepOutput = failErr.testOutput;
     throw failErr;
   } finally {
     // 1. Clean up temporary test file immediately

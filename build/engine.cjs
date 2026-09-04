@@ -28459,11 +28459,18 @@ function runTypeScriptAndLintChecks(cwd = process.cwd(), projectPkg = {}) {
   } else {
     console.log(source_default.blue("  Running Type Safety Check (npx tsc --noEmit)..."));
     try {
-      (0, import_child_process2.execSync)("npx tsc --noEmit --skipLibCheck", { stdio: "inherit", cwd });
+      const tscOut = (0, import_child_process2.execSync)("npx tsc --noEmit --skipLibCheck", { stdio: "pipe", encoding: "utf8", cwd });
+      process.stdout.write(tscOut);
       logSuccess("TypeScript compilation verification passed with zero type errors.");
     } catch (err) {
       logError("TypeScript type checking failed!");
-      throw new Error("TypeScript compilation failed");
+      const stdout = err.stdout ? err.stdout.toString() : "";
+      const stderr = err.stderr ? err.stderr.toString() : "";
+      const combined = (stdout + "\n" + stderr).trim();
+      if (combined) process.stdout.write(combined + "\n");
+      const failErr = new Error("TypeScript compilation failed");
+      failErr.stepOutput = combined || err.message;
+      throw failErr;
     }
   }
 }
@@ -28572,7 +28579,8 @@ try {
     console.log(source_default.yellow("  Please fix the failing unit test specs displayed above."));
     console.log(source_default.red("  \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\n"));
     const failErr = new Error("Automated unit tests failed");
-    failErr.stepOutput = capturedTestOutput || (err ? (err.stdout ? err.stdout.toString() : "") + "\n" + (err.stderr ? err.stderr.toString() : "") : "") || err?.message || "Unit test specs reported failure";
+    failErr.testOutput = capturedTestOutput || (err ? (err.stdout ? err.stdout.toString() : "") + "\n" + (err.stderr ? err.stderr.toString() : "") : "") || err?.stepOutput || err?.message || "Unit test specs reported failure";
+    failErr.stepOutput = failErr.testOutput;
     throw failErr;
   } finally {
     if (tempSpecPath && import_fs2.default.existsSync(tempSpecPath)) {
@@ -52117,6 +52125,10 @@ var import_fs7 = __toESM(require("fs"), 1);
 var import_os = __toESM(require("os"), 1);
 var import_path6 = __toESM(require("path"), 1);
 var import_child_process5 = require("child_process");
+function stripAnsi(str) {
+  if (!str) return "";
+  return str.replace(/[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g, "").replace(/\[[0-9;]+m/g, "");
+}
 function getAiStepLabel() {
   const provider = (process.env.AI_PROVIDER || "gemini").toLowerCase();
   switch (provider) {
@@ -52329,7 +52341,8 @@ if ($copyBtn) {
     $copyBtn.Add_Click({
         try {
             if ($script:rawErrorText -and $script:rawErrorText.Trim() -ne '') {
-                [System.Windows.Forms.Clipboard]::SetText($script:rawErrorText)
+                $cleanClipboard = $script:rawErrorText -replace '\x1B[[0-9;]*[a-zA-Z]', '' -replace '[[0-9;]+m', ''
+                [System.Windows.Forms.Clipboard]::SetText($cleanClipboard)
                 $copyBtn.Content = "Copied!"
                 $resetTimer = New-Object System.Windows.Threading.DispatcherTimer
                 $resetTimer.Interval = [TimeSpan]::FromMilliseconds(1500)
@@ -52357,6 +52370,48 @@ function Convert-MarkdownToFlowDocument {
     $doc.PagePadding = New-Object System.Windows.Thickness(2, 2, 2, 2)
 
     if ([string]::IsNullOrWhiteSpace($text)) {
+        return $doc
+    }
+
+    # Strip ANSI escape codes
+    $cleanText = $text -replace '\x1B[[0-9;]*[a-zA-Z]', ''
+
+    # If this is a compiler / test runner error log (starts with [Step ...)
+    if ($cleanText.StartsWith('[Step ') -or $cleanText -match '^[Step d+:') {
+        $lines = $cleanText.Split([char]10)
+        foreach ($rawLine in $lines) {
+            $line = $rawLine.TrimEnd([char]13)
+            if ($line.Trim() -eq '') {
+                $p = New-Object System.Windows.Documents.Paragraph
+                $p.Margin = New-Object System.Windows.Thickness(0, 1, 0, 1)
+                $doc.Blocks.Add($p)
+                continue
+            }
+
+            if ($line.StartsWith('[Step ')) {
+                $p = New-Object System.Windows.Documents.Paragraph
+                $p.Margin = New-Object System.Windows.Thickness(0, 4, 0, 4)
+                $run = New-Object System.Windows.Documents.Run($line)
+                $run.FontWeight = [System.Windows.FontWeights]::Bold
+                $run.FontSize = 12.5
+                $run.Foreground = $h1Brush
+                $p.Inlines.Add($run)
+                $doc.Blocks.Add($p)
+                continue
+            }
+
+            $p = New-Object System.Windows.Documents.Paragraph
+            $p.Margin = New-Object System.Windows.Thickness(0, 1, 0, 1)
+            $p.FontFamily = New-Object System.Windows.Media.FontFamily('Consolas')
+            $p.FontSize = 10.5
+            
+            # Preserve indentation so caret pointers (^ ) align accurately
+            $presLine = $line.Replace(' ', [char]0x00A0)
+            $run = New-Object System.Windows.Documents.Run($presLine)
+            $run.Foreground = $normalBrush
+            $p.Inlines.Add($run)
+            $doc.Blocks.Add($p)
+        }
         return $doc
     }
 
@@ -52708,6 +52763,7 @@ $timer.Add_Tick({
     }
 
     if ($displayLog -and $displayLog.Trim() -ne '') {
+        $displayLog = $displayLog -replace '\x1B[[0-9;]*[a-zA-Z]', '' -replace '[[0-9;]+m', ''
         $script:rawErrorText = $displayLog
 
         if ($script:lastRenderedLog -ne $displayLog) {
@@ -52796,14 +52852,14 @@ function updateStep(stepId, status, reportOrDetail = "") {
   if (data.steps[stepId]) {
     data.steps[stepId].status = status;
     if (stepId !== 8) {
-      data.steps[stepId].detail = reportOrDetail;
+      data.steps[stepId].detail = stripAnsi(reportOrDetail);
     }
   }
   if (status === "error") {
     data.hasError = true;
   }
   if (stepId === 8 && reportOrDetail) {
-    data.aiReport = reportOrDetail;
+    data.aiReport = stripAnsi(reportOrDetail);
   }
   writeProgressFile(data);
 }
@@ -52814,15 +52870,19 @@ function finalizeProgress(passed, finalReport = "", errorLog = "") {
   data.done = true;
   data.hasError = !passed;
   if (finalReport) {
-    data.aiReport = finalReport;
+    data.aiReport = stripAnsi(finalReport);
   }
   if (errorLog) {
-    data.errorLog = errorLog;
+    data.errorLog = stripAnsi(errorLog);
   }
   writeProgressFile(data);
 }
 
 // src/engine.js
+function stripAnsi2(str) {
+  if (!str) return "";
+  return str.replace(/[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g, "").replace(/\[[0-9;]+m/g, "");
+}
 var appDataDir = process.env.APPDATA ? import_path7.default.join(process.env.APPDATA, "FrontendGatekeeper") : import_path7.default.join(process.env.HOME || process.env.USERPROFILE || ".", ".frontend-gatekeeper");
 var envPath = import_path7.default.join(appDataDir, ".env");
 if (import_fs8.default.existsSync(envPath)) {
@@ -52849,7 +52909,7 @@ async function runGatekeeper() {
   } catch (err) {
     const errorMsg = err.message || "Missing critical architecture files";
     updateStep(2, "error", errorMsg);
-    finalizeProgress(false, "", "[Step 2 Error] " + errorMsg);
+    finalizeProgress(false, "", "[Step 2: Architecture Integrity Error]\n" + stripAnsi2(errorMsg));
     throw err;
   }
   startStep(3, "Auditing package dependencies (npm audit)...");
@@ -52859,7 +52919,7 @@ async function runGatekeeper() {
   } catch (err) {
     const errorMsg = err.auditOutput || err.message || "High/Critical CVEs detected in package dependencies";
     updateStep(3, "error", "High/Critical CVEs detected in package dependencies");
-    finalizeProgress(false, "", "[Step 3: Dependency Security Audit]\n" + errorMsg);
+    finalizeProgress(false, "", "[Step 3: Dependency Security Audit]\n" + stripAnsi2(errorMsg));
     throw err;
   }
   startStep(4, "Executing TypeScript compilation & lint check...");
@@ -52867,9 +52927,9 @@ async function runGatekeeper() {
     runTypeScriptAndLintChecks(cwd, projectPkg);
     updateStep(4, "pass", "TypeScript compilation passed with 0 type errors");
   } catch (err) {
-    const errorMsg = err.stdout ? err.stdout.toString() : err.stderr ? err.stderr.toString() : err.message || "TypeScript type-check or linter failed";
+    const errorMsg = err.stepOutput || err.stdout?.toString() || err.stderr?.toString() || err.message || "TypeScript type-check or linter failed";
     updateStep(4, "error", "TypeScript type-check or linter failed");
-    finalizeProgress(false, "", "[Step 4: TypeScript / Lint Error]\n" + errorMsg);
+    finalizeProgress(false, "", "[Step 4: TypeScript / Lint Error]\n" + stripAnsi2(errorMsg));
     throw err;
   }
   startStep(5, "Running headless test runner...");
@@ -52885,9 +52945,9 @@ async function runGatekeeper() {
     }
     updateStep(5, "pass", detailText);
   } catch (err) {
-    const errorMsg = err.testOutput || (err.stdout ? err.stdout.toString() : err.stderr ? err.stderr.toString() : err.message || "Unit test specs reported failure");
+    const errorMsg = err.testOutput || err.stepOutput || err.stdout?.toString() || err.stderr?.toString() || err.message || "Unit test specs reported failure";
     updateStep(5, "error", "Unit test specs reported failure");
-    finalizeProgress(false, "", "[Step 5: Automated Unit Tests Failure]\n" + errorMsg);
+    finalizeProgress(false, "", "[Step 5: Automated Unit Tests Failure]\n" + stripAnsi2(errorMsg));
     throw err;
   }
   startStep(6, "Compiling production bundle & verifying CD readiness...");
@@ -52901,9 +52961,9 @@ async function runGatekeeper() {
     }
     updateStep(6, "pass", cdDetail);
   } catch (err) {
-    const errorMsg = err.stdout ? err.stdout.toString() : err.stderr ? err.stderr.toString() : err.message || "Production build compilation failed";
+    const errorMsg = err.buildOutput || err.stepOutput || err.stdout?.toString() || err.stderr?.toString() || err.message || "Production build compilation failed";
     updateStep(6, "error", "Production build compilation or CD artifact verification failed");
-    finalizeProgress(false, "", "[Step 6: Production Build Failure]\n" + errorMsg);
+    finalizeProgress(false, "", "[Step 6: Production Build Failure]\n" + stripAnsi2(errorMsg));
     throw err;
   }
   startStep(7, "Scanning staged diff & files for credentials or repo bloat...");
@@ -52914,7 +52974,7 @@ async function runGatekeeper() {
   } catch (err) {
     const errorMsg = err.message || "Secret credentials, forbidden files, or conflict markers detected";
     updateStep(7, "error", "Secret credentials, forbidden files, or conflict markers detected");
-    finalizeProgress(false, "", "[Step 7: Security & Secret Leak Warning]\n" + errorMsg);
+    finalizeProgress(false, "", "[Step 7: Security & Secret Leak Warning]\n" + stripAnsi2(errorMsg));
     throw err;
   }
   startStep(8, "Auditing regression against knowledge base...");

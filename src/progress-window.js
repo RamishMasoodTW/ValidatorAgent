@@ -1,3 +1,11 @@
+
+export function stripAnsi(str) {
+  if (!str) return '';
+  return str
+    .replace(/[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g, '')
+    .replace(/\[[0-9;]+m/g, '');
+}
+
 function getAiStepLabel() {
   const provider = (process.env.AI_PROVIDER || 'gemini').toLowerCase();
   switch (provider) {
@@ -225,7 +233,8 @@ if ($copyBtn) {
     $copyBtn.Add_Click({
         try {
             if ($script:rawErrorText -and $script:rawErrorText.Trim() -ne '') {
-                [System.Windows.Forms.Clipboard]::SetText($script:rawErrorText)
+                $cleanClipboard = $script:rawErrorText -replace '\x1b\[[0-9;]*[a-zA-Z]', '' -replace '\[[0-9;]+m', ''
+                [System.Windows.Forms.Clipboard]::SetText($cleanClipboard)
                 $copyBtn.Content = "Copied!"
                 $resetTimer = New-Object System.Windows.Threading.DispatcherTimer
                 $resetTimer.Interval = [TimeSpan]::FromMilliseconds(1500)
@@ -253,6 +262,48 @@ function Convert-MarkdownToFlowDocument {
     $doc.PagePadding = New-Object System.Windows.Thickness(2, 2, 2, 2)
 
     if ([string]::IsNullOrWhiteSpace($text)) {
+        return $doc
+    }
+
+    # Strip ANSI escape codes
+    $cleanText = $text -replace '\x1b\[[0-9;]*[a-zA-Z]', ''
+
+    # If this is a compiler / test runner error log (starts with [Step ...)
+    if ($cleanText.StartsWith('[Step ') -or $cleanText -match '^\[Step \d+:') {
+        $lines = $cleanText.Split([char]10)
+        foreach ($rawLine in $lines) {
+            $line = $rawLine.TrimEnd([char]13)
+            if ($line.Trim() -eq '') {
+                $p = New-Object System.Windows.Documents.Paragraph
+                $p.Margin = New-Object System.Windows.Thickness(0, 1, 0, 1)
+                $doc.Blocks.Add($p)
+                continue
+            }
+
+            if ($line.StartsWith('[Step ')) {
+                $p = New-Object System.Windows.Documents.Paragraph
+                $p.Margin = New-Object System.Windows.Thickness(0, 4, 0, 4)
+                $run = New-Object System.Windows.Documents.Run($line)
+                $run.FontWeight = [System.Windows.FontWeights]::Bold
+                $run.FontSize = 12.5
+                $run.Foreground = $h1Brush
+                $p.Inlines.Add($run)
+                $doc.Blocks.Add($p)
+                continue
+            }
+
+            $p = New-Object System.Windows.Documents.Paragraph
+            $p.Margin = New-Object System.Windows.Thickness(0, 1, 0, 1)
+            $p.FontFamily = New-Object System.Windows.Media.FontFamily('Consolas')
+            $p.FontSize = 10.5
+            
+            # Preserve indentation so caret pointers (^ ) align accurately
+            $presLine = $line.Replace(' ', [char]0x00A0)
+            $run = New-Object System.Windows.Documents.Run($presLine)
+            $run.Foreground = $normalBrush
+            $p.Inlines.Add($run)
+            $doc.Blocks.Add($p)
+        }
         return $doc
     }
 
@@ -604,6 +655,7 @@ $timer.Add_Tick({
     }
 
     if ($displayLog -and $displayLog.Trim() -ne '') {
+        $displayLog = $displayLog -replace '\x1b\[[0-9;]*[a-zA-Z]', '' -replace '\[[0-9;]+m', ''
         $script:rawErrorText = $displayLog
 
         if ($script:lastRenderedLog -ne $displayLog) {
@@ -709,14 +761,14 @@ export function updateStep(stepId, status, reportOrDetail = '') {
   if (data.steps[stepId]) {
     data.steps[stepId].status = status;
     if (stepId !== 8) {
-      data.steps[stepId].detail = reportOrDetail;
+      data.steps[stepId].detail = stripAnsi(reportOrDetail);
     }
   }
   if (status === 'error') {
     data.hasError = true;
   }
   if (stepId === 8 && reportOrDetail) {
-    data.aiReport = reportOrDetail;
+    data.aiReport = stripAnsi(reportOrDetail);
   }
   writeProgressFile(data);
 }
@@ -731,10 +783,10 @@ export function finalizeProgress(passed, finalReport = '', errorLog = '') {
   data.done = true;
   data.hasError = !passed;
   if (finalReport) {
-    data.aiReport = finalReport;
+    data.aiReport = stripAnsi(finalReport);
   }
   if (errorLog) {
-    data.errorLog = errorLog;
+    data.errorLog = stripAnsi(errorLog);
   }
   writeProgressFile(data);
 }
