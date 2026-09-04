@@ -8,12 +8,10 @@ function stripAnsi(str) {
 
 import fs from 'fs';
 import path from 'path';
-import { execSync } from 'child_process';
 import dotenv from 'dotenv';
 import chalk from 'chalk';
 import { MINI_BANNER } from './ascii-art.js';
-import { logStep, logSuccess, logWarning, logError } from './utils/logger.js';
-import { runGit, getCurrentBranch, getDiff } from './utils/git.js';
+import { getDiff } from './utils/git.js';
 import {
   checkAngularProject,
   checkCriticalArchitecture,
@@ -45,7 +43,7 @@ import {
 } from './progress-window.js';
 
 // Resolve configuration directory (%APPDATA%/FrontendGatekeeper on Windows)
-const appDataDir = process.env.APPDATA 
+const appDataDir = process.env.APPDATA
   ? path.join(process.env.APPDATA, 'FrontendGatekeeper')
   : path.join(process.env.HOME || process.env.USERPROFILE || '.', '.frontend-gatekeeper');
 
@@ -65,7 +63,7 @@ async function runGatekeeper() {
   const cwd = process.cwd();
 
   // STEP 1: Angular Project Detection (Safe Bypass for non-Angular)
-  const { isAngular, projectPkg } = checkAngularProject(cwd);
+  const { isAngular: _isAngular, projectPkg } = checkAngularProject(cwd);
   initProgressWindow();
   startStep(1, 'Scanning workspace structure...');
   const deps = { ...(projectPkg.dependencies || {}), ...(projectPkg.devDependencies || {}) };
@@ -164,21 +162,21 @@ async function runGatekeeper() {
   // STEP 8: AI Knowledge Base Audit (Gemini, Ollama, vLLM / OpenAI-compatible)
   startStep(8, 'Auditing regression against knowledge base...');
   const aiConfig = {
-      AI_PROVIDER: process.env.AI_PROVIDER,
-      GEMINI_API_KEY: process.env.GEMINI_API_KEY,
-      OLLAMA_BASE_URL: process.env.OLLAMA_BASE_URL,
-      OLLAMA_MODEL: process.env.OLLAMA_MODEL,
-      OPENAI_API_KEY: process.env.OPENAI_API_KEY,
-      OPENAI_MODEL: process.env.OPENAI_MODEL,
-      ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY,
-      ANTHROPIC_MODEL: process.env.ANTHROPIC_MODEL,
-      DEEPSEEK_API_KEY: process.env.DEEPSEEK_API_KEY,
-      DEEPSEEK_MODEL: process.env.DEEPSEEK_MODEL,
-      GROQ_API_KEY: process.env.GROQ_API_KEY,
-      GROQ_MODEL: process.env.GROQ_MODEL,
-      OPENROUTER_API_KEY: process.env.OPENROUTER_API_KEY,
-      OPENROUTER_MODEL: process.env.OPENROUTER_MODEL
-    };
+    AI_PROVIDER: process.env.AI_PROVIDER,
+    GEMINI_API_KEY: process.env.GEMINI_API_KEY,
+    OLLAMA_BASE_URL: process.env.OLLAMA_BASE_URL,
+    OLLAMA_MODEL: process.env.OLLAMA_MODEL,
+    OPENAI_API_KEY: process.env.OPENAI_API_KEY,
+    OPENAI_MODEL: process.env.OPENAI_MODEL,
+    ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY,
+    ANTHROPIC_MODEL: process.env.ANTHROPIC_MODEL,
+    DEEPSEEK_API_KEY: process.env.DEEPSEEK_API_KEY,
+    DEEPSEEK_MODEL: process.env.DEEPSEEK_MODEL,
+    GROQ_API_KEY: process.env.GROQ_API_KEY,
+    GROQ_MODEL: process.env.GROQ_MODEL,
+    OPENROUTER_API_KEY: process.env.OPENROUTER_API_KEY,
+    OPENROUTER_MODEL: process.env.OPENROUTER_MODEL
+  };
   let aiReport = '';
   try {
     const auditRes = await runAiKnowledgeBaseAudit(aiConfig, cwd);
@@ -195,10 +193,10 @@ async function runGatekeeper() {
     } else {
       updateStep(8, 'skip');
     }
-  } catch (err) {
-    updateStep(8, 'error', err.message);
-    finalizeProgress(false, err.message);
-    throw err;
+  } catch (_err) {
+    updateStep(8, 'error', _err.message);
+    finalizeProgress(false, _err.message);
+    throw _err;
   }
 
   // FINAL VERDICT
@@ -263,6 +261,6 @@ async function main() {
   await runGatekeeper();
 }
 
-main().catch(err => {
+main().catch(_err => {
   process.exit(1);
 });

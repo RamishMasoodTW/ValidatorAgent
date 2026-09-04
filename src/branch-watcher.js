@@ -197,7 +197,7 @@ export function sendWindowsNotification(title, message, cwd = process.cwd()) {
 
   const safeTitle = title.replace(/'/g, "''").replace(/</g, '&lt;').replace(/>/g, '&gt;');
   const safeMessage = message.replace(/'/g, "''").replace(/</g, '&lt;').replace(/>/g, '&gt;');
-  const safeCwd = cwd.replace(/\\/g, '\\\\');
+  const _safeCwd = cwd.replace(/\\/g, '\\\\');
 
   // Write dedicated launcher script in .git
   const gitDir = path.join(cwd, '.git');

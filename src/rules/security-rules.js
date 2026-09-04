@@ -51,9 +51,9 @@ export function scanSecurityRules(diffOutput) {
     { pattern: /-----BEGIN\s+CERTIFICATE-----/, name: 'Raw SSL/TLS Certificate Block' },
 
     // 8. Git Merge Conflict Markers (Stops CI Syntax/Compilation Disasters)
-    { pattern: /^<{7}\s+HEAD/, name: 'Unresolved Git Merge Conflict Marker (<<<<<<< HEAD)' },
-    { pattern: /^={7}$/, name: 'Unresolved Git Merge Conflict Separator (=======)' },
-    { pattern: /^>{7}\s+/, name: 'Unresolved Git Merge Conflict Marker (>>>>>>> branch)' }
+    { pattern: /<{7}\s+HEAD/, name: 'Unresolved Git Merge Conflict Marker (<<<<<<< HEAD)' },
+    { pattern: /={7}/, name: 'Unresolved Git Merge Conflict Separator (=======)' },
+    { pattern: />{7}\s+/, name: 'Unresolved Git Merge Conflict Marker (>>>>>>> branch)' }
   ];
 
   let violations = [];

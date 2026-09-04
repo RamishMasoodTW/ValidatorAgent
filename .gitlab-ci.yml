@@ -5,35 +5,70 @@ stages:
   - test
   - build
 
+# ──────────────────────────────────────────────
+# Cache node_modules across pipeline runs
+# ──────────────────────────────────────────────
 cache:
+  key:
+    files:
+      - package-lock.json
   paths:
     - .npm/
     - node_modules/
 
 before_script:
+  - node --version
+  - npm --version
   - npm ci --cache .npm --prefer-offline
 
+# ──────────────────────────────────────────────
+# STAGE: validate
+# ──────────────────────────────────────────────
 security_audit:
   stage: validate
   script:
     - npm audit --audit-level=high
+  allow_failure: false
 
 lint:
   stage: validate
   script:
-    - npm run lint || echo "No lint script defined"
+    - npm run lint
+  allow_failure: false
 
+# ──────────────────────────────────────────────
+# STAGE: test
+# ──────────────────────────────────────────────
 unit_tests:
   stage: test
-  image: trion/ng-cli-karma:latest
+  # No Angular-specific image needed — this is a Node.js tool
+  image: node:20
   script:
-    - npm run test:ci || npx ng test --watch=false --browsers=ChromeHeadless
+    - npm run test:ci
+  coverage: '/Lines\s*:\s*(\d+(?:\.\d+)?)%/'
+  artifacts:
+    when: always
+    paths:
+      - coverage/
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+        path: coverage/cobertura-coverage.xml
+    expire_in: 14 days
 
-production_build:
+# ──────────────────────────────────────────────
+# STAGE: build
+# ──────────────────────────────────────────────
+build_bundle:
   stage: build
   script:
-    - npm run build -- --configuration=production
+    - npm run build:bundle
   artifacts:
     paths:
       - dist/
     expire_in: 1 week
+  only:
+    - main
+    - master
+    - develop
+    - tags

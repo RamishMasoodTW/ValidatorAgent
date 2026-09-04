@@ -1699,6 +1699,121 @@ var require_browser = __commonJS({
   }
 });
 
+// node_modules/has-flag/index.js
+var require_has_flag = __commonJS({
+  "node_modules/has-flag/index.js"(exports2, module2) {
+    "use strict";
+    module2.exports = (flag, argv2 = process.argv) => {
+      const prefix = flag.startsWith("-") ? "" : flag.length === 1 ? "-" : "--";
+      const position = argv2.indexOf(prefix + flag);
+      const terminatorPosition = argv2.indexOf("--");
+      return position !== -1 && (terminatorPosition === -1 || position < terminatorPosition);
+    };
+  }
+});
+
+// node_modules/supports-color/index.js
+var require_supports_color = __commonJS({
+  "node_modules/supports-color/index.js"(exports2, module2) {
+    "use strict";
+    var os3 = require("os");
+    var tty2 = require("tty");
+    var hasFlag2 = require_has_flag();
+    var { env: env3 } = process;
+    var forceColor;
+    if (hasFlag2("no-color") || hasFlag2("no-colors") || hasFlag2("color=false") || hasFlag2("color=never")) {
+      forceColor = 0;
+    } else if (hasFlag2("color") || hasFlag2("colors") || hasFlag2("color=true") || hasFlag2("color=always")) {
+      forceColor = 1;
+    }
+    if ("FORCE_COLOR" in env3) {
+      if (env3.FORCE_COLOR === "true") {
+        forceColor = 1;
+      } else if (env3.FORCE_COLOR === "false") {
+        forceColor = 0;
+      } else {
+        forceColor = env3.FORCE_COLOR.length === 0 ? 1 : Math.min(parseInt(env3.FORCE_COLOR, 10), 3);
+      }
+    }
+    function translateLevel2(level) {
+      if (level === 0) {
+        return false;
+      }
+      return {
+        level,
+        hasBasic: true,
+        has256: level >= 2,
+        has16m: level >= 3
+      };
+    }
+    function supportsColor2(haveStream, streamIsTTY) {
+      if (forceColor === 0) {
+        return 0;
+      }
+      if (hasFlag2("color=16m") || hasFlag2("color=full") || hasFlag2("color=truecolor")) {
+        return 3;
+      }
+      if (hasFlag2("color=256")) {
+        return 2;
+      }
+      if (haveStream && !streamIsTTY && forceColor === void 0) {
+        return 0;
+      }
+      const min = forceColor || 0;
+      if (env3.TERM === "dumb") {
+        return min;
+      }
+      if (process.platform === "win32") {
+        const osRelease = os3.release().split(".");
+        if (Number(osRelease[0]) >= 10 && Number(osRelease[2]) >= 10586) {
+          return Number(osRelease[2]) >= 14931 ? 3 : 2;
+        }
+        return 1;
+      }
+      if ("CI" in env3) {
+        if (["TRAVIS", "CIRCLECI", "APPVEYOR", "GITLAB_CI", "GITHUB_ACTIONS", "BUILDKITE"].some((sign) => sign in env3) || env3.CI_NAME === "codeship") {
+          return 1;
+        }
+        return min;
+      }
+      if ("TEAMCITY_VERSION" in env3) {
+        return /^(9\.(0*[1-9]\d*)\.|\d{2,}\.)/.test(env3.TEAMCITY_VERSION) ? 1 : 0;
+      }
+      if (env3.COLORTERM === "truecolor") {
+        return 3;
+      }
+      if ("TERM_PROGRAM" in env3) {
+        const version = parseInt((env3.TERM_PROGRAM_VERSION || "").split(".")[0], 10);
+        switch (env3.TERM_PROGRAM) {
+          case "iTerm.app":
+            return version >= 3 ? 3 : 2;
+          case "Apple_Terminal":
+            return 2;
+        }
+      }
+      if (/-256(color)?$/i.test(env3.TERM)) {
+        return 2;
+      }
+      if (/^screen|^xterm|^vt100|^vt220|^rxvt|color|ansi|cygwin|linux/i.test(env3.TERM)) {
+        return 1;
+      }
+      if ("COLORTERM" in env3) {
+        return 1;
+      }
+      return min;
+    }
+    function getSupportLevel(stream) {
+      const level = supportsColor2(stream, stream && stream.isTTY);
+      return translateLevel2(level);
+    }
+    module2.exports = {
+      supportsColor: getSupportLevel,
+      stdout: translateLevel2(supportsColor2(true, tty2.isatty(1))),
+      stderr: translateLevel2(supportsColor2(true, tty2.isatty(2)))
+    };
+  }
+});
+
 // node_modules/debug/src/node.js
 var require_node = __commonJS({
   "node_modules/debug/src/node.js"(exports2, module2) {
@@ -1717,7 +1832,7 @@ var require_node = __commonJS({
     );
     exports2.colors = [6, 2, 3, 4, 5, 1];
     try {
-      const supportsColor2 = require("supports-color");
+      const supportsColor2 = require_supports_color();
       if (supportsColor2 && (supportsColor2.stderr || supportsColor2).level >= 2) {
         exports2.colors = [
           20,
@@ -28076,22 +28191,6 @@ var MINI_BANNER = `
 ${source_default.red.bold(">>> [ANGULAR GATEKEEPER] Pre-Commit AI Validation Engine <<<")}
 `;
 
-// src/utils/logger.js
-function logStep(stepNum, title) {
-  console.log(`
-${source_default.red.bold(`[Step ${stepNum}]`)} ${source_default.white.bold(title)}`);
-  console.log(source_default.gray("\u2500".repeat(60)));
-}
-function logSuccess(msg) {
-  console.log(`${source_default.green("\u2714")} ${source_default.green.bold(msg)}`);
-}
-function logWarning(msg) {
-  console.log(`${source_default.yellow("\u26A0")} ${source_default.yellow(msg)}`);
-}
-function logError(msg) {
-  console.log(`${source_default.red("\u2716")} ${source_default.red.bold(msg)}`);
-}
-
 // src/utils/git.js
 var import_child_process = require("child_process");
 function runGit(command, allowFail = false, cwd = process.cwd()) {
@@ -28146,6 +28245,24 @@ function getStagedFiles(cwd = process.cwd()) {
 // src/rules/angular-best-practices.js
 var import_fs = __toESM(require("fs"), 1);
 var import_path = __toESM(require("path"), 1);
+
+// src/utils/logger.js
+function logStep(stepNum, title) {
+  console.log(`
+${source_default.red.bold(`[Step ${stepNum}]`)} ${source_default.white.bold(title)}`);
+  console.log(source_default.gray("\u2500".repeat(60)));
+}
+function logSuccess(msg) {
+  console.log(`${source_default.green("\u2714")} ${source_default.green.bold(msg)}`);
+}
+function logWarning(msg) {
+  console.log(`${source_default.yellow("\u26A0")} ${source_default.yellow(msg)}`);
+}
+function logError(msg) {
+  console.log(`${source_default.red("\u2716")} ${source_default.red.bold(msg)}`);
+}
+
+// src/rules/angular-best-practices.js
 function getAllFiles(dirPath, arrayOfFiles = []) {
   if (!import_fs.default.existsSync(dirPath)) return [];
   const files = import_fs.default.readdirSync(dirPath);
@@ -28431,7 +28548,7 @@ var import_fs2 = __toESM(require("fs"), 1);
 var import_path2 = __toESM(require("path"), 1);
 var import_child_process2 = require("child_process");
 function runTypeScriptAndLintChecks(cwd = process.cwd(), projectPkg = {}) {
-  let capturedErrorOutput = "";
+  let _capturedErrorOutput = "";
   logStep(4, "Strict TypeScript & Linter Verification");
   const scripts = projectPkg.scripts || {};
   if (scripts["lint"]) {
@@ -28658,9 +28775,9 @@ function scanSecurityRules(diffOutput) {
     { pattern: /-----BEGIN\s+(?:RSA\s+|EC\s+|DSA\s+|OPENSSH\s+)?PRIVATE\s+KEY-----/, name: "Unencrypted Private Key (PEM/RSA/EC)" },
     { pattern: /-----BEGIN\s+CERTIFICATE-----/, name: "Raw SSL/TLS Certificate Block" },
     // 8. Git Merge Conflict Markers (Stops CI Syntax/Compilation Disasters)
-    { pattern: /^<{7}\s+HEAD/, name: "Unresolved Git Merge Conflict Marker (<<<<<<< HEAD)" },
-    { pattern: /^={7}$/, name: "Unresolved Git Merge Conflict Separator (=======)" },
-    { pattern: /^>{7}\s+/, name: "Unresolved Git Merge Conflict Marker (>>>>>>> branch)" }
+    { pattern: /<{7}\s+HEAD/, name: "Unresolved Git Merge Conflict Marker (<<<<<<< HEAD)" },
+    { pattern: /={7}/, name: "Unresolved Git Merge Conflict Separator (=======)" },
+    { pattern: />{7}\s+/, name: "Unresolved Git Merge Conflict Marker (>>>>>>> branch)" }
   ];
   let violations = [];
   const lines = diffOutput.split("\n");
@@ -51641,7 +51758,7 @@ function sendWindowsNotification(title, message, cwd = process.cwd()) {
   if (process.platform !== "win32") return;
   const safeTitle = title.replace(/'/g, "''").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   const safeMessage = message.replace(/'/g, "''").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-  const safeCwd = cwd.replace(/\\/g, "\\\\");
+  const _safeCwd = cwd.replace(/\\/g, "\\\\");
   const gitDir = import_path5.default.join(cwd, ".git");
   const launcherPath = import_path5.default.join(gitDir, "gatekeeper-show-details.cmd");
   try {
@@ -52894,7 +53011,7 @@ async function runGatekeeper() {
   console.log(source_default.gray(`Working Directory: ${process.cwd()}
 `));
   const cwd = process.cwd();
-  const { isAngular, projectPkg } = checkAngularProject(cwd);
+  const { isAngular: _isAngular, projectPkg } = checkAngularProject(cwd);
   initProgressWindow();
   startStep(1, "Scanning workspace structure...");
   const deps = { ...projectPkg.dependencies || {}, ...projectPkg.devDependencies || {} };
@@ -53010,10 +53127,10 @@ async function runGatekeeper() {
     } else {
       updateStep(8, "skip");
     }
-  } catch (err) {
-    updateStep(8, "error", err.message);
-    finalizeProgress(false, err.message);
-    throw err;
+  } catch (_err) {
+    updateStep(8, "error", _err.message);
+    finalizeProgress(false, _err.message);
+    throw _err;
   }
   finalizeProgress(true, aiReport);
   console.log("\n" + source_default.green.bold("\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550"));
@@ -53055,7 +53172,7 @@ async function main() {
   }
   await runGatekeeper();
 }
-main().catch((err) => {
+main().catch((_err) => {
   process.exit(1);
 });
 /*! Bundled license information:

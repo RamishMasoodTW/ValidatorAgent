@@ -9,7 +9,7 @@ import { getAllFiles } from './angular-best-practices.js';
  * Step 4: Strict TypeScript Compilation & Linting (tsc --noEmit, eslint)
  */
 export function runTypeScriptAndLintChecks(cwd = process.cwd(), projectPkg = {}) {
-  let capturedErrorOutput = '';
+  let _capturedErrorOutput = '';
   logStep(4, 'Strict TypeScript & Linter Verification');
   const scripts = projectPkg.scripts || {};
 
