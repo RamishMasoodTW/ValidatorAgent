@@ -4,7 +4,14 @@
  * which are pure/side-effect-free enough to test without mocking.
  */
 
-import { scanSecurityRules } from '../src/rules/security-rules.js';
+import fs from 'fs';
+import path from 'path';
+import os from 'os';
+import {
+  scanSecurityRules,
+  scanStagedFileIntegrity,
+  scanDependencyVulnerabilities
+} from '../src/rules/security-rules.js';
 
 // ─────────────────────────────────────────────────
 // Helpers
@@ -173,3 +180,48 @@ describe('scanSecurityRules() — Stripe key detection', () => {
     expect(() => scanSecurityRules(diff)).toThrow(/Stripe|Hardcoded secrets/i);
   });
 });
+
+// ─────────────────────────────────────────────────
+// Staged File Integrity & Repo Bloat
+// ─────────────────────────────────────────────────
+describe('scanStagedFileIntegrity()', () => {
+  test('passes on safe file stage', () => {
+    expect(() => scanStagedFileIntegrity(process.cwd(), ['src/app.ts', 'src/app.html', 'package.json'])).not.toThrow();
+  });
+
+  test('blocks .env files', () => {
+    expect(() => scanStagedFileIntegrity(process.cwd(), ['.env'])).toThrow(/Forbidden or oversized/i);
+  });
+
+  test('allows .env.example files', () => {
+    expect(() => scanStagedFileIntegrity(process.cwd(), ['.env.example'])).not.toThrow();
+  });
+
+  test('blocks private key files (.pem, .key, .pfx)', () => {
+    expect(() => scanStagedFileIntegrity(process.cwd(), ['server.pem'])).toThrow(/Forbidden or oversized/i);
+    expect(() => scanStagedFileIntegrity(process.cwd(), ['id_rsa.key'])).toThrow(/Forbidden or oversized/i);
+    expect(() => scanStagedFileIntegrity(process.cwd(), ['cert.pfx'])).toThrow(/Forbidden or oversized/i);
+  });
+
+  test('blocks OS junk files (Thumbs.db, .DS_Store)', () => {
+    expect(() => scanStagedFileIntegrity(process.cwd(), ['Thumbs.db'])).toThrow(/Forbidden or oversized/i);
+    expect(() => scanStagedFileIntegrity(process.cwd(), ['.DS_Store'])).toThrow(/Forbidden or oversized/i);
+  });
+});
+
+// ─────────────────────────────────────────────────
+// Dependency Vulnerability Audit
+// ─────────────────────────────────────────────────
+describe('scanDependencyVulnerabilities()', () => {
+  test('skips audit gracefully if no lockfile is present in directory', () => {
+    const emptyDir = path.join(os.tmpdir(), 'gatekeeper-empty-lock-' + Date.now());
+    fs.mkdirSync(emptyDir, { recursive: true });
+    try {
+      const res = scanDependencyVulnerabilities(emptyDir);
+      expect(res).toBe(true);
+    } finally {
+      fs.rmSync(emptyDir, { recursive: true, force: true });
+    }
+  });
+});
+

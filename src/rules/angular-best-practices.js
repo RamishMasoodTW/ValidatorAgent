@@ -250,13 +250,16 @@ export function validateCompiledArtifacts(cwd = process.cwd()) {
   console.log(chalk.gray(`  Inspecting build distribution output at: ${outputDir}`));
   const outputFiles = getAllFiles(outputDir).map(f => path.relative(outputDir, f).replace(/\\/g, '/'));
 
-  // 1. Check index.html
-  const hasIndexHtml = outputFiles.some(f => path.basename(f).toLowerCase() === 'index.html');
+  // 1. Check index.html & Base Href (Required for SPA routing after deployment)
+  const indexHtmlPath = path.join(outputDir, 'index.html');
+  const hasIndexHtml = fs.existsSync(indexHtmlPath) || outputFiles.some(f => path.basename(f).toLowerCase() === 'index.html');
   if (!hasIndexHtml) {
     logError('Critical build artifact missing: index.html was not generated in distribution output!');
     console.log(chalk.red('  Commit rejected: index.html is required for IIS/web servers to load the application.\n'));
     throw new Error('Critical build artifact missing: index.html');
   }
+
+  const { hasBaseHref } = checkBaseHref(indexHtmlPath);
 
   // 2. Check compiled JavaScript bundles
   const jsBundles = outputFiles.filter(f => f.endsWith('.js'));
@@ -278,23 +281,14 @@ export function validateCompiledArtifacts(cwd = process.cwd()) {
     f.toLowerCase().endsWith('htaccess')
   );
   
-  // 5. CD Check: Production Environment Localhost Leak Scan
+  // 5. CD Check: Production Environment Localhost & Insecure HTTP Leak Scan
   const envProdPath = path.join(cwd, 'src', 'environments', 'environment.prod.ts');
-  let hasLocalhostLeak = false;
-  if (fs.existsSync(envProdPath)) {
-    const envContent = fs.readFileSync(envProdPath, 'utf8');
-    if (/(?:http:\/\/localhost|http:\/\/127\.0\.0\.1|http:\/\/0\.0\.0\.0)/i.test(envContent)) {
-      hasLocalhostLeak = true;
-    }
-  }
+  const { hasLocalhostLeak, hasHttpApiLeak } = auditEnvironmentProd(envProdPath);
 
-  // 6. CD Check: Dockerfile Integrity (if present in repo)
+  // 6. CD Check: Dockerfile Integrity & Container Best Practices
   const dockerfilePath = path.join(cwd, 'Dockerfile');
-  let dockerValid = null;
-  if (fs.existsSync(dockerfilePath)) {
-    const dockerContent = fs.readFileSync(dockerfilePath, 'utf8');
-    dockerValid = dockerContent.includes('FROM ') && (dockerContent.includes('COPY ') || dockerContent.includes('ADD '));
-  }
+  const dockerAudit = auditDockerfile(dockerfilePath);
+  const dockerValid = dockerAudit ? dockerAudit.valid : null;
 
   // 7. CD Check: Bundle Size & Performance Budget Calculation
   let totalBundleSizeBytes = 0;
@@ -305,9 +299,10 @@ export function validateCompiledArtifacts(cwd = process.cwd()) {
     }
   }
   const totalBundleSizeMb = (totalBundleSizeBytes / (1024 * 1024)).toFixed(2);
+  const bundleBudgetExceeded = totalBundleSizeBytes > 5 * 1024 * 1024; // 5 MB threshold
 
   console.log(chalk.white('  Distribution & CD Readiness Checklist:'));
-  console.log(`    ${chalk.green('✔')} index.html (Main SPA Entry Point)`);
+  console.log(`    ${chalk.green('✔')} index.html (Main SPA Entry Point${hasBaseHref ? ', <base href> verified' : ''})`);
   console.log(`    ${chalk.green('✔')} Compiled JavaScript Bundles (${jsBundles.length} files: ${totalBundleSizeMb} MB total)`);
   if (hasStylesCss) {
     console.log(`    ${chalk.green('✔')} Global Production Styles (${cssFiles.map(f => path.basename(f)).join(', ')})`);
@@ -316,10 +311,16 @@ export function validateCompiledArtifacts(cwd = process.cwd()) {
     console.log(`    ${chalk.green('✔')} Web Server SPA Rewrite Config (IIS web.config / Nginx / _redirects)`);
   }
   if (dockerValid !== null) {
-    console.log(`    ${chalk.green('✔')} Dockerfile Container Specification Validated`);
+    console.log(`    ${chalk.green('✔')} Dockerfile Container Specification Validated${dockerAudit?.hasMultiStage ? ' (Multi-stage)' : ''}`);
   }
   if (hasLocalhostLeak) {
     logWarning('CD Warning: Localhost/dev endpoint detected in environment.prod.ts!');
+  }
+  if (hasHttpApiLeak) {
+    logWarning('CD Security Warning: Unencrypted http:// endpoint detected in production environment!');
+  }
+  if (bundleBudgetExceeded) {
+    logWarning(`CD Performance Warning: Total compiled bundle size (${totalBundleSizeMb} MB) exceeds recommended 5 MB budget.`);
   }
 
   logSuccess(`Production distribution & CD deployment artifacts validated successfully (${totalBundleSizeMb} MB).`);
@@ -328,7 +329,77 @@ export function validateCompiledArtifacts(cwd = process.cwd()) {
     totalBundleSizeMb,
     hasSpaRewrite,
     dockerValid,
-    hasLocalhostLeak
+    hasLocalhostLeak,
+    hasHttpApiLeak,
+    hasBaseHref,
+    bundleBudgetExceeded
+  };
+}
+
+/**
+ * Validates index.html <base href> tag for correct SPA client-side routing
+ */
+export function checkBaseHref(indexHtmlPath) {
+  if (!fs.existsSync(indexHtmlPath)) return { hasBaseHref: false, baseHrefValue: null };
+  const content = fs.readFileSync(indexHtmlPath, 'utf8');
+  const match = content.match(/<base\s+href=["']([^"']+)["']/i);
+  return {
+    hasBaseHref: !!match,
+    baseHrefValue: match ? match[1] : null
+  };
+}
+
+/**
+ * Audits environment.prod.ts for localhost leaks and insecure HTTP endpoints
+ */
+export function auditEnvironmentProd(envProdPath) {
+  if (!fs.existsSync(envProdPath)) {
+    return { hasLocalhostLeak: false, hasHttpApiLeak: false, issues: [] };
+  }
+  const content = fs.readFileSync(envProdPath, 'utf8');
+  const issues = [];
+
+  const hasLocalhostLeak = /(?:http:\/\/localhost|http:\/\/127\.0\.0\.1|http:\/\/0\.0\.0\.0)/i.test(content);
+  if (hasLocalhostLeak) {
+    issues.push('Development localhost URL found in production config');
+  }
+
+  // Detect unencrypted HTTP endpoints (excluding comments)
+  const lines = content.split('\n');
+  let hasHttpApiLeak = false;
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (trimmed.startsWith('//') || trimmed.startsWith('*')) continue;
+    if (/http:\/\/(?!localhost|127\.0\.0\.1|0\.0\.0\.0)[a-zA-Z0-9.-]+/i.test(trimmed)) {
+      hasHttpApiLeak = true;
+      issues.push('Unencrypted http:// endpoint found in production config');
+      break;
+    }
+  }
+
+  return { hasLocalhostLeak, hasHttpApiLeak, issues };
+}
+
+/**
+ * Audits Dockerfile container specification for production CD deployment
+ */
+export function auditDockerfile(dockerfilePath) {
+  if (!fs.existsSync(dockerfilePath)) return null;
+  const content = fs.readFileSync(dockerfilePath, 'utf8');
+  const lines = content.split('\n').map(l => l.trim()).filter(l => l && !l.startsWith('#'));
+
+  const hasFrom = lines.some(l => l.startsWith('FROM '));
+  const hasCopyOrAdd = lines.some(l => l.startsWith('COPY ') || l.startsWith('ADD '));
+  const fromCount = lines.filter(l => l.startsWith('FROM ')).length;
+  const hasMultiStage = fromCount > 1;
+  const hasExpose = lines.some(l => l.startsWith('EXPOSE '));
+
+  return {
+    valid: hasFrom && hasCopyOrAdd,
+    hasFrom,
+    hasCopyOrAdd,
+    hasMultiStage,
+    hasExpose
   };
 }
 
@@ -374,3 +445,4 @@ export function updateBuildMetadata(cwd = process.cwd(), projectPkg = {}) {
     console.log(chalk.gray('  Skipped: src directory not found.'));
   }
 }
+

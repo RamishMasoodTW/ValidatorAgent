@@ -134,9 +134,15 @@ async function runGatekeeper() {
     runAngularProductionBuild(cwd, projectPkg);
     const cdRes = validateCompiledArtifacts(cwd);
     updateBuildMetadata(cwd, projectPkg);
-    let cdDetail = `Verified ${cdRes?.bundleCount || 0} production bundles (${cdRes?.totalBundleSizeMb || '0'} MB)`;
+    let cdDetail = `Verified ${cdRes?.bundleCount || 0} bundles (${cdRes?.totalBundleSizeMb || '0'} MB)`;
     if (cdRes && cdRes.hasSpaRewrite) {
-      cdDetail += ' + SPA web.config/nginx rule';
+      cdDetail += ' + SPA rewrite';
+    }
+    if (cdRes && cdRes.hasBaseHref) {
+      cdDetail += ' + <base href>';
+    }
+    if (cdRes && cdRes.dockerValid) {
+      cdDetail += ' + Dockerfile';
     }
     updateStep(6, 'pass', cdDetail);
   } catch (err) {

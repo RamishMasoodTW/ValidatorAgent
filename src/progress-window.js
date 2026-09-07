@@ -48,8 +48,8 @@ const STEPS = [
   { id: 2, label: '2. Critical Architecture & Entry Points' },
   { id: 3, label: '3. Dependency Vulnerability Audit (npm audit)' },
   { id: 4, label: '4. TypeScript & Linter Verification' },
-  { id: 5, label: '5. Automated Unit Tests (test:ci)' },
-  { id: 6, label: '6. Production Build & Distribution Artifacts' },
+  { id: 5, label: '5. Automated Unit Tests (test:ci) + Coverage Gate' },
+  { id: 6, label: '6. Production Build & CD Deployment Verification' },
   { id: 7, label: '7. Security & Secret Leak Scanning' },
   { id: 8, label: getAiStepLabel() }
 ];
@@ -121,7 +121,7 @@ $PROGRESS_FILE = "$env:TEMP\\gk-progress.json"
 [xml]$xaml = @"
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Angular Gatekeeper - Live Commit Validation"
+        Title="Angular Gatekeeper — Live CI/CD Commit Validation"
         Width="580" Height="700"
         WindowStartupLocation="CenterScreen"
         Topmost="True"
@@ -167,8 +167,8 @@ $PROGRESS_FILE = "$env:TEMP\\gk-progress.json"
     <!-- Header -->
     <Border Grid.Row="0" Background="$hdrBg" Padding="18,14" BorderBrush="$border" BorderThickness="0,0,0,1">
       <StackPanel>
-        <TextBlock Text="Angular Gatekeeper - Commit Verification" FontSize="16" FontWeight="Bold" Foreground="$fg"/>
-        <TextBlock Text="Validating code quality, build integrity &amp; architecture in real-time..." FontSize="11" Foreground="#94A3B8" Margin="0,3,0,0"/>
+        <TextBlock Text="Angular Gatekeeper — CI/CD Pre-Commit Quality Gate" FontSize="16" FontWeight="Bold" Foreground="$fg"/>
+        <TextBlock Text="Enforcing strict CI standards, CD deployment readiness &amp; AI regressions in real-time..." FontSize="11" Foreground="#94A3B8" Margin="0,3,0,0"/>
       </StackPanel>
     </Border>
 
@@ -464,8 +464,8 @@ $stepLabels = @(
   '2. Critical Architecture & Entry Points',
   '3. Dependency Vulnerability Audit (npm audit)',
   '4. TypeScript & Linter Verification',
-  '5. Automated Unit Tests (test:ci)',
-  '6. Production Build & Distribution Artifacts',
+  '5. Automated Unit Tests (test:ci) + Coverage Gate',
+  '6. Production Build & CD Deployment Verification',
   '7. Security & Secret Leak Scanning',
   '8. AI Knowledge Base Audit'
 )
@@ -576,6 +576,10 @@ $timer.Add_Tick({
         $sub   = $rowSubs[$num]
         $row   = $rowBorders[$num]
         $badge = $rowBadges[$num]
+
+        if ($state.label -and $state.label.Trim() -ne '') {
+            $lbl.Text = $state.label
+        }
 
         if ($state.detail -and $state.detail.Trim() -ne '') {
             $sub.Text = $state.detail

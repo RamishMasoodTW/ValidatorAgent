@@ -100,9 +100,9 @@ export function scanSecurityRules(diffOutput) {
 /**
  * Scans staged filenames for forbidden sensitive extensions (.env, .pem, .key) or oversized binary blobs (>10MB)
  */
-export function scanStagedFileIntegrity(cwd = process.cwd()) {
+export function scanStagedFileIntegrity(cwd = process.cwd(), stagedFilesOverride = null) {
   try {
-    const files = getStagedFiles(cwd);
+    const files = stagedFilesOverride || getStagedFiles(cwd);
     const forbiddenFiles = [];
 
     for (const f of files) {

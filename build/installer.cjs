@@ -5434,43 +5434,103 @@ if (args.includes("--uninstall") || args.includes("uninstall")) {
       const ciWorkflowFile = import_path.default.join(githubWorkflowDir, "ci.yml");
       if (!import_fs.default.existsSync(ciWorkflowFile)) {
         import_fs.default.mkdirSync(githubWorkflowDir, { recursive: true });
-        const workflowYaml = `name: CI/CD Quality Pipeline
+        const workflowYaml = `name: Angular CI/CD Quality & Delivery Pipeline
 
 on:
   push:
     branches: [ main, master, develop ]
+    tags:
+      - 'v*.*.*'
   pull_request:
     branches: [ main, master, develop ]
 
+concurrency:
+  group: \${{ github.workflow }}-\${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  validate:
+  # \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+  # JOB 1: Automated Quality Gate (CI)
+  # \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+  quality-gate:
+    name: \u{1F6E1}\uFE0F Quality Gate & Verification (CI)
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Repository
+      - name: \u{1F4E5} Checkout Repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      - name: Setup Node.js
+      - name: \u2699\uFE0F Setup Node.js v20
         uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: 'npm'
 
-      - name: Clean Install Dependencies
+      - name: \u{1F4E6} Clean Install Dependencies (npm ci)
         run: npm ci
 
-      - name: Dependency Security Audit
+      - name: \u{1F512} Dependency Security Audit
         run: npm audit --audit-level=high
 
-      - name: Strict TypeScript & Lint Check
-        run: |
-          npx tsc --noEmit --skipLibCheck || true
-          npm run lint --if-present
+      - name: \u{1F50D} Strict TypeScript Compilation
+        run: npx tsc --noEmit --skipLibCheck
 
-      - name: Run Automated CI Tests
+      - name: \u{1F9F9} Angular Lint Verification
+        run: npm run lint --if-present
+
+      - name: \u{1F9EA} Automated Headless Unit Tests
         run: npm run test:ci --if-present
 
-      - name: Angular Production Build
+      - name: \u{1F3D7}\uFE0F Angular Production Build (AOT)
         run: npm run build --if-present
+
+  # \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+  # JOB 2: Automated CD Deployment Readiness & Packaging
+  # \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+  delivery-readiness:
+    name: \u{1F6A2} Deployment Readiness & Delivery (CD)
+    needs: quality-gate
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/v'))
+    steps:
+      - name: \u{1F4E5} Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: \u2699\uFE0F Setup Node.js v20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: \u{1F4E6} Clean Install Dependencies
+        run: npm ci
+
+      - name: \u{1F3D7}\uFE0F Compile Production Bundle
+        run: npm run build --if-present
+
+      - name: \u{1F50D} Verify Compiled Distribution Artifacts & SPA Rewrite
+        shell: bash
+        run: |
+          if [ -d "dist" ]; then
+            echo "\u2714 Verifying compiled production distribution artifacts in dist/..."
+            ls -la dist/
+            INDEX_FILE=$(find dist -name "index.html" | head -n 1)
+            if [ -z "$INDEX_FILE" ]; then
+              echo "\u274C Error: index.html not found in dist/"
+              exit 1
+            fi
+            echo "\u2714 index.html verified: $INDEX_FILE"
+          else
+            echo "\u2139\uFE0F No dist/ output found; skipping artifact check"
+          fi
+
+      - name: \u{1F4E4} Upload Production Distribution Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-dist
+          path: dist/
+          retention-days: 14
 `;
         import_fs.default.writeFileSync(ciWorkflowFile, workflowYaml, "utf8");
         console.log(source_default.green(`\u2714 Auto-generated Server CI Workflow: .github/workflows/ci.yml`));

@@ -137,3 +137,34 @@ describe('CLI argument routing logic', () => {
     expect(resolveCommand(['node', 'engine.js', '--branch', '-d'])).toBe('branch-disable');
   });
 });
+
+describe('CI/CD Manifest & Configuration Integrity', () => {
+  test('package.json contains necessary CI/CD scripts and fields', () => {
+    const fs = require('fs');
+    const path = require('path');
+    const pkgPath = path.join(__dirname, '..', 'package.json');
+    const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
+
+    expect(pkg.engines).toBeDefined();
+    expect(pkg.engines.node).toBe('>=20');
+
+    expect(pkg.scripts).toBeDefined();
+    expect(pkg.scripts.lint).toBeDefined();
+    expect(pkg.scripts['test:ci']).toBeDefined();
+    expect(pkg.scripts['test:smoke']).toBeDefined();
+    expect(pkg.scripts['build:pack']).toBeDefined();
+    expect(pkg.scripts['build:bundle']).toBeDefined();
+
+    expect(Array.isArray(pkg.files)).toBe(true);
+    expect(pkg.files).toContain('src');
+    expect(pkg.files).toContain('build');
+  });
+
+  test('SHA256 checksum formatting conforms to standard 64-hex format', () => {
+    const crypto = require('crypto');
+    const sample = 'test content for release verification';
+    const hash = crypto.createHash('sha256').update(sample).digest('hex');
+    expect(hash).toMatch(/^[a-f0-9]{64}$/);
+  });
+});
+

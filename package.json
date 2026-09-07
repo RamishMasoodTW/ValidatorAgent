@@ -7,14 +7,21 @@
   "engines": {
     "node": ">=20"
   },
+  "files": [
+    "src",
+    "build",
+    "README.md"
+  ],
   "scripts": {
     "build:bundle": "node build.js --bundle-only",
-    "build:exe": "node build.js",
-    "build": "node build.js",
+    "build:exe": "node build.js --zip",
+    "build:pack": "npm pack --dry-run",
+    "build": "node build.js --zip",
     "lint": "eslint src/**/*.js --max-warnings=0",
     "lint:fix": "eslint src/**/*.js --fix",
-    "test": "npx jest",
+    "test": "npx jest --forceExit",
     "test:ci": "npx jest --ci --coverage --forceExit",
+    "test:smoke": "node --check build/engine.cjs && node --check build/installer.cjs && node build/engine.cjs branch --status 2>&1 | node -e \"let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{if(!d.includes('watcher')){process.stderr.write('smoke:engine missing expected output\\n');process.exit(1)}})\" && node build/installer.cjs --status 2>&1 | node -e \"let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{if(!d.includes('Gatekeeper')){process.stderr.write('smoke:installer missing expected output\\n');process.exit(1)}})\"",
     "test:watch": "npx jest --watch"
   },
   "keywords": [

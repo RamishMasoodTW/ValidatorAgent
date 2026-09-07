@@ -1,6 +1,7 @@
 import esbuild from 'esbuild';
 import fs from 'fs';
 import path from 'path';
+import crypto from 'crypto';
 import { fileURLToPath } from 'url';
 import { exec as pkgExec } from '@yao-pkg/pkg';
 
@@ -558,13 +559,15 @@ async function build() {
   // 3. Compile standalone Windows binaries with @yao-pkg/pkg
   console.log('\n>>> [2/3] Compiling standalone Windows binaries (.exe) with pkg...');
   
-  // Gracefully terminate any running instances of AngularGatekeeperSetup.exe to avoid Windows EPERM file lock
-  try {
-    const { execSync } = await import('child_process');
-    execSync('taskkill /F /IM AngularGatekeeperSetup.exe /T 2>nul || exit 0', { shell: 'cmd.exe' });
-    execSync('taskkill /F /IM engine.exe /T 2>nul || exit 0', { shell: 'cmd.exe' });
-  } catch (e) {
-    // Ignore if not running
+  // Gracefully terminate any running instances of AngularGatekeeperSetup.exe on Windows
+  if (process.platform === 'win32') {
+    try {
+      const { execSync } = await import('child_process');
+      execSync('taskkill /F /IM AngularGatekeeperSetup.exe /T 2>nul || exit 0', { shell: 'cmd.exe' });
+      execSync('taskkill /F /IM engine.exe /T 2>nul || exit 0', { shell: 'cmd.exe' });
+    } catch (e) {
+      // Ignore if not running
+    }
   }
   
   const targetPlatform = 'node22.23.2-win-x64';
@@ -636,6 +639,46 @@ async function build() {
     fs.copyFileSync(path.join(outputFolder, 'README.txt'), path.join(distDir, 'README.txt'));
   } catch (e) {}
 
+  // Generate cryptographic SHA256 checksums for release verification
+  const releaseFiles = [
+    'AngularGatekeeperSetup.exe',
+    'engine.exe',
+    'Install.bat',
+    'Uninstall.bat',
+    'README.txt'
+  ];
+  const checksumLines = [];
+  for (const file of releaseFiles) {
+    const filePath = path.join(distDir, file);
+    if (fs.existsSync(filePath)) {
+      const hash = crypto.createHash('sha256').update(fs.readFileSync(filePath)).digest('hex');
+      checksumLines.push(`${hash}  ${file}`);
+    }
+  }
+  if (checksumLines.length > 0) {
+    const checksumContent = checksumLines.join('\n') + '\n';
+    fs.writeFileSync(path.join(distDir, 'SHA256SUMS.txt'), checksumContent, 'utf8');
+    fs.writeFileSync(path.join(outputFolder, 'SHA256SUMS.txt'), checksumContent, 'utf8');
+    console.log('  ✔ Generated: dist/SHA256SUMS.txt & Angular Gatekeeper/SHA256SUMS.txt');
+  }
+
+  // Create standalone zip package if requested via --zip flag
+  if (process.argv.includes('--zip')) {
+    console.log('\n>>> Packaging release zip archive...');
+    try {
+      const { execSync } = await import('child_process');
+      const zipPath = path.join(distDir, 'Angular-Gatekeeper-Windows-x64.zip');
+      if (process.platform === 'win32') {
+        execSync(`powershell -NoProfile -Command "Compress-Archive -Path '${outputFolder}\\*' -DestinationPath '${zipPath}' -Force"`, { stdio: 'inherit' });
+      } else {
+        execSync(`cd "${outputFolder}" && zip -r "${zipPath}" .`, { stdio: 'inherit' });
+      }
+      console.log(`  ✔ Release zip archive ready: ${zipPath}`);
+    } catch (zipErr) {
+      console.warn('  ⚠ Warning: Could not create zip archive automatically:', zipErr.message);
+    }
+  }
+
   if (fs.existsSync(engineExePath) && fs.existsSync(installerExePath)) {
     const engineSizeMb = (fs.statSync(engineExePath).size / (1024 * 1024)).toFixed(2);
     const installerSizeMb = (fs.statSync(installerExePath).size / (1024 * 1024)).toFixed(2);
@@ -645,6 +688,7 @@ async function build() {
     console.log(`  ├── Angular Gatekeeper/engine.exe (${engineSizeMb} MB)`);
     console.log(`  ├── Angular Gatekeeper/Install.bat (Quick 1-click launcher)`);
     console.log(`  ├── Angular Gatekeeper/Uninstall.bat (Quick 1-click uninstaller)`);
+    console.log(`  ├── Angular Gatekeeper/SHA256SUMS.txt (SHA-256 integrity checksums)`);
     console.log(`  └── Angular Gatekeeper/README.txt (Complete instructions & user guide)`);
     console.log('\n✨ Standalone Software Distribution Package Built Successfully!\n');
   } else {

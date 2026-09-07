@@ -28445,12 +28445,14 @@ function validateCompiledArtifacts(cwd = process.cwd()) {
   }
   console.log(source_default.gray(`  Inspecting build distribution output at: ${outputDir}`));
   const outputFiles = getAllFiles(outputDir).map((f3) => import_path.default.relative(outputDir, f3).replace(/\\/g, "/"));
-  const hasIndexHtml = outputFiles.some((f3) => import_path.default.basename(f3).toLowerCase() === "index.html");
+  const indexHtmlPath = import_path.default.join(outputDir, "index.html");
+  const hasIndexHtml = import_fs.default.existsSync(indexHtmlPath) || outputFiles.some((f3) => import_path.default.basename(f3).toLowerCase() === "index.html");
   if (!hasIndexHtml) {
     logError("Critical build artifact missing: index.html was not generated in distribution output!");
     console.log(source_default.red("  Commit rejected: index.html is required for IIS/web servers to load the application.\n"));
     throw new Error("Critical build artifact missing: index.html");
   }
+  const { hasBaseHref } = checkBaseHref(indexHtmlPath);
   const jsBundles = outputFiles.filter((f3) => f3.endsWith(".js"));
   if (jsBundles.length === 0) {
     logError("Critical build artifact missing: No compiled JavaScript bundles found in output!");
@@ -28463,19 +28465,10 @@ function validateCompiledArtifacts(cwd = process.cwd()) {
     (f3) => f3.toLowerCase().endsWith("web.config") || f3.toLowerCase().endsWith("nginx.conf") || f3.toLowerCase().endsWith("_redirects") || f3.toLowerCase().endsWith("htaccess")
   );
   const envProdPath = import_path.default.join(cwd, "src", "environments", "environment.prod.ts");
-  let hasLocalhostLeak = false;
-  if (import_fs.default.existsSync(envProdPath)) {
-    const envContent = import_fs.default.readFileSync(envProdPath, "utf8");
-    if (/(?:http:\/\/localhost|http:\/\/127\.0\.0\.1|http:\/\/0\.0\.0\.0)/i.test(envContent)) {
-      hasLocalhostLeak = true;
-    }
-  }
+  const { hasLocalhostLeak, hasHttpApiLeak } = auditEnvironmentProd(envProdPath);
   const dockerfilePath = import_path.default.join(cwd, "Dockerfile");
-  let dockerValid = null;
-  if (import_fs.default.existsSync(dockerfilePath)) {
-    const dockerContent = import_fs.default.readFileSync(dockerfilePath, "utf8");
-    dockerValid = dockerContent.includes("FROM ") && (dockerContent.includes("COPY ") || dockerContent.includes("ADD "));
-  }
+  const dockerAudit = auditDockerfile(dockerfilePath);
+  const dockerValid = dockerAudit ? dockerAudit.valid : null;
   let totalBundleSizeBytes = 0;
   for (const jsFile of jsBundles) {
     const fullJsPath = import_path.default.join(outputDir, jsFile);
@@ -28484,8 +28477,9 @@ function validateCompiledArtifacts(cwd = process.cwd()) {
     }
   }
   const totalBundleSizeMb = (totalBundleSizeBytes / (1024 * 1024)).toFixed(2);
+  const bundleBudgetExceeded = totalBundleSizeBytes > 5 * 1024 * 1024;
   console.log(source_default.white("  Distribution & CD Readiness Checklist:"));
-  console.log(`    ${source_default.green("\u2714")} index.html (Main SPA Entry Point)`);
+  console.log(`    ${source_default.green("\u2714")} index.html (Main SPA Entry Point${hasBaseHref ? ", <base href> verified" : ""})`);
   console.log(`    ${source_default.green("\u2714")} Compiled JavaScript Bundles (${jsBundles.length} files: ${totalBundleSizeMb} MB total)`);
   if (hasStylesCss) {
     console.log(`    ${source_default.green("\u2714")} Global Production Styles (${cssFiles.map((f3) => import_path.default.basename(f3)).join(", ")})`);
@@ -28494,10 +28488,16 @@ function validateCompiledArtifacts(cwd = process.cwd()) {
     console.log(`    ${source_default.green("\u2714")} Web Server SPA Rewrite Config (IIS web.config / Nginx / _redirects)`);
   }
   if (dockerValid !== null) {
-    console.log(`    ${source_default.green("\u2714")} Dockerfile Container Specification Validated`);
+    console.log(`    ${source_default.green("\u2714")} Dockerfile Container Specification Validated${dockerAudit?.hasMultiStage ? " (Multi-stage)" : ""}`);
   }
   if (hasLocalhostLeak) {
     logWarning("CD Warning: Localhost/dev endpoint detected in environment.prod.ts!");
+  }
+  if (hasHttpApiLeak) {
+    logWarning("CD Security Warning: Unencrypted http:// endpoint detected in production environment!");
+  }
+  if (bundleBudgetExceeded) {
+    logWarning(`CD Performance Warning: Total compiled bundle size (${totalBundleSizeMb} MB) exceeds recommended 5 MB budget.`);
   }
   logSuccess(`Production distribution & CD deployment artifacts validated successfully (${totalBundleSizeMb} MB).`);
   return {
@@ -28505,7 +28505,59 @@ function validateCompiledArtifacts(cwd = process.cwd()) {
     totalBundleSizeMb,
     hasSpaRewrite,
     dockerValid,
-    hasLocalhostLeak
+    hasLocalhostLeak,
+    hasHttpApiLeak,
+    hasBaseHref,
+    bundleBudgetExceeded
+  };
+}
+function checkBaseHref(indexHtmlPath) {
+  if (!import_fs.default.existsSync(indexHtmlPath)) return { hasBaseHref: false, baseHrefValue: null };
+  const content = import_fs.default.readFileSync(indexHtmlPath, "utf8");
+  const match2 = content.match(/<base\s+href=["']([^"']+)["']/i);
+  return {
+    hasBaseHref: !!match2,
+    baseHrefValue: match2 ? match2[1] : null
+  };
+}
+function auditEnvironmentProd(envProdPath) {
+  if (!import_fs.default.existsSync(envProdPath)) {
+    return { hasLocalhostLeak: false, hasHttpApiLeak: false, issues: [] };
+  }
+  const content = import_fs.default.readFileSync(envProdPath, "utf8");
+  const issues = [];
+  const hasLocalhostLeak = /(?:http:\/\/localhost|http:\/\/127\.0\.0\.1|http:\/\/0\.0\.0\.0)/i.test(content);
+  if (hasLocalhostLeak) {
+    issues.push("Development localhost URL found in production config");
+  }
+  const lines = content.split("\n");
+  let hasHttpApiLeak = false;
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (trimmed.startsWith("//") || trimmed.startsWith("*")) continue;
+    if (/http:\/\/(?!localhost|127\.0\.0\.1|0\.0\.0\.0)[a-zA-Z0-9.-]+/i.test(trimmed)) {
+      hasHttpApiLeak = true;
+      issues.push("Unencrypted http:// endpoint found in production config");
+      break;
+    }
+  }
+  return { hasLocalhostLeak, hasHttpApiLeak, issues };
+}
+function auditDockerfile(dockerfilePath) {
+  if (!import_fs.default.existsSync(dockerfilePath)) return null;
+  const content = import_fs.default.readFileSync(dockerfilePath, "utf8");
+  const lines = content.split("\n").map((l) => l.trim()).filter((l) => l && !l.startsWith("#"));
+  const hasFrom = lines.some((l) => l.startsWith("FROM "));
+  const hasCopyOrAdd = lines.some((l) => l.startsWith("COPY ") || l.startsWith("ADD "));
+  const fromCount = lines.filter((l) => l.startsWith("FROM ")).length;
+  const hasMultiStage = fromCount > 1;
+  const hasExpose = lines.some((l) => l.startsWith("EXPOSE "));
+  return {
+    valid: hasFrom && hasCopyOrAdd,
+    hasFrom,
+    hasCopyOrAdd,
+    hasMultiStage,
+    hasExpose
   };
 }
 function updateBuildMetadata(cwd = process.cwd(), projectPkg = {}) {
@@ -28811,9 +28863,9 @@ function scanSecurityRules(diffOutput) {
   logSuccess("Security scan passed: Zero leaked API keys, tokens, or private credentials.");
   return true;
 }
-function scanStagedFileIntegrity(cwd = process.cwd()) {
+function scanStagedFileIntegrity(cwd = process.cwd(), stagedFilesOverride = null) {
   try {
-    const files = getStagedFiles(cwd);
+    const files = stagedFilesOverride || getStagedFiles(cwd);
     const forbiddenFiles = [];
     for (const f3 of files) {
       const base = import_path3.default.basename(f3).toLowerCase();
@@ -52275,8 +52327,8 @@ var STEPS = [
   { id: 2, label: "2. Critical Architecture & Entry Points" },
   { id: 3, label: "3. Dependency Vulnerability Audit (npm audit)" },
   { id: 4, label: "4. TypeScript & Linter Verification" },
-  { id: 5, label: "5. Automated Unit Tests (test:ci)" },
-  { id: 6, label: "6. Production Build & Distribution Artifacts" },
+  { id: 5, label: "5. Automated Unit Tests (test:ci) + Coverage Gate" },
+  { id: 6, label: "6. Production Build & CD Deployment Verification" },
   { id: 7, label: "7. Security & Secret Leak Scanning" },
   { id: 8, label: getAiStepLabel() }
 ];
@@ -52346,7 +52398,7 @@ $PROGRESS_FILE = "$env:TEMP\\gk-progress.json"
 [xml]$xaml = @"
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Angular Gatekeeper - Live Commit Validation"
+        Title="Angular Gatekeeper \u2014 Live CI/CD Commit Validation"
         Width="580" Height="700"
         WindowStartupLocation="CenterScreen"
         Topmost="True"
@@ -52392,8 +52444,8 @@ $PROGRESS_FILE = "$env:TEMP\\gk-progress.json"
     <!-- Header -->
     <Border Grid.Row="0" Background="$hdrBg" Padding="18,14" BorderBrush="$border" BorderThickness="0,0,0,1">
       <StackPanel>
-        <TextBlock Text="Angular Gatekeeper - Commit Verification" FontSize="16" FontWeight="Bold" Foreground="$fg"/>
-        <TextBlock Text="Validating code quality, build integrity &amp; architecture in real-time..." FontSize="11" Foreground="#94A3B8" Margin="0,3,0,0"/>
+        <TextBlock Text="Angular Gatekeeper \u2014 CI/CD Pre-Commit Quality Gate" FontSize="16" FontWeight="Bold" Foreground="$fg"/>
+        <TextBlock Text="Enforcing strict CI standards, CD deployment readiness &amp; AI regressions in real-time..." FontSize="11" Foreground="#94A3B8" Margin="0,3,0,0"/>
       </StackPanel>
     </Border>
 
@@ -52689,8 +52741,8 @@ $stepLabels = @(
   '2. Critical Architecture & Entry Points',
   '3. Dependency Vulnerability Audit (npm audit)',
   '4. TypeScript & Linter Verification',
-  '5. Automated Unit Tests (test:ci)',
-  '6. Production Build & Distribution Artifacts',
+  '5. Automated Unit Tests (test:ci) + Coverage Gate',
+  '6. Production Build & CD Deployment Verification',
   '7. Security & Secret Leak Scanning',
   '8. AI Knowledge Base Audit'
 )
@@ -52801,6 +52853,10 @@ $timer.Add_Tick({
         $sub   = $rowSubs[$num]
         $row   = $rowBorders[$num]
         $badge = $rowBadges[$num]
+
+        if ($state.label -and $state.label.Trim() -ne '') {
+            $lbl.Text = $state.label
+        }
 
         if ($state.detail -and $state.detail.Trim() -ne '') {
             $sub.Text = $state.detail
@@ -53072,9 +53128,15 @@ async function runGatekeeper() {
     runAngularProductionBuild(cwd, projectPkg);
     const cdRes = validateCompiledArtifacts(cwd);
     updateBuildMetadata(cwd, projectPkg);
-    let cdDetail = `Verified ${cdRes?.bundleCount || 0} production bundles (${cdRes?.totalBundleSizeMb || "0"} MB)`;
+    let cdDetail = `Verified ${cdRes?.bundleCount || 0} bundles (${cdRes?.totalBundleSizeMb || "0"} MB)`;
     if (cdRes && cdRes.hasSpaRewrite) {
-      cdDetail += " + SPA web.config/nginx rule";
+      cdDetail += " + SPA rewrite";
+    }
+    if (cdRes && cdRes.hasBaseHref) {
+      cdDetail += " + <base href>";
+    }
+    if (cdRes && cdRes.dockerValid) {
+      cdDetail += " + Dockerfile";
     }
     updateStep(6, "pass", cdDetail);
   } catch (err) {

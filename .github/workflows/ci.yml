@@ -1,4 +1,4 @@
-name: Angular Gatekeeper — CI Pipeline
+name: Angular Gatekeeper — CI/CD Pipeline
 
 on:
   push:
@@ -7,21 +7,161 @@ on:
       - 'v*.*.*'
   pull_request:
     branches: [main, master, develop]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   # ════════════════════════════════════════════════════
-  # JOB 1: Quality Gate (lint, test, coverage, build)
+  # JOB 1: Quality Gate & Validation (CI)
   # ════════════════════════════════════════════════════
   quality-gate:
-    name: 🛡️ Quality Gate
+    name: 🛡️ Quality Gate (Node ${{ matrix.node-version }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: ['20', '22']
 
     steps:
       - name: 📥 Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+
+      - name: ⚙️ Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+
+      - name: 📦 Clean Install Dependencies
+        id: install
+        run: npm ci
+
+      - name: 🔒 Dependency Vulnerability Audit
+        id: audit
+        run: npm audit --audit-level=high
+
+      - name: 🔍 ESLint — Static Code Analysis
+        id: lint
+        run: npm run lint
+
+      - name: 🧪 Unit Tests with Coverage
+        id: test
+        run: npm run test:ci
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          AI_PROVIDER: ${{ secrets.AI_PROVIDER || 'none' }}
+
+      - name: 📊 Upload Coverage Artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: matrix.node-version == '20' && always()
+        with:
+          name: coverage-report-node-${{ matrix.node-version }}
+          path: coverage/
+          retention-days: 14
+
+      - name: 🏗️ Build CLI Bundle (esbuild)
+        id: build
+        run: npm run build:bundle
+
+      - name: 🧪 Smoke Test Bundled Executables
+        id: smoke
+        run: npm run test:smoke
+
+      - name: 📦 Verify NPM Package Packing Integrity
+        id: pack
+        run: npm run build:pack
+
+      - name: 📤 Upload CLI Bundle Artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: matrix.node-version == '20'
+        with:
+          name: cli-bundle
+          path: build/
+          retention-days: 7
+
+      - name: 📋 Publish CI Step Summary
+        if: always()
+        run: |
+          echo "## 🛡️ Quality Gate Summary (Node ${{ matrix.node-version }})" >> $GITHUB_STEP_SUMMARY
+          echo "| Check | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|---|---|" >> $GITHUB_STEP_SUMMARY
+          echo "| Dependency Audit (npm audit) | ${{ steps.audit.outcome == 'success' && '✅ Passed' || steps.audit.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| ESLint Static Analysis | ${{ steps.lint.outcome == 'success' && '✅ Passed' || steps.lint.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Jest Unit Tests & Coverage | ${{ steps.test.outcome == 'success' && '✅ Passed' || steps.test.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| ESBuild Bundle Build | ${{ steps.build.outcome == 'success' && '✅ Passed' || steps.build.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| CLI Smoke Test | ${{ steps.smoke.outcome == 'success' && '✅ Passed' || steps.smoke.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| NPM Pack Integrity | ${{ steps.pack.outcome == 'success' && '✅ Passed' || steps.pack.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+
+  # ════════════════════════════════════════════════════
+  # JOB 2: Secret & Security Scanner (CI)
+  # ════════════════════════════════════════════════════
+  security-scan:
+    name: 🔒 Secret & SAST Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+
+      - name: 🔑 Gitleaks Security Scan
+        # Upgraded from v2 → v3: Node 20 runtime was deprecated on Sep 16 2026.
+        # v3 runs on Node 24 and is a drop-in replacement.
+        uses: gitleaks/gitleaks-action@v3
+        continue-on-error: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # ════════════════════════════════════════════════════
+  # JOB 3: CodeQL Static Analysis (SAST)
+  # ════════════════════════════════════════════════════
+  codeql:
+    name: 🔬 CodeQL SAST Analysis
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      actions: read
+      contents: read
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: 🔬 Initialize CodeQL
+        # Upgraded from v3 → v4: v3 deprecated Oct 2025, end-of-life Dec 2026.
+        # v4 runs on Node 24 runtime.
+        uses: github/codeql-action/init@v4
+        with:
+          languages: javascript
+          queries: security-and-quality
+
+      - name: 🔬 Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v4
+        with:
+          category: '/language:javascript'
+
+  # ════════════════════════════════════════════════════
+  # JOB 4: Production Release Packaging & CD Delivery
+  # ════════════════════════════════════════════════════
+  release:
+    name: 🚀 GitHub Release & Distribution
+    needs: [quality-gate, security-scan]
+    runs-on: windows-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: ⚙️ Setup Node.js v20
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: '20'
           cache: 'npm'
@@ -29,68 +169,93 @@ jobs:
       - name: 📦 Clean Install Dependencies
         run: npm ci
 
-      - name: 🔒 Dependency Vulnerability Audit
-        run: npm audit --audit-level=high
+      - name: 🔍 Verify Tag Matches package.json Version
+        shell: bash
+        run: |
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          PKG_VERSION=$(node -p "require('./package.json').version")
+          if [ "$TAG_VERSION" != "$PKG_VERSION" ]; then
+            echo "❌ Version mismatch: Git tag is v${TAG_VERSION} but package.json has ${PKG_VERSION}"
+            exit 1
+          fi
+          echo "✔ Tag v${TAG_VERSION} matches package.json version ${PKG_VERSION}"
 
-      - name: 🔍 ESLint — Static Code Analysis
-        run: npm run lint
+      - name: 📦 Cache pkg Binary Downloads
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v4.2.3
+        with:
+          path: ~/.pkg-cache
+          key: pkg-cache-${{ runner.os }}-node22-x64
+          restore-keys: |
+            pkg-cache-${{ runner.os }}-
 
-      - name: 🧪 Unit Tests with Coverage
-        run: npm run test:ci
+      - name: 🏗️ Build Standalone Executables & Zip Distribution
+        run: npm run build:exe
+
+      - name: 🧪 Verify Release Artifacts & SHA256 Checksums
+        shell: bash
+        run: |
+          ls -la dist/
+          if [ ! -f "dist/engine.exe" ] || [ ! -f "dist/AngularGatekeeperSetup.exe" ] || [ ! -f "dist/SHA256SUMS.txt" ]; then
+            echo "❌ Critical release files are missing in dist/"
+            exit 1
+          fi
+          echo "✔ All binary artifacts and checksums verified successfully."
+
+      - name: 📦 Create GitHub Release
+        # Upgraded from v2 → v3: v2 deprecated (Node 20 runtime end-of-life).
+        # v3 is a drop-in replacement on Node 24.
+        uses: softprops/action-gh-release@v3
+        with:
+          name: "Angular Gatekeeper v${{ github.ref_name }}"
+          files: |
+            dist/Angular-Gatekeeper-Windows-x64.zip
+            dist/AngularGatekeeperSetup.exe
+            dist/engine.exe
+            dist/SHA256SUMS.txt
+            dist/Install.bat
+            dist/Uninstall.bat
+          generate_release_notes: true
+          draft: false
+          prerelease: false
         env:
-          # AI keys are optional — CI runs rule-based checks if not provided
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          AI_PROVIDER: ${{ secrets.AI_PROVIDER || 'none' }}
-
-      - name: 📊 Upload Coverage Report
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: coverage-report
-          path: coverage/
-          retention-days: 14
-
-      - name: 🏗️ Build CLI Bundle
-        run: npm run build:bundle
-
-      - name: 📤 Upload Build Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: dist-bundle
-          path: dist/
-          retention-days: 7
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   # ════════════════════════════════════════════════════
-  # JOB 2: Release (only on version tags, e.g. v1.2.3)
+  # JOB 5: NPM Registry Delivery (CD)
   # ════════════════════════════════════════════════════
-  release:
-    name: 🚀 GitHub Release
-    needs: quality-gate
+  npm-delivery:
+    name: 📦 NPM Package Delivery
+    # Requires BOTH quality-gate AND a successful GitHub Release before publishing.
+    # Prevents NPM publish from running if the binary release step failed.
+    needs: [quality-gate, release]
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/v')
 
     steps:
       - name: 📥 Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: ⚙️ Setup Node.js v20
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: '20'
-          cache: 'npm'
+          registry-url: 'https://registry.npmjs.org'
 
       - name: 📦 Clean Install Dependencies
         run: npm ci
 
-      - name: 🏗️ Build Full Executable
-        run: npm run build:exe
+      - name: 🏗️ Build CLI Bundle
+        run: npm run build:bundle
 
-      - name: 📦 Create GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          files: |
-            dist/engine.exe
-            dist/installer.exe
-          generate_release_notes: true
+      - name: 🚀 Publish to NPM
+        shell: bash
+        run: |
+          if [ -z "$NODE_AUTH_TOKEN" ]; then
+            echo "❌ NPM_TOKEN secret is not configured. Cannot publish to NPM registry."
+            echo "   Go to: Settings → Secrets → Actions → New repository secret → NPM_TOKEN"
+            exit 1
+          fi
+          echo "Publishing to NPM registry..."
+          npm publish --access public
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

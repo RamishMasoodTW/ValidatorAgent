@@ -1,0 +1,10 @@
+# Gitleaks configuration
+[allowlist]
+description = "Ignore test fixture mock tokens, docs, and example configs"
+paths = [
+  '''tests/''',
+  '''\.env\.example$''',
+  '''dist/''',
+  '''build/''',
+  '''coverage/'''
+]

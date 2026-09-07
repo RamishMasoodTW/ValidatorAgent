@@ -26,9 +26,9 @@
 │                       CI / CD COMPLIANCE BENCHMARK                          │
 ├──────────────────────────────────────┬──────────────────────────────────────┤
 │ 🚀 CONTINUOUS INTEGRATION (CI)       │ 🚢 CONTINUOUS DELIVERY / DEPLOY (CD) │
-│       ⭐ 96% RESOLUTION              │          ⭐ 55% RESOLUTION           │
+│       ⭐ 96% RESOLUTION              │          ⭐ 62% RESOLUTION           │
 ├──────────────────────────────────────┴──────────────────────────────────────┤
-│ 🎯 COMBINED REAL-WORLD LIFECYCLE COVERAGE: ~80% - 85%                       │
+│ 🎯 COMBINED REAL-WORLD LIFECYCLE COVERAGE: ~85% - 88%                       │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -45,20 +45,24 @@
 | **Leftover Git Merge Conflict Markers** | **100%** | Regex-scans code for `<<<<<<< HEAD`, `=======`, and `>>>>>>>` to prevent syntax corruption in CI. |
 | **CI Runner Disk & Repo Bloat (>10MB)** | **95%** | Blocks accidental commits of `.env`, `.pem`, `.key`, and oversized binary files (>10MB). |
 | **Node.js CI Runner Version Mismatches** | **95%** | Verifies active Node.js version against `package.json` `"engines"` and `.nvmrc`. |
-| **Server Workflow Automation** | **100%** | Automatically generates `.github/workflows/ci.yml` with all 8 checks during `a-gatekeeper enable`. |
+| **Server Workflow Automation** | **100%** | Automatically generates strict `.github/workflows/ci.yml` (without `\|\| true` bypasses) with quality gate and CD delivery stages during `a-gatekeeper enable`. |
 
 ---
 
-### 🚢 CD (Continuous Delivery & Deployment Readiness) — **55% Resolved**
+### 🚢 CD (Continuous Delivery & Deployment Readiness) — **62% Resolved**
 
 | Specific CD Issue Resolved | Impact | How Gatekeeper Resolves It Locally |
 | :--- | :---: | :--- |
 | **SPA 404 Refresh Failures on Servers** | **100%** | Validates that web server URL rewrite configurations (`web.config` for IIS, `nginx.conf`, or `_redirects` for Cloudflare/Netlify) exist in distribution output so page refreshes don't 404. |
+| **SPA Client-Side Route Base-Href Breakages** | **100%** | Verifies `<base href="...">` exists in `index.html` to ensure router links and relative static assets resolve correctly after deployment. |
 | **Production Localhost / Dev URL Leaks** | **95%** | Scans `environment.prod.ts` to ensure development URLs (`http://localhost:3000`, `127.0.0.1`) do not leak into live production. |
+| **Insecure HTTP API Endpoints in Prod** | **90%** | Audits production environment configurations for unencrypted `http://` API calls to enforce transport-layer security (HTTPS). |
 | **Missing Production Artifacts (`dist/`)** | **100%** | Runs `ng build` and confirms `index.html`, JavaScript bundles (`main.js`, `polyfills.js`), and global styles exist in `dist/`. |
-| **Bundle Size & Performance Bloat** | **85%** | Calculates total compiled bundle size (in MB) and verifies it against budget thresholds. |
-| **Container (Docker) Build Syntax** | **80%** | Lints repo `Dockerfile` (validates `FROM`, `COPY`, and multi-stage steps) to prevent cloud container build crashes. |
+| **Bundle Sizing Budget & Load SLAs** | **85%** | Calculates total compiled bundle size (in MB) and audits against enterprise performance budgets (<5MB threshold). |
+| **Container (Docker) Build & Multi-Stage Syntax** | **85%** | Lints repo `Dockerfile` (validates `FROM`, `COPY`, `EXPOSE`, and multi-stage steps) to prevent cloud container build crashes. |
 | **Automated Build Version Tracking** | **100%** | Automatically stamps build number, Git commit hash, active branch, and timestamp into `src/build-metadata.json`. |
+| **Automated CD Delivery Artifact Archiving** | **100%** | Generated pipeline includes a dedicated `delivery-readiness` CD job that verifies distribution bundles and archives production artifacts via GitHub Actions. |
+
 
 ---
 
