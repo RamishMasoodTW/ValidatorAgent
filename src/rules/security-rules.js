@@ -12,7 +12,7 @@ import { getStagedFiles } from '../utils/git.js';
 export function scanSecurityRules(diffOutput) {
   if (!diffOutput || diffOutput.trim() === '') return true;
 
-  logStep(6, 'Enterprise Security & Secret Leak Scanning');
+  logStep(7, 'Security & Secret Leak Scanning');
 
   const forbiddenPatterns = [
     // 1. Google / Gemini / Vertex AI Keys
@@ -136,7 +136,8 @@ export function scanStagedFileIntegrity(cwd = process.cwd(), stagedFilesOverride
         console.log(chalk.red(`    • ${chalk.bold(item.file)} [${item.reason}]`));
       });
       console.log(chalk.yellow('\n  Remove these files from git staging using "git reset HEAD <file>".'));
-      throw new Error('Forbidden or oversized files detected in staged commit');
+      const fileListStr = forbiddenFiles.map(item => `  • ${item.file} [${item.reason}]`).join('\n');
+      throw new Error(`Forbidden or oversized files detected in staged commit:\n${fileListStr}`);
     }
   } catch (err) {
     if (err.message.includes('Forbidden or oversized')) throw err;
@@ -177,7 +178,9 @@ export function scanDependencyVulnerabilities(cwd = process.cwd()) {
       console.log(chalk.red.bold('  ❌ COMMIT REJECTED: Security vulnerabilities found in npm packages!'));
       console.log(chalk.yellow('  Run "npm audit" or "npm audit fix" to resolve known CVEs.'));
       console.log(chalk.red('  ═════════════════════════════════════════════════════════════════\n'));
-      throw new Error('Dependency security audit failed (High/Critical CVEs detected)');
+      const secErr = new Error('Dependency security audit failed (High/Critical CVEs detected)');
+      secErr.auditOutput = output;
+      throw secErr;
     } else {
       // Network issue or npm audit offline - warn instead of hard blocking
       logWarning('npm audit could not connect to registry; skipping offline.');
@@ -185,4 +188,46 @@ export function scanDependencyVulnerabilities(cwd = process.cwd()) {
     }
   }
 }
+
+/**
+ * Validates that commit messages follow Conventional Commits specification
+ */
+export function validateCommitMessage(message) {
+  if (!message || typeof message !== 'string') {
+    return { valid: false, error: 'Commit message is empty' };
+  }
+
+  const clean = message.trim().split('\n')[0].trim();
+  if (!clean) {
+    return { valid: false, error: 'Commit message is empty' };
+  }
+
+  // Disallow lazy commit messages
+  const lazyPatterns = /^(wip|fix|update|test|stuff|changes|commit|done|temp)$/i;
+  if (lazyPatterns.test(clean)) {
+    return {
+      valid: false,
+      error: `Commit message "${clean}" is too vague. Follow Conventional Commits (e.g. "feat: add user profile page").`
+    };
+  }
+
+  // Conventional Commits regex: type(scope)!: description
+  const convRegex = /^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(?:\(([a-zA-Z0-9_.\-/]+)\))?!?:\s*(.+)$/i;
+  const match = clean.match(convRegex);
+
+  if (!match) {
+    return {
+      valid: false,
+      error: `Commit message does not adhere to Conventional Commits format ("type(scope): description"). Received: "${clean}"`
+    };
+  }
+
+  return {
+    valid: true,
+    type: match[1].toLowerCase(),
+    scope: match[2] || null,
+    description: match[3].trim()
+  };
+}
+
 

@@ -51,8 +51,7 @@ const STEPS = [
   { id: 5, label: '5. Automated Unit Tests (test:ci) + Coverage Gate' },
   { id: 6, label: '6. Production Build & CD Deployment Verification' },
   { id: 7, label: '7. Security & Secret Leak Scanning' },
-  { id: 8, label: '8. Additional CI Checks' },
-  { id: 9, label: getAiStepLabel() }
+  { id: 8, label: getAiStepLabel() }
 ];
 
 let _windowEnabled = false;
@@ -468,8 +467,7 @@ $stepLabels = @(
   '5. Automated Unit Tests (test:ci) + Coverage Gate',
   '6. Production Build & CD Deployment Verification',
   '7. Security & Secret Leak Scanning',
-  '8. Additional CI Checks',
-  '9. AI Knowledge Base Audit'
+  '8. AI Knowledge Base Audit'
 );
 
 $rowBorders = @{}
@@ -766,14 +764,14 @@ export function updateStep(stepId, status, reportOrDetail = '') {
   if (!data) return;
   if (data.steps[stepId]) {
     data.steps[stepId].status = status;
-    if (stepId !== 9) {
+    if (stepId !== 8) {
       data.steps[stepId].detail = stripAnsi(reportOrDetail);
     }
   }
   if (status === 'error') {
     data.hasError = true;
   }
-  if (stepId === 9 && reportOrDetail) {
+  if (stepId === 8 && reportOrDetail) {
     data.aiReport = stripAnsi(reportOrDetail);
   }
   writeProgressFile(data);

@@ -17,12 +17,19 @@ export function runTypeScriptAndLintChecks(cwd = process.cwd(), projectPkg = {})
   if (scripts['lint']) {
     console.log(chalk.blue('  Running Angular Linter (npm run lint)...'));
     try {
-      execSync('npm run lint', { stdio: 'inherit', cwd });
+      const lintOut = execSync('npm run lint', { stdio: 'pipe', encoding: 'utf8', maxBuffer: 10 * 1024 * 1024, cwd });
+      if (lintOut) process.stdout.write(lintOut);
       logSuccess('Angular linter passed with zero errors.');
     } catch (err) {
       logError('Angular linter reported errors!');
+      const stdout = err.stdout ? err.stdout.toString() : '';
+      const stderr = err.stderr ? err.stderr.toString() : '';
+      const combined = (stdout + '\n' + stderr).trim();
+      if (combined) process.stdout.write(combined + '\n');
       console.log(chalk.red('\n  Fix the linting issues before committing code.\n'));
-      throw new Error('Angular linting failed');
+      const failErr = new Error('Angular linting failed');
+      failErr.stepOutput = combined || err.message;
+      throw failErr;
     }
   }
 
@@ -31,12 +38,19 @@ export function runTypeScriptAndLintChecks(cwd = process.cwd(), projectPkg = {})
     const typeScript = scripts['type-check'] ? 'type-check' : 'typecheck';
     console.log(chalk.blue(`  Running TypeScript Check (npm run ${typeScript})...`));
     try {
-      execSync(`npm run ${typeScript}`, { stdio: 'inherit', cwd });
+      const tcOut = execSync(`npm run ${typeScript}`, { stdio: 'pipe', encoding: 'utf8', maxBuffer: 10 * 1024 * 1024, cwd });
+      if (tcOut) process.stdout.write(tcOut);
       logSuccess('TypeScript checks passed.');
     } catch (err) {
       logError('TypeScript type checking failed!');
+      const stdout = err.stdout ? err.stdout.toString() : '';
+      const stderr = err.stderr ? err.stderr.toString() : '';
+      const combined = (stdout + '\n' + stderr).trim();
+      if (combined) process.stdout.write(combined + '\n');
       console.log(chalk.red('\n  Fix the TypeScript errors before committing code.\n'));
-      throw new Error('TypeScript type checking failed');
+      const failErr = new Error('TypeScript type checking failed');
+      failErr.stepOutput = combined || err.message;
+      throw failErr;
     }
   } else {
     // Run direct tsc --noEmit check if tsconfig exists
@@ -212,7 +226,7 @@ try {
  * Step 6: Production Build Compilation & Artifact Verification
  */
 export function runAngularProductionBuild(cwd = process.cwd(), projectPkg = {}) {
-  logStep(6, 'Mandatory Angular Build Compilation');
+  logStep(6, 'Production Build & CD Deployment Verification');
   const scripts = projectPkg.scripts || {};
 
   console.log(chalk.blue('  Running Mandatory Angular Build Compilation...'));
@@ -223,14 +237,22 @@ export function runAngularProductionBuild(cwd = process.cwd(), projectPkg = {}) 
 
   console.log(chalk.gray(`  Executing: ${buildCommand}`));
   try {
-    execSync(buildCommand, { stdio: 'inherit', cwd });
+    const buildOut = execSync(buildCommand, { stdio: 'pipe', encoding: 'utf8', maxBuffer: 20 * 1024 * 1024, cwd });
+    if (buildOut) process.stdout.write(buildOut);
     logSuccess('Angular compilation & build completed successfully with ZERO errors.');
   } catch (buildErr) {
     logError('Angular Build FAILED! Compilation or TypeScript errors detected.');
+    const stdout = buildErr.stdout ? buildErr.stdout.toString() : '';
+    const stderr = buildErr.stderr ? buildErr.stderr.toString() : '';
+    const combined = (stdout + '\n' + stderr).trim();
+    if (combined) process.stdout.write(combined + '\n');
     console.log(chalk.red('\n  ═════════════════════════════════════════════════════════════════'));
     console.log(chalk.red.bold('  ❌ COMMIT REJECTED: Application bundle generation failed!'));
     console.log(chalk.yellow('  Please fix the Angular/TypeScript build errors displayed above.'));
     console.log(chalk.red('  ═════════════════════════════════════════════════════════════════\n'));
-    throw new Error('Angular build compilation failed');
+    const failErr = new Error('Angular build compilation failed');
+    failErr.buildOutput = combined || buildErr.message;
+    failErr.stepOutput = failErr.buildOutput;
+    throw failErr;
   }
 }

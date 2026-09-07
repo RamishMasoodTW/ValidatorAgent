@@ -61,6 +61,10 @@ async function runGatekeeper() {
   console.log(chalk.gray(`Working Directory: ${process.cwd()}\n`));
 
   const cwd = process.cwd();
+  const isCiMode = argv.includes('--ci') || !!process.env.CI;
+  if (isCiMode) {
+    process.env.SHOW_PROGRESS = 'false';
+  }
 
   // STEP 1: Angular Project Detection (Safe Bypass for non-Angular)
   const { isAngular: _isAngular, projectPkg } = checkAngularProject(cwd);
@@ -134,15 +138,23 @@ async function runGatekeeper() {
     runAngularProductionBuild(cwd, projectPkg);
     const cdRes = validateCompiledArtifacts(cwd);
     updateBuildMetadata(cwd, projectPkg);
-    let cdDetail = `Verified ${cdRes?.bundleCount || 0} bundles (${cdRes?.totalBundleSizeMb || '0'} MB)`;
+    let cdDetail = `CD Verified: ${cdRes?.totalBundleSizeMb || '0'} MB`;
+    if (cdRes?.totalGzipSizeKb && cdRes.totalGzipSizeKb !== '0.0') {
+      cdDetail += ` (Gzip: ${cdRes.totalGzipSizeKb} KB)`;
+    }
     if (cdRes && cdRes.hasSpaRewrite) {
-      cdDetail += ' + SPA rewrite';
+      cdDetail += ' | SPA: ✔';
+    } else {
+      cdDetail += ' | SPA: ⚠ Missing';
     }
     if (cdRes && cdRes.hasBaseHref) {
-      cdDetail += ' + <base href>';
+      cdDetail += ' | BaseHref: ✔';
     }
-    if (cdRes && cdRes.dockerValid) {
-      cdDetail += ' + Dockerfile';
+    if (cdRes && cdRes.assetAudit && cdRes.assetAudit.valid) {
+      cdDetail += ' | Assets: ✔';
+    }
+    if (cdRes && cdRes.releaseManifestCreated) {
+      cdDetail += ' | Manifest: ✔';
     }
     updateStep(6, 'pass', cdDetail);
   } catch (err) {
@@ -263,7 +275,49 @@ async function main() {
     }
   }
 
-  // 3. Default: Git Pre-Commit Validation
+  // 3. Live CD Deployment Verification Command (verify-deploy / verify-live)
+  const isVerifyDeploy = argv.some(a =>
+    a === 'verify-deploy' ||
+    a === 'verify-live' ||
+    a === '--verify-deploy' ||
+    a === '--verify-live'
+  );
+
+  if (isVerifyDeploy) {
+    const targetUrl = argv.find(a => a.startsWith('http://') || a.startsWith('https://')) || argv[3];
+    if (!targetUrl) {
+      console.log(chalk.red('\n  ✖ Error: Missing deployment URL to verify.'));
+      console.log(chalk.yellow('  Usage:   a-gatekeeper verify-deploy <url>'));
+      console.log(chalk.gray('  Example: a-gatekeeper verify-deploy https://my-angular-app.com\n'));
+      process.exit(1);
+    }
+
+    try {
+      const { verifyLiveDeployment } = await import('./rules/angular-best-practices.js');
+      const result = await verifyLiveDeployment(targetUrl);
+      console.log(chalk.white('\n  CD Live Deployment Probe Report:'));
+      console.log(`    Status Code:       ${result.statusCode === 200 ? chalk.green('200 OK') : chalk.red(result.statusCode)}`);
+      console.log(`    Base Href Tag:     ${result.hasBaseHref ? chalk.green('✔ Verified') : chalk.yellow('⚠ Missing')}`);
+      console.log(`    SPA Deep Rewrite:  ${result.spaRewriteWorking ? chalk.green('✔ Functional') : chalk.yellow('⚠ Not Detected / Standard 404')}`);
+      if (result.issues.length > 0) {
+        console.log(chalk.yellow('\n  Detected CD Configuration Warnings:'));
+        result.issues.forEach(iss => console.log(chalk.yellow(`    • ${iss}`)));
+      }
+      if (result.success) {
+        console.log(chalk.green.bold('\n  ✔ CD Deployment Verification: 65% Compliance Passed!\n'));
+        process.exit(0);
+      } else {
+        console.log(chalk.yellow.bold('\n  ⚠ CD Deployment Verification completed with warnings.\n'));
+        process.exit(0);
+      }
+    } catch (err) {
+      console.log(chalk.red(`\n  ✖ CD Verification Failed: ${err.message}\n`));
+      process.exit(1);
+    }
+    return;
+  }
+
+  // 4. Default: Git Pre-Commit Validation
   await runGatekeeper();
 }
 

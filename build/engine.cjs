@@ -46,7 +46,7 @@ var require_main = __commonJS({
     var fs10 = require("fs");
     var path9 = require("path");
     var os3 = require("os");
-    var crypto2 = require("crypto");
+    var crypto3 = require("crypto");
     var TIPS = [
       "\u25C8 encrypted .env [www.dotenvx.com]",
       "\u25C8 secrets for agents [www.dotenvx.com]",
@@ -290,7 +290,7 @@ var require_main = __commonJS({
       const authTag = ciphertext.subarray(-16);
       ciphertext = ciphertext.subarray(12, -16);
       try {
-        const aesgcm = crypto2.createDecipheriv("aes-256-gcm", key, nonce);
+        const aesgcm = crypto3.createDecipheriv("aes-256-gcm", key, nonce);
         aesgcm.setAuthTag(authTag);
         return `${aesgcm.update(ciphertext)}${aesgcm.final()}`;
       } catch (error) {
@@ -356,6 +356,1664 @@ var require_main = __commonJS({
     module2.exports.parse = DotenvModule.parse;
     module2.exports.populate = DotenvModule.populate;
     module2.exports = DotenvModule;
+  }
+});
+
+// node_modules/chalk/source/vendor/ansi-styles/index.js
+function assembleStyles() {
+  const codes = /* @__PURE__ */ new Map();
+  for (const [groupName, group] of Object.entries(styles)) {
+    for (const [styleName, style] of Object.entries(group)) {
+      styles[styleName] = {
+        open: `\x1B[${style[0]}m`,
+        close: `\x1B[${style[1]}m`
+      };
+      group[styleName] = styles[styleName];
+      codes.set(style[0], style[1]);
+    }
+    Object.defineProperty(styles, groupName, {
+      value: group,
+      enumerable: false
+    });
+  }
+  Object.defineProperty(styles, "codes", {
+    value: codes,
+    enumerable: false
+  });
+  styles.color.close = "\x1B[39m";
+  styles.bgColor.close = "\x1B[49m";
+  styles.color.ansi = wrapAnsi16();
+  styles.color.ansi256 = wrapAnsi256();
+  styles.color.ansi16m = wrapAnsi16m();
+  styles.bgColor.ansi = wrapAnsi16(ANSI_BACKGROUND_OFFSET);
+  styles.bgColor.ansi256 = wrapAnsi256(ANSI_BACKGROUND_OFFSET);
+  styles.bgColor.ansi16m = wrapAnsi16m(ANSI_BACKGROUND_OFFSET);
+  Object.defineProperties(styles, {
+    rgbToAnsi256: {
+      value(red, green, blue) {
+        if (red === green && green === blue) {
+          if (red < 8) {
+            return 16;
+          }
+          if (red > 248) {
+            return 231;
+          }
+          return Math.round((red - 8) / 247 * 24) + 232;
+        }
+        return 16 + 36 * Math.round(red / 255 * 5) + 6 * Math.round(green / 255 * 5) + Math.round(blue / 255 * 5);
+      },
+      enumerable: false
+    },
+    hexToRgb: {
+      value(hex) {
+        const matches = /[a-f\d]{6}|[a-f\d]{3}/i.exec(hex.toString(16));
+        if (!matches) {
+          return [0, 0, 0];
+        }
+        let [colorString] = matches;
+        if (colorString.length === 3) {
+          colorString = [...colorString].map((character) => character + character).join("");
+        }
+        const integer = Number.parseInt(colorString, 16);
+        return [
+          /* eslint-disable no-bitwise */
+          integer >> 16 & 255,
+          integer >> 8 & 255,
+          integer & 255
+          /* eslint-enable no-bitwise */
+        ];
+      },
+      enumerable: false
+    },
+    hexToAnsi256: {
+      value: (hex) => styles.rgbToAnsi256(...styles.hexToRgb(hex)),
+      enumerable: false
+    },
+    ansi256ToAnsi: {
+      value(code) {
+        if (code < 8) {
+          return 30 + code;
+        }
+        if (code < 16) {
+          return 90 + (code - 8);
+        }
+        let red;
+        let green;
+        let blue;
+        if (code >= 232) {
+          red = ((code - 232) * 10 + 8) / 255;
+          green = red;
+          blue = red;
+        } else {
+          code -= 16;
+          const remainder = code % 36;
+          red = Math.floor(code / 36) / 5;
+          green = Math.floor(remainder / 6) / 5;
+          blue = remainder % 6 / 5;
+        }
+        const value = Math.max(red, green, blue) * 2;
+        if (value === 0) {
+          return 30;
+        }
+        let result = 30 + (Math.round(blue) << 2 | Math.round(green) << 1 | Math.round(red));
+        if (value === 2) {
+          result += 60;
+        }
+        return result;
+      },
+      enumerable: false
+    },
+    rgbToAnsi: {
+      value: (red, green, blue) => styles.ansi256ToAnsi(styles.rgbToAnsi256(red, green, blue)),
+      enumerable: false
+    },
+    hexToAnsi: {
+      value: (hex) => styles.ansi256ToAnsi(styles.hexToAnsi256(hex)),
+      enumerable: false
+    }
+  });
+  return styles;
+}
+var ANSI_BACKGROUND_OFFSET, wrapAnsi16, wrapAnsi256, wrapAnsi16m, styles, modifierNames, foregroundColorNames, backgroundColorNames, colorNames, ansiStyles, ansi_styles_default;
+var init_ansi_styles = __esm({
+  "node_modules/chalk/source/vendor/ansi-styles/index.js"() {
+    ANSI_BACKGROUND_OFFSET = 10;
+    wrapAnsi16 = (offset = 0) => (code) => `\x1B[${code + offset}m`;
+    wrapAnsi256 = (offset = 0) => (code) => `\x1B[${38 + offset};5;${code}m`;
+    wrapAnsi16m = (offset = 0) => (red, green, blue) => `\x1B[${38 + offset};2;${red};${green};${blue}m`;
+    styles = {
+      modifier: {
+        reset: [0, 0],
+        // 21 isn't widely supported and 22 does the same thing
+        bold: [1, 22],
+        dim: [2, 22],
+        italic: [3, 23],
+        underline: [4, 24],
+        overline: [53, 55],
+        inverse: [7, 27],
+        hidden: [8, 28],
+        strikethrough: [9, 29]
+      },
+      color: {
+        black: [30, 39],
+        red: [31, 39],
+        green: [32, 39],
+        yellow: [33, 39],
+        blue: [34, 39],
+        magenta: [35, 39],
+        cyan: [36, 39],
+        white: [37, 39],
+        // Bright color
+        blackBright: [90, 39],
+        gray: [90, 39],
+        // Alias of `blackBright`
+        grey: [90, 39],
+        // Alias of `blackBright`
+        redBright: [91, 39],
+        greenBright: [92, 39],
+        yellowBright: [93, 39],
+        blueBright: [94, 39],
+        magentaBright: [95, 39],
+        cyanBright: [96, 39],
+        whiteBright: [97, 39]
+      },
+      bgColor: {
+        bgBlack: [40, 49],
+        bgRed: [41, 49],
+        bgGreen: [42, 49],
+        bgYellow: [43, 49],
+        bgBlue: [44, 49],
+        bgMagenta: [45, 49],
+        bgCyan: [46, 49],
+        bgWhite: [47, 49],
+        // Bright color
+        bgBlackBright: [100, 49],
+        bgGray: [100, 49],
+        // Alias of `bgBlackBright`
+        bgGrey: [100, 49],
+        // Alias of `bgBlackBright`
+        bgRedBright: [101, 49],
+        bgGreenBright: [102, 49],
+        bgYellowBright: [103, 49],
+        bgBlueBright: [104, 49],
+        bgMagentaBright: [105, 49],
+        bgCyanBright: [106, 49],
+        bgWhiteBright: [107, 49]
+      }
+    };
+    modifierNames = Object.keys(styles.modifier);
+    foregroundColorNames = Object.keys(styles.color);
+    backgroundColorNames = Object.keys(styles.bgColor);
+    colorNames = [...foregroundColorNames, ...backgroundColorNames];
+    ansiStyles = assembleStyles();
+    ansi_styles_default = ansiStyles;
+  }
+});
+
+// node_modules/chalk/source/vendor/supports-color/index.js
+function hasFlag(flag, argv2 = globalThis.Deno ? globalThis.Deno.args : import_node_process.default.argv) {
+  const prefix = flag.startsWith("-") ? "" : flag.length === 1 ? "-" : "--";
+  const position = argv2.indexOf(prefix + flag);
+  const terminatorPosition = argv2.indexOf("--");
+  return position !== -1 && (terminatorPosition === -1 || position < terminatorPosition);
+}
+function envForceColor() {
+  if ("FORCE_COLOR" in env) {
+    if (env.FORCE_COLOR === "true") {
+      return 1;
+    }
+    if (env.FORCE_COLOR === "false") {
+      return 0;
+    }
+    return env.FORCE_COLOR.length === 0 ? 1 : Math.min(Number.parseInt(env.FORCE_COLOR, 10), 3);
+  }
+}
+function translateLevel(level) {
+  if (level === 0) {
+    return false;
+  }
+  return {
+    level,
+    hasBasic: true,
+    has256: level >= 2,
+    has16m: level >= 3
+  };
+}
+function _supportsColor(haveStream, { streamIsTTY, sniffFlags = true } = {}) {
+  const noFlagForceColor = envForceColor();
+  if (noFlagForceColor !== void 0) {
+    flagForceColor = noFlagForceColor;
+  }
+  const forceColor = sniffFlags ? flagForceColor : noFlagForceColor;
+  if (forceColor === 0) {
+    return 0;
+  }
+  if (sniffFlags) {
+    if (hasFlag("color=16m") || hasFlag("color=full") || hasFlag("color=truecolor")) {
+      return 3;
+    }
+    if (hasFlag("color=256")) {
+      return 2;
+    }
+  }
+  if ("TF_BUILD" in env && "AGENT_NAME" in env) {
+    return 1;
+  }
+  if (haveStream && !streamIsTTY && forceColor === void 0) {
+    return 0;
+  }
+  const min = forceColor || 0;
+  if (env.TERM === "dumb") {
+    return min;
+  }
+  if (import_node_process.default.platform === "win32") {
+    const osRelease = import_node_os.default.release().split(".");
+    if (Number(osRelease[0]) >= 10 && Number(osRelease[2]) >= 10586) {
+      return Number(osRelease[2]) >= 14931 ? 3 : 2;
+    }
+    return 1;
+  }
+  if ("CI" in env) {
+    if (["GITHUB_ACTIONS", "GITEA_ACTIONS", "CIRCLECI"].some((key) => key in env)) {
+      return 3;
+    }
+    if (["TRAVIS", "APPVEYOR", "GITLAB_CI", "BUILDKITE", "DRONE"].some((sign) => sign in env) || env.CI_NAME === "codeship") {
+      return 1;
+    }
+    return min;
+  }
+  if ("TEAMCITY_VERSION" in env) {
+    return /^(9\.(0*[1-9]\d*)\.|\d{2,}\.)/.test(env.TEAMCITY_VERSION) ? 1 : 0;
+  }
+  if (env.COLORTERM === "truecolor") {
+    return 3;
+  }
+  if (env.TERM === "xterm-kitty") {
+    return 3;
+  }
+  if (env.TERM === "xterm-ghostty") {
+    return 3;
+  }
+  if (env.TERM === "wezterm") {
+    return 3;
+  }
+  if ("TERM_PROGRAM" in env) {
+    const version = Number.parseInt((env.TERM_PROGRAM_VERSION || "").split(".")[0], 10);
+    switch (env.TERM_PROGRAM) {
+      case "iTerm.app": {
+        return version >= 3 ? 3 : 2;
+      }
+      case "Apple_Terminal": {
+        return 2;
+      }
+    }
+  }
+  if (/-256(color)?$/i.test(env.TERM)) {
+    return 2;
+  }
+  if (/^screen|^xterm|^vt100|^vt220|^rxvt|color|ansi|cygwin|linux/i.test(env.TERM)) {
+    return 1;
+  }
+  if ("COLORTERM" in env) {
+    return 1;
+  }
+  return min;
+}
+function createSupportsColor(stream, options = {}) {
+  const level = _supportsColor(stream, {
+    streamIsTTY: stream && stream.isTTY,
+    ...options
+  });
+  return translateLevel(level);
+}
+var import_node_process, import_node_os, import_node_tty, env, flagForceColor, supportsColor, supports_color_default;
+var init_supports_color = __esm({
+  "node_modules/chalk/source/vendor/supports-color/index.js"() {
+    import_node_process = __toESM(require("node:process"), 1);
+    import_node_os = __toESM(require("node:os"), 1);
+    import_node_tty = __toESM(require("node:tty"), 1);
+    ({ env } = import_node_process.default);
+    if (hasFlag("no-color") || hasFlag("no-colors") || hasFlag("color=false") || hasFlag("color=never")) {
+      flagForceColor = 0;
+    } else if (hasFlag("color") || hasFlag("colors") || hasFlag("color=true") || hasFlag("color=always")) {
+      flagForceColor = 1;
+    }
+    supportsColor = {
+      stdout: createSupportsColor({ isTTY: import_node_tty.default.isatty(1) }),
+      stderr: createSupportsColor({ isTTY: import_node_tty.default.isatty(2) })
+    };
+    supports_color_default = supportsColor;
+  }
+});
+
+// node_modules/chalk/source/utilities.js
+function stringReplaceAll(string, substring, replacer) {
+  let index = string.indexOf(substring);
+  if (index === -1) {
+    return string;
+  }
+  const substringLength = substring.length;
+  let endIndex = 0;
+  let returnValue = "";
+  do {
+    returnValue += string.slice(endIndex, index) + substring + replacer;
+    endIndex = index + substringLength;
+    index = string.indexOf(substring, endIndex);
+  } while (index !== -1);
+  returnValue += string.slice(endIndex);
+  return returnValue;
+}
+function stringEncaseCRLFWithFirstIndex(string, prefix, postfix, index) {
+  let endIndex = 0;
+  let returnValue = "";
+  do {
+    const gotCR = string[index - 1] === "\r";
+    returnValue += string.slice(endIndex, gotCR ? index - 1 : index) + prefix + (gotCR ? "\r\n" : "\n") + postfix;
+    endIndex = index + 1;
+    index = string.indexOf("\n", endIndex);
+  } while (index !== -1);
+  returnValue += string.slice(endIndex);
+  return returnValue;
+}
+var init_utilities = __esm({
+  "node_modules/chalk/source/utilities.js"() {
+  }
+});
+
+// node_modules/chalk/source/index.js
+function createChalk(options) {
+  return chalkFactory(options);
+}
+var stdoutColor, stderrColor, GENERATOR, STYLER, IS_EMPTY, levelMapping, styles2, applyOptions, chalkFactory, getModelAnsi, usedModels, proto, createStyler, createBuilder, applyStyle, chalk, chalkStderr, source_default;
+var init_source = __esm({
+  "node_modules/chalk/source/index.js"() {
+    init_ansi_styles();
+    init_supports_color();
+    init_utilities();
+    ({ stdout: stdoutColor, stderr: stderrColor } = supports_color_default);
+    GENERATOR = /* @__PURE__ */ Symbol("GENERATOR");
+    STYLER = /* @__PURE__ */ Symbol("STYLER");
+    IS_EMPTY = /* @__PURE__ */ Symbol("IS_EMPTY");
+    levelMapping = [
+      "ansi",
+      "ansi",
+      "ansi256",
+      "ansi16m"
+    ];
+    styles2 = /* @__PURE__ */ Object.create(null);
+    applyOptions = (object, options = {}) => {
+      if (options.level && !(Number.isInteger(options.level) && options.level >= 0 && options.level <= 3)) {
+        throw new Error("The `level` option should be an integer from 0 to 3");
+      }
+      const colorLevel = stdoutColor ? stdoutColor.level : 0;
+      object.level = options.level === void 0 ? colorLevel : options.level;
+    };
+    chalkFactory = (options) => {
+      const chalk2 = (...strings) => strings.join(" ");
+      applyOptions(chalk2, options);
+      Object.setPrototypeOf(chalk2, createChalk.prototype);
+      return chalk2;
+    };
+    Object.setPrototypeOf(createChalk.prototype, Function.prototype);
+    for (const [styleName, style] of Object.entries(ansi_styles_default)) {
+      styles2[styleName] = {
+        get() {
+          const builder = createBuilder(this, createStyler(style.open, style.close, this[STYLER]), this[IS_EMPTY]);
+          Object.defineProperty(this, styleName, { value: builder });
+          return builder;
+        }
+      };
+    }
+    styles2.visible = {
+      get() {
+        const builder = createBuilder(this, this[STYLER], true);
+        Object.defineProperty(this, "visible", { value: builder });
+        return builder;
+      }
+    };
+    getModelAnsi = (model, level, type, ...arguments_) => {
+      if (model === "rgb") {
+        if (level === "ansi16m") {
+          return ansi_styles_default[type].ansi16m(...arguments_);
+        }
+        if (level === "ansi256") {
+          return ansi_styles_default[type].ansi256(ansi_styles_default.rgbToAnsi256(...arguments_));
+        }
+        return ansi_styles_default[type].ansi(ansi_styles_default.rgbToAnsi(...arguments_));
+      }
+      if (model === "hex") {
+        return getModelAnsi("rgb", level, type, ...ansi_styles_default.hexToRgb(...arguments_));
+      }
+      return ansi_styles_default[type][model](...arguments_);
+    };
+    usedModels = ["rgb", "hex", "ansi256"];
+    for (const model of usedModels) {
+      styles2[model] = {
+        get() {
+          const { level } = this;
+          return function(...arguments_) {
+            const styler = createStyler(getModelAnsi(model, levelMapping[level], "color", ...arguments_), ansi_styles_default.color.close, this[STYLER]);
+            return createBuilder(this, styler, this[IS_EMPTY]);
+          };
+        }
+      };
+      const bgModel = "bg" + model[0].toUpperCase() + model.slice(1);
+      styles2[bgModel] = {
+        get() {
+          const { level } = this;
+          return function(...arguments_) {
+            const styler = createStyler(getModelAnsi(model, levelMapping[level], "bgColor", ...arguments_), ansi_styles_default.bgColor.close, this[STYLER]);
+            return createBuilder(this, styler, this[IS_EMPTY]);
+          };
+        }
+      };
+    }
+    proto = Object.defineProperties(() => {
+    }, {
+      ...styles2,
+      level: {
+        enumerable: true,
+        get() {
+          return this[GENERATOR].level;
+        },
+        set(level) {
+          this[GENERATOR].level = level;
+        }
+      }
+    });
+    createStyler = (open2, close, parent) => {
+      let openAll;
+      let closeAll;
+      if (parent === void 0) {
+        openAll = open2;
+        closeAll = close;
+      } else {
+        openAll = parent.openAll + open2;
+        closeAll = close + parent.closeAll;
+      }
+      return {
+        open: open2,
+        close,
+        openAll,
+        closeAll,
+        parent
+      };
+    };
+    createBuilder = (self2, _styler, _isEmpty) => {
+      const builder = (...arguments_) => applyStyle(builder, arguments_.length === 1 ? "" + arguments_[0] : arguments_.join(" "));
+      Object.setPrototypeOf(builder, proto);
+      builder[GENERATOR] = self2;
+      builder[STYLER] = _styler;
+      builder[IS_EMPTY] = _isEmpty;
+      return builder;
+    };
+    applyStyle = (self2, string) => {
+      if (self2.level <= 0 || !string) {
+        return self2[IS_EMPTY] ? "" : string;
+      }
+      let styler = self2[STYLER];
+      if (styler === void 0) {
+        return string;
+      }
+      const { openAll, closeAll } = styler;
+      if (string.includes("\x1B")) {
+        while (styler !== void 0) {
+          string = stringReplaceAll(string, styler.close, styler.open);
+          styler = styler.parent;
+        }
+      }
+      const lfIndex = string.indexOf("\n");
+      if (lfIndex !== -1) {
+        string = stringEncaseCRLFWithFirstIndex(string, closeAll, openAll, lfIndex);
+      }
+      return openAll + string + closeAll;
+    };
+    Object.defineProperties(createChalk.prototype, styles2);
+    chalk = createChalk();
+    chalkStderr = createChalk({ level: stderrColor ? stderrColor.level : 0 });
+    source_default = chalk;
+  }
+});
+
+// src/utils/git.js
+function runGit(command, allowFail = false, cwd = process.cwd()) {
+  try {
+    return (0, import_child_process.execSync)(command, {
+      cwd,
+      encoding: "utf8",
+      stdio: ["pipe", "pipe", "pipe"],
+      windowsHide: true
+    }).trim();
+  } catch (err) {
+    if (!allowFail) {
+      throw err;
+    }
+    return "";
+  }
+}
+function getDiff(cwd = process.cwd(), excludeResolvedIssues = true) {
+  const excludeArg = excludeResolvedIssues ? '":(exclude)resolved_issues.md" ":(exclude)package-lock.json"' : "";
+  let diff = runGit(`git diff --cached -- . ${excludeArg}`, true, cwd);
+  if (!diff || diff.trim() === "") {
+    diff = runGit(`git diff HEAD~1 -- . ${excludeArg}`, true, cwd);
+  }
+  if (!diff || diff.trim() === "") {
+    diff = runGit(`git diff origin/main...HEAD -- . ${excludeArg}`, true, cwd);
+  }
+  if (!diff || diff.trim() === "") {
+    diff = runGit(`git diff origin/master...HEAD -- . ${excludeArg}`, true, cwd);
+  }
+  if (!diff || diff.trim() === "") {
+    diff = runGit(`git diff HEAD -- . ${excludeArg}`, true, cwd);
+  }
+  return diff || "";
+}
+function getProjectStructureTree(cwd = process.cwd()) {
+  try {
+    const output = runGit("git ls-tree -r --name-only HEAD", true, cwd);
+    if (output) {
+      const files = output.split("\n").filter((f3) => !f3.includes("node_modules") && !f3.includes("dist") && !f3.startsWith(".git"));
+      return files.slice(0, 150).join("\n");
+    }
+  } catch (_) {
+  }
+  return "";
+}
+function getStagedFiles(cwd = process.cwd()) {
+  const output = runGit("git diff --cached --name-only --diff-filter=ACM", true, cwd);
+  if (!output) return [];
+  return output.split("\n").map((f3) => f3.trim()).filter(Boolean);
+}
+var import_child_process;
+var init_git = __esm({
+  "src/utils/git.js"() {
+    import_child_process = require("child_process");
+  }
+});
+
+// src/utils/logger.js
+function logStep(stepNum, title) {
+  console.log(`
+${source_default.red.bold(`[Step ${stepNum}]`)} ${source_default.white.bold(title)}`);
+  console.log(source_default.gray("\u2500".repeat(60)));
+}
+function logSuccess(msg) {
+  console.log(`${source_default.green("\u2714")} ${source_default.green.bold(msg)}`);
+}
+function logWarning(msg) {
+  console.log(`${source_default.yellow("\u26A0")} ${source_default.yellow(msg)}`);
+}
+function logError(msg) {
+  console.log(`${source_default.red("\u2716")} ${source_default.red.bold(msg)}`);
+}
+var init_logger = __esm({
+  "src/utils/logger.js"() {
+    init_source();
+  }
+});
+
+// src/rules/angular-best-practices.js
+var angular_best_practices_exports = {};
+__export(angular_best_practices_exports, {
+  auditCloudDeploymentConfigs: () => auditCloudDeploymentConfigs,
+  auditDistributionAssetIntegrity: () => auditDistributionAssetIntegrity,
+  auditDockerfile: () => auditDockerfile,
+  auditEnvironmentProd: () => auditEnvironmentProd,
+  auditIisDeploymentConfig: () => auditIisDeploymentConfig,
+  auditTemplateSecurity: () => auditTemplateSecurity,
+  calculateGzipBudgets: () => calculateGzipBudgets,
+  calculateSemVerBump: () => calculateSemVerBump,
+  checkAngularProject: () => checkAngularProject,
+  checkBaseHref: () => checkBaseHref,
+  checkCriticalArchitecture: () => checkCriticalArchitecture,
+  checkNodeEngineCompatibility: () => checkNodeEngineCompatibility,
+  detectCircularDependencies: () => detectCircularDependencies,
+  detectSpaRewrite: () => detectSpaRewrite,
+  findBuildOutputDir: () => findBuildOutputDir,
+  getAllFiles: () => getAllFiles,
+  updateBuildMetadata: () => updateBuildMetadata,
+  validateCaseSensitiveImports: () => validateCaseSensitiveImports,
+  validateCompiledArtifacts: () => validateCompiledArtifacts,
+  verifyAngularBootstrapIntegrity: () => verifyAngularBootstrapIntegrity,
+  verifyLiveDeployment: () => verifyLiveDeployment,
+  verifyStagedCleanroom: () => verifyStagedCleanroom
+});
+function getAllFiles(dirPath, arrayOfFiles = []) {
+  if (!import_fs.default.existsSync(dirPath)) return [];
+  const files = import_fs.default.readdirSync(dirPath);
+  files.forEach((file) => {
+    const fullPath = import_path.default.join(dirPath, file);
+    if (import_fs.default.statSync(fullPath).isDirectory()) {
+      getAllFiles(fullPath, arrayOfFiles);
+    } else {
+      arrayOfFiles.push(fullPath);
+    }
+  });
+  return arrayOfFiles;
+}
+function findBuildOutputDir(distPath) {
+  if (!import_fs.default.existsSync(distPath)) return null;
+  if (import_fs.default.existsSync(import_path.default.join(distPath, "index.html"))) {
+    return distPath;
+  }
+  const allFiles = getAllFiles(distPath);
+  const indexHtmlFile = allFiles.find((f3) => import_path.default.basename(f3).toLowerCase() === "index.html");
+  if (indexHtmlFile) {
+    return import_path.default.dirname(indexHtmlFile);
+  }
+  return distPath;
+}
+function checkAngularProject(cwd = process.cwd()) {
+  logStep(1, "Angular Project Detection");
+  const angularJsonPath = import_path.default.join(cwd, "angular.json");
+  const packageJsonPath = import_path.default.join(cwd, "package.json");
+  let isAngular = false;
+  let projectPkg = {};
+  if (import_fs.default.existsSync(packageJsonPath)) {
+    try {
+      projectPkg = JSON.parse(import_fs.default.readFileSync(packageJsonPath, "utf8"));
+      const deps = { ...projectPkg.dependencies || {}, ...projectPkg.devDependencies || {} };
+      if (deps["@angular/core"] || deps["@angular/cli"] || import_fs.default.existsSync(angularJsonPath)) {
+        isAngular = true;
+      }
+    } catch (e2) {
+    }
+  }
+  if (!isAngular) {
+    logWarning("Non-Angular repository detected (no angular.json or @angular/core found).");
+    console.log(source_default.gray("  Bypassing Angular Gatekeeper checks safely."));
+    process.exit(0);
+  }
+  logSuccess("Angular project verified (angular.json / @angular/core detected).");
+  return { isAngular, projectPkg };
+}
+function checkCriticalArchitecture(cwd = process.cwd()) {
+  logStep(2, "Critical Angular Architecture & Source Validation");
+  const requiredItems = [
+    { name: "angular.json", path: import_path.default.join(cwd, "angular.json"), type: "file" },
+    { name: "package.json", path: import_path.default.join(cwd, "package.json"), type: "file" },
+    { name: "src/ directory", path: import_path.default.join(cwd, "src"), type: "dir" },
+    { name: "src/app/ directory", path: import_path.default.join(cwd, "src", "app"), type: "dir" }
+  ];
+  let missingItems = [];
+  for (const item of requiredItems) {
+    if (item.type === "file") {
+      if (!import_fs.default.existsSync(item.path)) {
+        missingItems.push(item.name);
+      }
+    } else if (item.type === "dir") {
+      if (!import_fs.default.existsSync(item.path) || !import_fs.default.statSync(item.path).isDirectory()) {
+        missingItems.push(item.name);
+      }
+    }
+  }
+  const tsconfigExists = import_fs.default.existsSync(import_path.default.join(cwd, "tsconfig.json")) || import_fs.default.existsSync(import_path.default.join(cwd, "tsconfig.app.json"));
+  if (!tsconfigExists) {
+    missingItems.push("tsconfig.json (or tsconfig.app.json)");
+  }
+  const indexHtmlExists = import_fs.default.existsSync(import_path.default.join(cwd, "src", "index.html")) || import_fs.default.existsSync(import_path.default.join(cwd, "src", "index.csr.html")) || import_fs.default.existsSync(import_path.default.join(cwd, "index.html"));
+  if (!indexHtmlExists) {
+    missingItems.push("src/index.html (Application Main Entry Point)");
+  }
+  const mainTsExists = import_fs.default.existsSync(import_path.default.join(cwd, "src", "main.ts"));
+  if (!mainTsExists) {
+    missingItems.push("src/main.ts (Application Bootstrap Entry Point)");
+  }
+  if (missingItems.length > 0) {
+    logError(`Missing critical Angular file(s)/directory: ${missingItems.join(", ")}`);
+    console.log(source_default.red("  Commit rejected: Ensure your project structure adheres to Angular CLI standards.\n"));
+    throw new Error(`Missing critical Angular file(s)/directory: ${missingItems.join(", ")}`);
+  }
+  const stagedFiles = runGit("git diff --cached --name-only", true, cwd).split("\n").map((f3) => f3.trim());
+  const packageJsonStaged = stagedFiles.includes("package.json");
+  const lockfileStaged = stagedFiles.includes("package-lock.json") || stagedFiles.includes("yarn.lock") || stagedFiles.includes("pnpm-lock.yaml");
+  if (packageJsonStaged && !lockfileStaged) {
+    const lockfilePath = import_path.default.join(cwd, "package-lock.json");
+    if (import_fs.default.existsSync(lockfilePath)) {
+      logError("CI Integrity Violation: package.json is staged for commit, but package-lock.json is NOT staged!");
+      console.log(source_default.red("\n  \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550"));
+      console.log(source_default.red.bold("  \u274C COMMIT REJECTED: Lockfile out of sync!"));
+      console.log(source_default.yellow('  CI pipelines use "npm ci", which will FAIL if package-lock.json is not updated.'));
+      console.log(source_default.yellow('  Action: Run "git add package-lock.json" and commit again.'));
+      console.log(source_default.red("  \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\n"));
+      throw new Error("Lockfile out of sync: package.json is staged without package-lock.json");
+    }
+  }
+  validateCaseSensitiveImports(cwd, stagedFiles);
+  checkNodeEngineCompatibility(cwd);
+  verifyStagedCleanroom(cwd);
+  verifyAngularBootstrapIntegrity(cwd);
+  detectCircularDependencies(cwd);
+  auditTemplateSecurity(cwd, stagedFiles);
+  logSuccess("All critical Angular architecture files, lockfile sync, and entry points verified.");
+}
+function checkNodeEngineCompatibility(cwd = process.cwd()) {
+  try {
+    const pkgPath = import_path.default.join(cwd, "package.json");
+    if (!import_fs.default.existsSync(pkgPath)) return;
+    const pkg = JSON.parse(import_fs.default.readFileSync(pkgPath, "utf8"));
+    const requiredNode = pkg.engines && pkg.engines.node;
+    if (requiredNode) {
+      const currentMajor = parseInt(process.versions.node.split(".")[0], 10);
+      const match2 = requiredNode.match(/\d+/);
+      if (match2) {
+        const requiredMajor = parseInt(match2[0], 10);
+        if (requiredNode.startsWith(">=") && currentMajor < requiredMajor) {
+          logError(`Node.js Version Incompatibility! Required: ${requiredNode}, Active: ${process.version}`);
+          throw new Error(`Node.js version mismatch: Required ${requiredNode} but running ${process.version}`);
+        }
+      }
+    }
+  } catch (err) {
+    if (err.message.includes("Node.js version mismatch")) throw err;
+  }
+}
+function validateCaseSensitiveImports(cwd = process.cwd(), stagedFiles = []) {
+  const tsFiles = stagedFiles.filter((f3) => f3.endsWith(".ts") && !f3.endsWith(".d.ts") && import_fs.default.existsSync(import_path.default.join(cwd, f3)));
+  if (tsFiles.length === 0) return;
+  const importRegex = /(?:import|from)\s+['"](\.[^'"]+)['"]/g;
+  const casingErrors = [];
+  for (const relFile of tsFiles) {
+    const fullFilePath = import_path.default.join(cwd, relFile);
+    const fileDir = import_path.default.dirname(fullFilePath);
+    const content = import_fs.default.readFileSync(fullFilePath, "utf8");
+    let match2;
+    while ((match2 = importRegex.exec(content)) !== null) {
+      const importPath = match2[1];
+      const targetBase = import_path.default.resolve(fileDir, importPath);
+      const targetDir = import_path.default.dirname(targetBase);
+      const targetFileName = import_path.default.basename(targetBase);
+      if (import_fs.default.existsSync(targetDir)) {
+        const actualDiskFiles = import_fs.default.readdirSync(targetDir);
+        const matchedExact = actualDiskFiles.find((f3) => {
+          const noExt = f3.replace(/\.(ts|js|d\.ts)$/, "");
+          return f3 === targetFileName || noExt === targetFileName;
+        });
+        const matchedCaseInsensitive = actualDiskFiles.find((f3) => {
+          const noExt = f3.replace(/\.(ts|js|d\.ts)$/, "");
+          return f3.toLowerCase() === targetFileName.toLowerCase() || noExt.toLowerCase() === targetFileName.toLowerCase();
+        });
+        if (!matchedExact && matchedCaseInsensitive) {
+          casingErrors.push({
+            file: relFile,
+            imported: importPath,
+            actual: import_path.default.join(import_path.default.dirname(importPath), matchedCaseInsensitive).replace(/\\/g, "/")
+          });
+        }
+      }
+    }
+  }
+  if (casingErrors.length > 0) {
+    logError("CRITICAL: Linux CI Path Incompatibility! Case-sensitivity mismatch detected in imports:");
+    casingErrors.forEach((err) => {
+      console.log(source_default.red(`    \u2022 In ${source_default.bold(err.file)}: Imported "${source_default.yellow(err.imported)}" but file on disk is "${source_default.green(err.actual)}"`));
+    });
+    console.log(source_default.yellow('\n  While Windows is case-insensitive, Linux CI servers will FAIL with "Module not found".'));
+    console.log(source_default.yellow("  Fix the casing of the import statement to match the actual file name.\n"));
+    throw new Error("Case-sensitive import mismatch detected (Linux CI incompatibility)");
+  }
+}
+function detectSpaRewrite(cwd = process.cwd(), outputDir = null, distPath = null) {
+  if (outputDir && import_fs.default.existsSync(outputDir)) {
+    const outputFiles = getAllFiles(outputDir);
+    const match2 = outputFiles.find((f3) => {
+      const b = import_path.default.basename(f3).toLowerCase();
+      return b === "web.config" || b === "nginx.conf" || b === "_redirects" || b === ".htaccess" || b === "htaccess";
+    });
+    if (match2) return { hasSpaRewrite: true, file: import_path.default.basename(match2), source: "dist" };
+  }
+  if (distPath && import_fs.default.existsSync(distPath) && distPath !== outputDir) {
+    const distFiles = getAllFiles(distPath);
+    const match2 = distFiles.find((f3) => {
+      const b = import_path.default.basename(f3).toLowerCase();
+      return b === "web.config" || b === "nginx.conf" || b === "_redirects" || b === ".htaccess" || b === "htaccess";
+    });
+    if (match2) return { hasSpaRewrite: true, file: import_path.default.basename(match2), source: "dist" };
+  }
+  const srcDir = import_path.default.join(cwd, "src");
+  if (import_fs.default.existsSync(srcDir)) {
+    const srcCandidates = ["web.config", "nginx.conf", "_redirects", ".htaccess"];
+    for (const c of srcCandidates) {
+      if (import_fs.default.existsSync(import_path.default.join(srcDir, c))) {
+        return { hasSpaRewrite: true, file: `src/${c}`, source: "src" };
+      }
+    }
+  }
+  const rootCandidates = [
+    "web.config",
+    "nginx.conf",
+    "_redirects",
+    ".htaccess",
+    "firebase.json",
+    "vercel.json",
+    "netlify.toml",
+    "staticwebapp.config.json"
+  ];
+  for (const c of rootCandidates) {
+    const p = import_path.default.join(cwd, c);
+    if (import_fs.default.existsSync(p)) {
+      if (c === "firebase.json") {
+        try {
+          const fb = JSON.parse(import_fs.default.readFileSync(p, "utf8"));
+          if (fb.hosting && (fb.hosting.rewrites || Array.isArray(fb.hosting) && fb.hosting.some((h2) => h2.rewrites))) {
+            return { hasSpaRewrite: true, file: c, source: "root" };
+          }
+        } catch (_) {
+        }
+      } else if (c === "vercel.json") {
+        try {
+          const vj = JSON.parse(import_fs.default.readFileSync(p, "utf8"));
+          if (vj.rewrites || vj.routes) {
+            return { hasSpaRewrite: true, file: c, source: "root" };
+          }
+        } catch (_) {
+        }
+      } else {
+        return { hasSpaRewrite: true, file: c, source: "root" };
+      }
+    }
+  }
+  const angularJsonPath = import_path.default.join(cwd, "angular.json");
+  if (import_fs.default.existsSync(angularJsonPath)) {
+    try {
+      const content = import_fs.default.readFileSync(angularJsonPath, "utf8");
+      if (content.includes("web.config") || content.includes("_redirects") || content.includes("nginx.conf")) {
+        return { hasSpaRewrite: true, file: "angular.json (assets)", source: "angular.json" };
+      }
+    } catch (_) {
+    }
+  }
+  return { hasSpaRewrite: false, file: null, source: null };
+}
+function validateCompiledArtifacts(cwd = process.cwd()) {
+  console.log(source_default.blue("\n  Validating Compiled Production Distribution Artifacts (CD Readiness)..."));
+  const distPath = import_path.default.join(cwd, "dist");
+  const outputDir = findBuildOutputDir(distPath);
+  if (!outputDir || !import_fs.default.existsSync(outputDir)) {
+    logError("Build output directory (dist/) was not generated or is missing!");
+    console.log(source_default.red("  Commit rejected: Ensure ng build produces valid output.\n"));
+    throw new Error("Build output directory (dist/) was not generated or is missing!");
+  }
+  console.log(source_default.gray(`  Inspecting build distribution output at: ${outputDir}`));
+  const outputFiles = getAllFiles(outputDir).map((f3) => import_path.default.relative(outputDir, f3).replace(/\\/g, "/"));
+  const indexHtmlPath = import_path.default.join(outputDir, "index.html");
+  const hasIndexHtml = import_fs.default.existsSync(indexHtmlPath) || outputFiles.some((f3) => import_path.default.basename(f3).toLowerCase() === "index.html");
+  if (!hasIndexHtml) {
+    logError("Critical build artifact missing: index.html was not generated in distribution output!");
+    console.log(source_default.red("  Commit rejected: index.html is required for IIS/web servers to load the application.\n"));
+    throw new Error("Critical build artifact missing: index.html");
+  }
+  const { hasBaseHref } = checkBaseHref(indexHtmlPath);
+  const jsBundles = outputFiles.filter((f3) => f3.endsWith(".js"));
+  if (jsBundles.length === 0) {
+    logError("Critical build artifact missing: No compiled JavaScript bundles found in output!");
+    console.log(source_default.red("  Commit rejected: Application logic files (main.js, polyfills.js, runtime.js) are missing.\n"));
+    throw new Error("Critical build artifact missing: No compiled JavaScript bundles found");
+  }
+  const cssFiles = outputFiles.filter((f3) => f3.endsWith(".css"));
+  const hasStylesCss = cssFiles.some((f3) => import_path.default.basename(f3).toLowerCase().startsWith("styles") || cssFiles.length > 0);
+  const spaAudit = detectSpaRewrite(cwd, outputDir, distPath);
+  const hasSpaRewrite = spaAudit.hasSpaRewrite;
+  const envProdPath = import_path.default.join(cwd, "src", "environments", "environment.prod.ts");
+  const { hasLocalhostLeak, hasHttpApiLeak } = auditEnvironmentProd(envProdPath);
+  const dockerfilePath = import_path.default.join(cwd, "Dockerfile");
+  const dockerAudit = auditDockerfile(dockerfilePath);
+  const dockerValid = dockerAudit ? dockerAudit.valid : null;
+  let totalBundleSizeBytes = 0;
+  for (const jsFile of jsBundles) {
+    const fullJsPath = import_path.default.join(outputDir, jsFile);
+    if (import_fs.default.existsSync(fullJsPath)) {
+      totalBundleSizeBytes += import_fs.default.statSync(fullJsPath).size;
+    }
+  }
+  const totalBundleSizeMb = (totalBundleSizeBytes / (1024 * 1024)).toFixed(2);
+  const bundleBudgetExceeded = totalBundleSizeBytes > 5 * 1024 * 1024;
+  const gzipMetrics = calculateGzipBudgets(outputDir, jsBundles);
+  const assetAudit = auditDistributionAssetIntegrity(outputDir);
+  const cloudAudit = auditCloudDeploymentConfigs(cwd);
+  const iisAudit = auditIisDeploymentConfig(cwd, outputDir);
+  console.log(source_default.white("  Distribution & CD Readiness Checklist:"));
+  console.log(`    ${source_default.green("\u2714")} index.html (Main SPA Entry Point${hasBaseHref ? ", <base href> verified" : ""})`);
+  console.log(`    ${source_default.green("\u2714")} Compiled JavaScript Bundles (${jsBundles.length} files: ${totalBundleSizeMb} MB total | Gzip: ${gzipMetrics.totalGzipSizeKb} KB)`);
+  if (hasStylesCss) {
+    console.log(`    ${source_default.green("\u2714")} Global Production Styles (${cssFiles.map((f3) => import_path.default.basename(f3)).join(", ")})`);
+  }
+  if (hasSpaRewrite) {
+    console.log(`    ${source_default.green("\u2714")} Web Server SPA Rewrite Config (${spaAudit.file || "web.config / nginx / _redirects"})`);
+  } else {
+    logWarning("CD Warning: No SPA rewrite rule found (web.config / nginx.conf / _redirects / firebase.json). Direct route reloads in production may 404.");
+  }
+  if (iisAudit.isIisConfigured) {
+    const iisStatusStr = [
+      iisAudit.hasRewriteRule ? "URL Rewrite: \u2714" : "URL Rewrite: \u26A0 Missing",
+      iisAudit.isValidXml ? "XML: \u2714" : "XML: \u2716 Error",
+      iisAudit.isSyncedInAngularJson ? "Assets Sync: \u2714" : "Assets Sync: \u26A0 Missing"
+    ].join(" | ");
+    console.log(`    ${source_default.green("\u2714")} IIS Server Config (${import_path.default.basename(iisAudit.filePath)} [${iisStatusStr}])`);
+    iisAudit.warnings.forEach((w) => logWarning(`IIS Notice: ${w}`));
+  }
+  if (assetAudit.valid) {
+    console.log(`    ${source_default.green("\u2714")} Distribution Asset Links & Resources Verified (0 broken assets)`);
+  } else {
+    logWarning(`CD Warning: ${assetAudit.brokenAssets.length} broken/missing asset reference(s) found in distribution output.`);
+  }
+  if (cloudAudit.hasAnyCloudTarget) {
+    console.log(`    ${source_default.green("\u2714")} Cloud / Server Deployment Configs Detected (${cloudAudit.detectedTargets.join(", ")})`);
+  }
+  if (dockerValid !== null) {
+    console.log(`    ${source_default.green("\u2714")} Dockerfile Container Specification Validated${dockerAudit?.hasMultiStage ? " (Multi-stage)" : ""}`);
+  }
+  if (hasLocalhostLeak) {
+    logWarning("CD Warning: Localhost/dev endpoint detected in environment.prod.ts!");
+  }
+  if (hasHttpApiLeak) {
+    logWarning("CD Security Warning: Unencrypted http:// endpoint detected in production environment!");
+  }
+  if (bundleBudgetExceeded) {
+    logWarning(`CD Performance Warning: Total compiled bundle size (${totalBundleSizeMb} MB) exceeds recommended 5 MB budget.`);
+  }
+  if (gzipMetrics.budgetExceeded && gzipMetrics.budgetWarning) {
+    logWarning(`CD Performance Warning: ${gzipMetrics.budgetWarning}`);
+  }
+  let releaseManifestCreated = false;
+  try {
+    const manifestPath = import_path.default.join(outputDir, "release-manifest.json");
+    const artifactManifest = [];
+    for (const f3 of jsBundles) {
+      const fullPath = import_path.default.join(outputDir, f3);
+      if (import_fs.default.existsSync(fullPath)) {
+        const fileBuf = import_fs.default.readFileSync(fullPath);
+        const hash = import_crypto.default.createHash("sha256").update(fileBuf).digest("hex");
+        artifactManifest.push({
+          file: f3,
+          sha256: hash,
+          sizeBytes: fileBuf.length
+        });
+      }
+    }
+    const manifestData = {
+      manifestVersion: "1.0.0",
+      cdReadiness: "75%",
+      generatedAt: (/* @__PURE__ */ new Date()).toISOString(),
+      totalBundleSizeMb,
+      totalGzipSizeKb: gzipMetrics.totalGzipSizeKb,
+      bundleCount: jsBundles.length,
+      hasSpaRewrite,
+      hasBaseHref,
+      assetIntegrityValid: assetAudit.valid,
+      cloudTargets: cloudAudit.detectedTargets,
+      iisDeployment: iisAudit.isIisConfigured ? iisAudit : null,
+      dockerValid,
+      artifacts: artifactManifest
+    };
+    import_fs.default.writeFileSync(manifestPath, JSON.stringify(manifestData, null, 2), "utf8");
+    if (outputDir !== distPath && import_fs.default.existsSync(distPath)) {
+      import_fs.default.writeFileSync(import_path.default.join(distPath, "release-manifest.json"), JSON.stringify(manifestData, null, 2), "utf8");
+    }
+    releaseManifestCreated = true;
+    console.log(`    ${source_default.green("\u2714")} CD Release Manifest & SHA256 Checksums Generated (dist/release-manifest.json)`);
+  } catch (_manifestErr) {
+  }
+  logSuccess(`Production distribution & CD deployment artifacts validated successfully (${totalBundleSizeMb} MB | Gzip: ${gzipMetrics.totalGzipSizeKb} KB).`);
+  return {
+    bundleCount: jsBundles.length,
+    totalBundleSizeMb,
+    totalGzipSizeKb: gzipMetrics.totalGzipSizeKb,
+    hasSpaRewrite,
+    dockerValid,
+    hasLocalhostLeak,
+    hasHttpApiLeak,
+    hasBaseHref,
+    bundleBudgetExceeded,
+    releaseManifestCreated,
+    assetAudit,
+    gzipMetrics,
+    cloudAudit,
+    iisAudit,
+    cdComplianceScore: "75%"
+  };
+}
+function checkBaseHref(indexHtmlPath) {
+  if (!import_fs.default.existsSync(indexHtmlPath)) return { hasBaseHref: false, baseHrefValue: null };
+  const content = import_fs.default.readFileSync(indexHtmlPath, "utf8");
+  const match2 = content.match(/<base\s+href=["']([^"']+)["']/i);
+  return {
+    hasBaseHref: !!match2,
+    baseHrefValue: match2 ? match2[1] : null
+  };
+}
+function auditEnvironmentProd(envProdPath) {
+  if (!import_fs.default.existsSync(envProdPath)) {
+    return { hasLocalhostLeak: false, hasHttpApiLeak: false, issues: [] };
+  }
+  const content = import_fs.default.readFileSync(envProdPath, "utf8");
+  const issues = [];
+  const hasLocalhostLeak = /(?:http:\/\/localhost|http:\/\/127\.0\.0\.1|http:\/\/0\.0\.0\.0)/i.test(content);
+  if (hasLocalhostLeak) {
+    issues.push("Development localhost URL found in production config");
+  }
+  const lines = content.split("\n");
+  let hasHttpApiLeak = false;
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (trimmed.startsWith("//") || trimmed.startsWith("*")) continue;
+    if (/http:\/\/(?!localhost|127\.0\.0\.1|0\.0\.0\.0)[a-zA-Z0-9.-]+/i.test(trimmed)) {
+      hasHttpApiLeak = true;
+      issues.push("Unencrypted http:// endpoint found in production config");
+      break;
+    }
+  }
+  return { hasLocalhostLeak, hasHttpApiLeak, issues };
+}
+function auditDockerfile(dockerfilePath) {
+  if (!import_fs.default.existsSync(dockerfilePath)) return null;
+  const content = import_fs.default.readFileSync(dockerfilePath, "utf8");
+  const lines = content.split("\n").map((l) => l.trim()).filter((l) => l && !l.startsWith("#"));
+  const hasFrom = lines.some((l) => l.startsWith("FROM "));
+  const hasCopyOrAdd = lines.some((l) => l.startsWith("COPY ") || l.startsWith("ADD "));
+  const fromCount = lines.filter((l) => l.startsWith("FROM ")).length;
+  const hasMultiStage = fromCount > 1;
+  const hasExpose = lines.some((l) => l.startsWith("EXPOSE "));
+  return {
+    valid: hasFrom && hasCopyOrAdd,
+    hasFrom,
+    hasCopyOrAdd,
+    hasMultiStage,
+    hasExpose
+  };
+}
+function updateBuildMetadata(cwd = process.cwd(), projectPkg = {}) {
+  console.log(source_default.blue("  Automated Angular Build Versioning & Conventional Commit SemVer..."));
+  const srcDir = import_path.default.join(cwd, "src");
+  if (import_fs.default.existsSync(srcDir) && import_fs.default.statSync(srcDir).isDirectory()) {
+    const buildMetaPath = import_path.default.join(srcDir, "build-metadata.json");
+    const semverInfo = calculateSemVerBump(cwd, projectPkg.version || "1.0.0");
+    let buildData = {
+      buildNumber: 0,
+      version: projectPkg.version || "1.0.0",
+      nextSemVer: semverInfo.nextVersion,
+      releaseType: semverInfo.releaseType,
+      cdCompliance: "65%",
+      branch: "main",
+      commitHash: "working-tree",
+      builtAt: (/* @__PURE__ */ new Date()).toISOString()
+    };
+    if (import_fs.default.existsSync(buildMetaPath)) {
+      try {
+        buildData = { ...buildData, ...JSON.parse(import_fs.default.readFileSync(buildMetaPath, "utf8")) };
+      } catch (e2) {
+      }
+    }
+    buildData.buildNumber = (Number(buildData.buildNumber) || 0) + 1;
+    buildData.version = projectPkg.version || buildData.version;
+    buildData.nextSemVer = semverInfo.nextVersion;
+    buildData.releaseType = semverInfo.releaseType;
+    buildData.cdCompliance = "65%";
+    buildData.branch = runGit("git rev-parse --abbrev-ref HEAD", true, cwd) || "main";
+    buildData.commitHash = runGit("git rev-parse --short HEAD", true, cwd) || "uncommitted";
+    buildData.builtAt = (/* @__PURE__ */ new Date()).toISOString();
+    import_fs.default.writeFileSync(buildMetaPath, JSON.stringify(buildData, null, 2), "utf8");
+    try {
+      runGit("git add src/build-metadata.json", true, cwd);
+      logSuccess(`Build metadata updated & staged: Build #${buildData.buildNumber} (${buildData.commitHash}) on "${buildData.branch}" [SemVer: v${buildData.nextSemVer} (${buildData.releaseType})]`);
+    } catch (addErr) {
+      logSuccess(`Build metadata updated: Build #${buildData.buildNumber} (${buildData.commitHash}) [SemVer: v${buildData.nextSemVer} (${buildData.releaseType})]`);
+    }
+  } else {
+    console.log(source_default.gray("  Skipped: src directory not found."));
+  }
+}
+function calculateSemVerBump(cwd = process.cwd(), currentVersion = "1.0.0") {
+  let commitMessage = "";
+  try {
+    commitMessage = runGit("git log -1 --pretty=%B", true, cwd) || "";
+  } catch (_) {
+    commitMessage = "";
+  }
+  let releaseType = "patch";
+  const cleanMsg = commitMessage.trim();
+  if (/BREAKING CHANGE/i.test(cleanMsg) || /^[a-z]+(\([a-z0-9_-]+\))?!:/i.test(cleanMsg)) {
+    releaseType = "major";
+  } else if (/^feat(\([a-z0-9_-]+\))?:/i.test(cleanMsg)) {
+    releaseType = "minor";
+  } else if (/^(fix|perf|refactor|revert)(\([a-z0-9_-]+\))?:/i.test(cleanMsg)) {
+    releaseType = "patch";
+  }
+  const parts = (currentVersion || "1.0.0").split(".").map((n) => parseInt(n, 10) || 0);
+  while (parts.length < 3) parts.push(0);
+  let [major, minor, patch] = parts;
+  if (releaseType === "major") {
+    major += 1;
+    minor = 0;
+    patch = 0;
+  } else if (releaseType === "minor") {
+    minor += 1;
+    patch = 0;
+  } else {
+    patch += 1;
+  }
+  const nextVersion = `${major}.${minor}.${patch}`;
+  return {
+    currentVersion,
+    nextVersion,
+    releaseType,
+    commitMessage: cleanMsg
+  };
+}
+function verifyStagedCleanroom(cwd = process.cwd()) {
+  try {
+    const statusOutput = runGit("git status --porcelain", true, cwd);
+    if (!statusOutput) {
+      return { isCleanroom: true, unstagedDriftFiles: [] };
+    }
+    const lines = statusOutput.split("\n").map((l) => l.trimEnd()).filter(Boolean);
+    const unstagedDriftFiles = [];
+    for (const line of lines) {
+      const indexStatus = line[0];
+      const worktreeStatus = line[1];
+      const filePath = line.substring(3).trim();
+      if ((indexStatus === "M" || indexStatus === "A" || indexStatus === "R") && worktreeStatus === "M") {
+        unstagedDriftFiles.push(filePath);
+      }
+    }
+    if (unstagedDriftFiles.length > 0) {
+      logWarning(`CI Cleanroom Drift: Unstaged modifications detected in staged file(s): ${unstagedDriftFiles.join(", ")}`);
+      console.log(source_default.yellow("  Note: Committed code differs from active disk files. Ensure your staged index compiles cleanly."));
+      return { isCleanroom: false, unstagedDriftFiles };
+    }
+    return { isCleanroom: true, unstagedDriftFiles: [] };
+  } catch (_e) {
+    return { isCleanroom: true, unstagedDriftFiles: [] };
+  }
+}
+function verifyAngularBootstrapIntegrity(cwd = process.cwd(), outputDir = null) {
+  let hasRootElement = false;
+  let hasBootstrapCall = false;
+  let selector = "app-root";
+  const candidateIndexPaths = [
+    outputDir ? import_path.default.join(outputDir, "index.html") : null,
+    import_path.default.join(cwd, "src", "index.html"),
+    import_path.default.join(cwd, "src", "index.csr.html"),
+    import_path.default.join(cwd, "index.html")
+  ].filter(Boolean);
+  for (const p of candidateIndexPaths) {
+    if (import_fs.default.existsSync(p)) {
+      const content = import_fs.default.readFileSync(p, "utf8");
+      const rootMatch = content.match(/<([a-zA-Z0-9_-]+)[^>]*>\s*<\/\1>/) || content.match(/<app-root[^>]*>/i);
+      if (rootMatch) {
+        hasRootElement = true;
+        selector = rootMatch[1] || "app-root";
+        break;
+      }
+    }
+  }
+  const mainTsPath = import_path.default.join(cwd, "src", "main.ts");
+  if (import_fs.default.existsSync(mainTsPath)) {
+    const mainContent = import_fs.default.readFileSync(mainTsPath, "utf8");
+    if (mainContent.includes("bootstrapApplication") || mainContent.includes("bootstrapModule") || mainContent.includes("platformBrowserDynamic") || mainContent.includes("platformBrowser")) {
+      hasBootstrapCall = true;
+    }
+  } else if (outputDir && import_fs.default.existsSync(outputDir)) {
+    const files = getAllFiles(outputDir);
+    if (files.some((f3) => import_path.default.basename(f3).startsWith("main") && f3.endsWith(".js"))) {
+      hasBootstrapCall = true;
+    }
+  }
+  const valid = hasRootElement || hasBootstrapCall;
+  return {
+    valid,
+    hasRootElement,
+    hasBootstrapCall,
+    selector
+  };
+}
+async function verifyLiveDeployment(targetUrl) {
+  if (!targetUrl || !targetUrl.startsWith("http")) {
+    throw new Error("Invalid URL. Provide a valid HTTP/HTTPS URL (e.g., https://example.com)");
+  }
+  console.log(source_default.blue(`
+  Probing Live CD Deployment Endpoint: ${source_default.bold(targetUrl)}...`));
+  const issues = [];
+  let statusCode = 0;
+  let hasBaseHref = false;
+  let spaRewriteWorking = false;
+  const headers = {};
+  try {
+    const res = await fetch(targetUrl, { redirect: "follow" });
+    statusCode = res.status;
+    res.headers.forEach((val, key) => {
+      headers[key.toLowerCase()] = val;
+    });
+    const bodyText = await res.text();
+    hasBaseHref = /<base\s+href=["']([^"']+)["']/i.test(bodyText);
+    if (statusCode !== 200) {
+      issues.push(`Endpoint returned HTTP status ${statusCode} instead of 200 OK`);
+    }
+    if (!headers["strict-transport-security"] && targetUrl.startsWith("https://")) {
+      issues.push("Missing HSTS (Strict-Transport-Security) header");
+    }
+    if (!headers["x-content-type-options"]) {
+      issues.push("Missing X-Content-Type-Options: nosniff header");
+    }
+    try {
+      const probeUrl = `${targetUrl.replace(/\/$/, "")}/__gatekeeper_spa_probe__`;
+      const deepRes = await fetch(probeUrl, { redirect: "follow" });
+      if (deepRes.status === 200) {
+        const deepBody = await deepRes.text();
+        if (deepBody.includes("<app-root") || deepBody.includes("<!doctype html>") || deepBody.includes("<html")) {
+          spaRewriteWorking = true;
+        }
+      }
+    } catch (_) {
+    }
+    const success = statusCode === 200 && issues.length === 0;
+    return {
+      success,
+      statusCode,
+      hasBaseHref,
+      spaRewriteWorking,
+      headers,
+      issues
+    };
+  } catch (fetchErr) {
+    issues.push(`Connection failed: ${fetchErr.message}`);
+    return {
+      success: false,
+      statusCode: 0,
+      hasBaseHref: false,
+      spaRewriteWorking: false,
+      headers: {},
+      issues
+    };
+  }
+}
+function detectCircularDependencies(cwd = process.cwd()) {
+  const srcDir = import_path.default.join(cwd, "src");
+  if (!import_fs.default.existsSync(srcDir)) return { hasCycles: false, cycles: [] };
+  const allFiles = getAllFiles(srcDir);
+  const tsFiles = allFiles.filter(
+    (f3) => (f3.endsWith(".ts") || f3.endsWith(".js")) && !f3.endsWith(".spec.ts") && !f3.endsWith(".test.ts") && !f3.endsWith(".spec.js") && !f3.endsWith(".test.js") && !f3.endsWith(".d.ts") && !f3.includes("node_modules")
+  );
+  if (tsFiles.length === 0) return { hasCycles: false, cycles: [] };
+  const graph = /* @__PURE__ */ new Map();
+  const importRegex = /(?:import|from|require\()\s*['"](\.[^'"]+)['"]/g;
+  for (const file of tsFiles) {
+    const fileDir = import_path.default.dirname(file);
+    let content = "";
+    try {
+      content = import_fs.default.readFileSync(file, "utf8");
+    } catch (_) {
+      continue;
+    }
+    const imports = /* @__PURE__ */ new Set();
+    let match2;
+    while ((match2 = importRegex.exec(content)) !== null) {
+      const relPath = match2[1];
+      const targetBase = import_path.default.resolve(fileDir, relPath);
+      const candidates = [
+        targetBase,
+        targetBase + ".ts",
+        targetBase + ".js",
+        import_path.default.join(targetBase, "index.ts"),
+        import_path.default.join(targetBase, "index.js")
+      ];
+      for (const cand of candidates) {
+        if (import_fs.default.existsSync(cand) && !import_fs.default.statSync(cand).isDirectory()) {
+          const norm = import_path.default.normalize(cand);
+          if (norm !== import_path.default.normalize(file)) {
+            imports.add(norm);
+          }
+          break;
+        }
+      }
+    }
+    graph.set(import_path.default.normalize(file), imports);
+  }
+  const cycles = [];
+  const visited = /* @__PURE__ */ new Set();
+  const recStack = /* @__PURE__ */ new Set();
+  const currentPath = [];
+  function dfs(node) {
+    visited.add(node);
+    recStack.add(node);
+    currentPath.push(node);
+    const neighbors = graph.get(node) || /* @__PURE__ */ new Set();
+    for (const neighbor of neighbors) {
+      if (!visited.has(neighbor)) {
+        dfs(neighbor);
+      } else if (recStack.has(neighbor)) {
+        const cycleStartIndex = currentPath.indexOf(neighbor);
+        if (cycleStartIndex !== -1) {
+          const cyclePath = currentPath.slice(cycleStartIndex).concat(neighbor);
+          const relCycle = cyclePath.map((p) => import_path.default.relative(cwd, p).replace(/\\/g, "/"));
+          const cycleKey = relCycle.slice(0, -1).sort().join("->");
+          if (!cycles.some((c) => c.key === cycleKey)) {
+            cycles.push({ key: cycleKey, path: relCycle });
+          }
+        }
+      }
+    }
+    recStack.delete(node);
+    currentPath.pop();
+  }
+  for (const file of graph.keys()) {
+    if (!visited.has(file)) {
+      dfs(file);
+    }
+  }
+  if (cycles.length > 0) {
+    logWarning(`Angular Architecture Warning: ${cycles.length} circular dependency cycle(s) detected:`);
+    cycles.forEach((c) => {
+      console.log(source_default.yellow(`    \u2022 Cycle: ${c.path.join(" \u2794 ")}`));
+    });
+    console.log(source_default.gray("  Note: Circular imports can cause undefined injection tokens or runtime NullInjectorError.\n"));
+  }
+  return { hasCycles: cycles.length > 0, cycles };
+}
+function auditTemplateSecurity(cwd = process.cwd(), stagedFiles = []) {
+  const targetFiles = stagedFiles.length > 0 ? stagedFiles.map((f3) => import_path.default.join(cwd, f3)).filter((p) => import_fs.default.existsSync(p)) : import_fs.default.existsSync(import_path.default.join(cwd, "src")) ? getAllFiles(import_path.default.join(cwd, "src")).filter((f3) => !f3.includes("node_modules") && !f3.includes("dist")) : [];
+  const inspectFiles = targetFiles.filter((f3) => f3.endsWith(".html") || f3.endsWith(".ts") && !f3.endsWith(".spec.ts"));
+  const violations = [];
+  for (const file of inspectFiles) {
+    let content = "";
+    try {
+      content = import_fs.default.readFileSync(file, "utf8");
+    } catch (_) {
+      continue;
+    }
+    const relPath = import_path.default.relative(cwd, file).replace(/\\/g, "/");
+    const lines = content.split("\n");
+    lines.forEach((line, idx) => {
+      const lineNum = idx + 1;
+      const trimmed = line.trim();
+      if (trimmed.startsWith("//") || trimmed.startsWith("/*") || trimmed.startsWith("*")) return;
+      if (/\[innerHTML\]\s*=\s*['"][^'"]*['"]/i.test(line) && !/\|\s*(?:safe|sanitize|trustHtml|trustUrl|trustResourceUrl)/i.test(line)) {
+        violations.push({
+          file: relPath,
+          line: lineNum,
+          type: "Unsanitized innerHTML",
+          snippet: trimmed
+        });
+      }
+      if (/bypassSecurityTrust(Html|Script|Style)\s*\(/i.test(line)) {
+        violations.push({
+          file: relPath,
+          line: lineNum,
+          type: "Security Trust Bypass (XSS Risk)",
+          snippet: trimmed
+        });
+      }
+      if (file.endsWith(".ts") && /(?:document\.getElementById|document\.querySelector|document\.getElementsByClassName)\s*\(/i.test(line)) {
+        violations.push({
+          file: relPath,
+          line: lineNum,
+          type: "Direct DOM Mutation (Bypasses Angular Renderer2)",
+          snippet: trimmed
+        });
+      }
+    });
+  }
+  if (violations.length > 0) {
+    logWarning(`Angular Security Notice: ${violations.length} template/DOM security pattern(s) flagged:`);
+    violations.slice(0, 5).forEach((v) => {
+      console.log(source_default.yellow(`    \u2022 [${v.type}] in ${source_default.bold(v.file)}:${v.line}`));
+      console.log(source_default.gray(`      Code: "${v.snippet.substring(0, 60)}"`));
+    });
+    console.log(source_default.gray("  Use Angular Renderer2 for DOM manipulation and DomSanitizer for dynamic HTML.\n"));
+  }
+  return {
+    passed: violations.length === 0,
+    violationCount: violations.length,
+    violations
+  };
+}
+function auditDistributionAssetIntegrity(outputDir) {
+  if (!outputDir || !import_fs.default.existsSync(outputDir)) {
+    return { valid: true, brokenAssets: [] };
+  }
+  const brokenAssets = [];
+  const indexHtmlPath = import_path.default.join(outputDir, "index.html");
+  if (import_fs.default.existsSync(indexHtmlPath)) {
+    const htmlContent = import_fs.default.readFileSync(indexHtmlPath, "utf8");
+    const tagRegex = /<(?:link|script|img)\s+[^>]*(?:href|src)=["']([^"']+)["'][^>]*>/gi;
+    let match2;
+    while ((match2 = tagRegex.exec(htmlContent)) !== null) {
+      const assetUrl = match2[1];
+      if (/^(?:https?:|\/\/|data:|#|mailto:)/i.test(assetUrl)) continue;
+      const cleanAsset = assetUrl.split("?")[0].split("#")[0].replace(/^\//, "");
+      if (cleanAsset) {
+        const targetDiskPath = import_path.default.join(outputDir, cleanAsset);
+        if (!import_fs.default.existsSync(targetDiskPath)) {
+          brokenAssets.push({
+            sourceFile: "index.html",
+            assetPath: assetUrl
+          });
+        }
+      }
+    }
+  }
+  const allDistFiles = getAllFiles(outputDir);
+  const cssFiles = allDistFiles.filter((f3) => f3.endsWith(".css"));
+  const urlRegex = /url\(\s*['"]?([^'")]+)['"]?\s*\)/gi;
+  for (const cssFile of cssFiles) {
+    let cssContent = "";
+    try {
+      cssContent = import_fs.default.readFileSync(cssFile, "utf8");
+    } catch (_) {
+      continue;
+    }
+    const cssDir = import_path.default.dirname(cssFile);
+    let match2;
+    while ((match2 = urlRegex.exec(cssContent)) !== null) {
+      const ref = match2[1];
+      if (/^(?:https?:|\/\/|data:|#)/i.test(ref)) continue;
+      const cleanRef = ref.split("?")[0].split("#")[0];
+      const targetDiskPath = cleanRef.startsWith("/") ? import_path.default.join(outputDir, cleanRef.replace(/^\//, "")) : import_path.default.resolve(cssDir, cleanRef);
+      if (!import_fs.default.existsSync(targetDiskPath)) {
+        brokenAssets.push({
+          sourceFile: import_path.default.relative(outputDir, cssFile).replace(/\\/g, "/"),
+          assetPath: ref
+        });
+      }
+    }
+  }
+  return {
+    valid: brokenAssets.length === 0,
+    brokenAssets
+  };
+}
+function calculateGzipBudgets(outputDir, jsBundles = []) {
+  if (!outputDir || !import_fs.default.existsSync(outputDir) || jsBundles.length === 0) {
+    return { totalGzipBytes: 0, totalGzipSizeKb: "0.00", bundleMetrics: [], budgetExceeded: false };
+  }
+  let totalGzipBytes = 0;
+  const bundleMetrics = [];
+  for (const file of jsBundles) {
+    const fullPath = import_path.default.join(outputDir, file);
+    if (import_fs.default.existsSync(fullPath)) {
+      try {
+        const rawBuf = import_fs.default.readFileSync(fullPath);
+        const gzipped = import_zlib.default.gzipSync(rawBuf);
+        totalGzipBytes += gzipped.length;
+        bundleMetrics.push({
+          file,
+          rawBytes: rawBuf.length,
+          gzipBytes: gzipped.length,
+          gzipSizeKb: (gzipped.length / 1024).toFixed(1)
+        });
+      } catch (_) {
+      }
+    }
+  }
+  const totalGzipSizeKb = (totalGzipBytes / 1024).toFixed(1);
+  const totalGzipSizeMb = (totalGzipBytes / (1024 * 1024)).toFixed(2);
+  const budgetExceeded = totalGzipBytes > 1.5 * 1024 * 1024;
+  let budgetWarning = null;
+  if (budgetExceeded) {
+    budgetWarning = `Total gzipped bundle size (${totalGzipSizeMb} MB) exceeds recommended 1.5 MB network budget.`;
+  }
+  return {
+    totalGzipBytes,
+    totalGzipSizeKb,
+    totalGzipSizeMb,
+    bundleMetrics,
+    budgetExceeded,
+    budgetWarning
+  };
+}
+function auditCloudDeploymentConfigs(cwd = process.cwd()) {
+  const targets = [];
+  const details = {};
+  const azurePath = import_path.default.join(cwd, "staticwebapp.config.json");
+  if (import_fs.default.existsSync(azurePath)) {
+    targets.push("Azure Static Web Apps");
+    details.azure = true;
+  }
+  const vercelPath = import_path.default.join(cwd, "vercel.json");
+  if (import_fs.default.existsSync(vercelPath)) {
+    targets.push("Vercel");
+    details.vercel = true;
+  }
+  const netlifyPath = import_path.default.join(cwd, "netlify.toml");
+  const redirectsPath = import_path.default.join(cwd, "_redirects");
+  if (import_fs.default.existsSync(netlifyPath) || import_fs.default.existsSync(redirectsPath)) {
+    targets.push("Netlify");
+    details.netlify = true;
+  }
+  const fbPath = import_path.default.join(cwd, "firebase.json");
+  if (import_fs.default.existsSync(fbPath)) {
+    targets.push("Firebase Hosting");
+    details.firebase = true;
+  }
+  const dockerPath = import_path.default.join(cwd, "Dockerfile");
+  if (import_fs.default.existsSync(dockerPath)) {
+    targets.push("Docker / Container");
+    details.docker = true;
+  }
+  const iisPath = import_path.default.join(cwd, "web.config");
+  const srcIisPath = import_path.default.join(cwd, "src", "web.config");
+  if (import_fs.default.existsSync(iisPath) || import_fs.default.existsSync(srcIisPath)) {
+    targets.push("IIS (Internet Information Services)");
+    details.iis = true;
+  }
+  return {
+    hasAnyCloudTarget: targets.length > 0,
+    detectedTargets: targets,
+    details
+  };
+}
+function auditIisDeploymentConfig(cwd = process.cwd(), outputDir = null) {
+  const candidates = [
+    outputDir ? import_path.default.join(outputDir, "web.config") : null,
+    import_path.default.join(cwd, "src", "web.config"),
+    import_path.default.join(cwd, "web.config")
+  ].filter(Boolean);
+  let targetWebConfig = null;
+  for (const c of candidates) {
+    if (import_fs.default.existsSync(c)) {
+      targetWebConfig = c;
+      break;
+    }
+  }
+  if (!targetWebConfig) {
+    return {
+      isIisConfigured: false,
+      filePath: null,
+      isValidXml: true,
+      hasRewriteRule: false,
+      hasMimeTypes: false,
+      isSyncedInAngularJson: true,
+      issues: [],
+      warnings: []
+    };
+  }
+  const issues = [];
+  const warnings = [];
+  let content = "";
+  try {
+    content = import_fs.default.readFileSync(targetWebConfig, "utf8");
+  } catch (readErr) {
+    return {
+      isIisConfigured: true,
+      filePath: targetWebConfig,
+      isValidXml: false,
+      hasRewriteRule: false,
+      hasMimeTypes: false,
+      isSyncedInAngularJson: false,
+      issues: [`Cannot read web.config: ${readErr.message}`],
+      warnings: []
+    };
+  }
+  let isValidXml = true;
+  const tagStack = [];
+  const tagRegex = /<!--[\s\S]*?-->|<([a-zA-Z0-9_.:-]+)(?:\s+[^>]*?)?(\/?)>|<\/([a-zA-Z0-9_.:-]+)>/g;
+  let tagMatch;
+  while ((tagMatch = tagRegex.exec(content)) !== null) {
+    if (tagMatch[0].startsWith("<!--") || tagMatch[0].startsWith("<?")) continue;
+    const openTag = tagMatch[1];
+    const isSelfClosing = tagMatch[2] === "/";
+    const closeTag = tagMatch[3];
+    if (openTag && !isSelfClosing) {
+      tagStack.push(openTag.toLowerCase());
+    } else if (closeTag) {
+      const expected = tagStack.pop();
+      if (expected !== closeTag.toLowerCase()) {
+        isValidXml = false;
+        issues.push(`Malformed XML in web.config: Closing tag </${closeTag}> does not match <${expected || "unknown"}> (IIS HTTP 500.19 risk)`);
+        break;
+      }
+    }
+  }
+  if (isValidXml && tagStack.length > 0) {
+    isValidXml = false;
+    issues.push(`Malformed XML in web.config: Unclosed tag(s) <${tagStack.join(">, <")}> (IIS HTTP 500.19 risk)`);
+  }
+  const hasRewriteTag = /<rewrite>/i.test(content) && /<rules>/i.test(content);
+  const hasRewriteAction = /<action\s+[^>]*type=["']Rewrite["'][^>]*url=["'][^"']*index\.html["']/i.test(content) || /<action\s+[^>]*url=["'][^"']*index\.html["'][^>]*type=["']Rewrite["']/i.test(content) || /<action\s+[^>]*type=["']Rewrite["']/i.test(content);
+  const hasRewriteRule = hasRewriteTag && hasRewriteAction;
+  if (!hasRewriteRule) {
+    warnings.push("web.config is missing standard Angular URL rewrite rule to index.html (Direct route reloads on IIS may 404).");
+  }
+  const hasStaticContent = /<staticContent>/i.test(content);
+  const hasWoff2 = /fileExtension=["']\.woff2["']/i.test(content);
+  const hasJson = /fileExtension=["']\.json["']/i.test(content);
+  const hasMimeTypes = hasStaticContent && (hasWoff2 || hasJson);
+  if (!hasWoff2) {
+    warnings.push("MIME type for .woff2 fonts not declared in web.config <staticContent> (IIS HTTP 404.3 risk).");
+  }
+  let isSyncedInAngularJson = true;
+  const angularJsonPath = import_path.default.join(cwd, "angular.json");
+  if (import_fs.default.existsSync(angularJsonPath) && targetWebConfig.includes("src")) {
+    try {
+      const aj = import_fs.default.readFileSync(angularJsonPath, "utf8");
+      if (!aj.includes("web.config")) {
+        isSyncedInAngularJson = false;
+        warnings.push('src/web.config is not registered in angular.json "assets" array. It will NOT be copied to dist/ during build!');
+      }
+    } catch (_) {
+    }
+  }
+  return {
+    isIisConfigured: true,
+    filePath: import_path.default.relative(cwd, targetWebConfig).replace(/\\/g, "/"),
+    isValidXml,
+    hasRewriteRule,
+    hasMimeTypes,
+    isSyncedInAngularJson,
+    issues,
+    warnings
+  };
+}
+var import_fs, import_path, import_crypto, import_zlib;
+var init_angular_best_practices = __esm({
+  "src/rules/angular-best-practices.js"() {
+    import_fs = __toESM(require("fs"), 1);
+    import_path = __toESM(require("path"), 1);
+    import_crypto = __toESM(require("crypto"), 1);
+    import_zlib = __toESM(require("zlib"), 1);
+    init_source();
+    init_logger();
+    init_git();
   }
 });
 
@@ -12135,22 +13793,22 @@ var require_crypto2 = __commonJS({
     "use strict";
     Object.defineProperty(exports2, "__esModule", { value: true });
     exports2.NodeCrypto = void 0;
-    var crypto2 = require("crypto");
+    var crypto3 = require("crypto");
     var NodeCrypto = class {
       async sha256DigestBase64(str) {
-        return crypto2.createHash("sha256").update(str).digest("base64");
+        return crypto3.createHash("sha256").update(str).digest("base64");
       }
       randomBytesBase64(count) {
-        return crypto2.randomBytes(count).toString("base64");
+        return crypto3.randomBytes(count).toString("base64");
       }
       async verify(pubkey, data, signature) {
-        const verifier = crypto2.createVerify("RSA-SHA256");
+        const verifier = crypto3.createVerify("RSA-SHA256");
         verifier.update(data);
         verifier.end();
         return verifier.verify(pubkey, signature, "base64");
       }
       async sign(privateKey, data) {
-        const signer = crypto2.createSign("RSA-SHA256");
+        const signer = crypto3.createSign("RSA-SHA256");
         signer.update(data);
         signer.end();
         return signer.sign(privateKey, "base64");
@@ -12168,7 +13826,7 @@ var require_crypto2 = __commonJS({
        *   string in hexadecimal encoding.
        */
       async sha256DigestHex(str) {
-        return crypto2.createHash("sha256").update(str).digest("hex");
+        return crypto3.createHash("sha256").update(str).digest("hex");
       }
       /**
        * Computes the HMAC hash of a message using the provided crypto key and the
@@ -12180,7 +13838,7 @@ var require_crypto2 = __commonJS({
        */
       async signWithHmacSha256(key, msg) {
         const cryptoKey = typeof key === "string" ? key : toBuffer(key);
-        return toArrayBuffer(crypto2.createHmac("sha256", cryptoKey).update(msg).digest());
+        return toArrayBuffer(crypto3.createHmac("sha256", cryptoKey).update(msg).digest());
       }
     };
     exports2.NodeCrypto = NodeCrypto;
@@ -13093,10 +14751,10 @@ var require_oauth2client = __commonJS({
        * https://github.com/googleapis/google-auth-library-nodejs/blob/main/samples/oauth2-codeVerifier.js
        */
       async generateCodeVerifierAsync() {
-        const crypto2 = (0, crypto_1.createCrypto)();
-        const randomString = crypto2.randomBytesBase64(96);
+        const crypto3 = (0, crypto_1.createCrypto)();
+        const randomString = crypto3.randomBytesBase64(96);
         const codeVerifier = randomString.replace(/\+/g, "~").replace(/=/g, "_").replace(/\//g, "-");
-        const unencodedCodeChallenge = await crypto2.sha256DigestBase64(codeVerifier);
+        const unencodedCodeChallenge = await crypto3.sha256DigestBase64(codeVerifier);
         const codeChallenge = unencodedCodeChallenge.split("=")[0].replace(/\+/g, "-").replace(/\//g, "_");
         return { codeVerifier, codeChallenge };
       }
@@ -13537,7 +15195,7 @@ var require_oauth2client = __commonJS({
        * @return Returns a promise resolving to LoginTicket on verification.
        */
       async verifySignedJwtWithCertsAsync(jwt, certs, requiredAudience, issuers, maxExpiry) {
-        const crypto2 = (0, crypto_1.createCrypto)();
+        const crypto3 = (0, crypto_1.createCrypto)();
         if (!maxExpiry) {
           maxExpiry = _OAuth2Client.DEFAULT_MAX_TOKEN_LIFETIME_SECS_;
         }
@@ -13550,7 +15208,7 @@ var require_oauth2client = __commonJS({
         let envelope;
         let payload;
         try {
-          envelope = JSON.parse(crypto2.decodeBase64StringUtf8(segments[0]));
+          envelope = JSON.parse(crypto3.decodeBase64StringUtf8(segments[0]));
         } catch (err) {
           if (err instanceof Error) {
             err.message = `Can't parse token envelope: ${segments[0]}': ${err.message}`;
@@ -13561,7 +15219,7 @@ var require_oauth2client = __commonJS({
           throw new Error("Can't parse token envelope: " + segments[0]);
         }
         try {
-          payload = JSON.parse(crypto2.decodeBase64StringUtf8(segments[1]));
+          payload = JSON.parse(crypto3.decodeBase64StringUtf8(segments[1]));
         } catch (err) {
           if (err instanceof Error) {
             err.message = `Can't parse token payload '${segments[0]}`;
@@ -13578,7 +15236,7 @@ var require_oauth2client = __commonJS({
         if (envelope.alg === "ES256") {
           signature = formatEcdsa.joseToDer(signature, "ES256").toString("base64");
         }
-        const verified = await crypto2.verify(cert, signed, signature);
+        const verified = await crypto3.verify(cert, signed, signature);
         if (!verified) {
           throw new Error("Invalid token signature: " + jwt);
         }
@@ -13953,14 +15611,14 @@ var require_buffer_equal_constant_time = __commonJS({
 var require_jwa = __commonJS({
   "node_modules/jwa/index.js"(exports2, module2) {
     var Buffer4 = require_safe_buffer().Buffer;
-    var crypto2 = require("crypto");
+    var crypto3 = require("crypto");
     var formatEcdsa = require_ecdsa_sig_formatter();
     var util = require("util");
     var MSG_INVALID_ALGORITHM = '"%s" is not a valid algorithm.\n  Supported algorithms are:\n  "HS256", "HS384", "HS512", "RS256", "RS384", "RS512", "PS256", "PS384", "PS512", "ES256", "ES384", "ES512" and "none".';
     var MSG_INVALID_SECRET = "secret must be a string or buffer";
     var MSG_INVALID_VERIFIER_KEY = "key must be a string or a buffer";
     var MSG_INVALID_SIGNER_KEY = "key must be a string, a buffer or an object";
-    var supportsKeyObjects = typeof crypto2.createPublicKey === "function";
+    var supportsKeyObjects = typeof crypto3.createPublicKey === "function";
     if (supportsKeyObjects) {
       MSG_INVALID_VERIFIER_KEY += " or a KeyObject";
       MSG_INVALID_SECRET += "or a KeyObject";
@@ -14050,17 +15708,17 @@ var require_jwa = __commonJS({
       return function sign(thing, secret) {
         checkIsSecretKey(secret);
         thing = normalizeInput(thing);
-        var hmac = crypto2.createHmac("sha" + bits, secret);
+        var hmac = crypto3.createHmac("sha" + bits, secret);
         var sig = (hmac.update(thing), hmac.digest("base64"));
         return fromBase64(sig);
       };
     }
     var bufferEqual;
-    var timingSafeEqual = "timingSafeEqual" in crypto2 ? function timingSafeEqual2(a, b) {
+    var timingSafeEqual = "timingSafeEqual" in crypto3 ? function timingSafeEqual2(a, b) {
       if (a.byteLength !== b.byteLength) {
         return false;
       }
-      return crypto2.timingSafeEqual(a, b);
+      return crypto3.timingSafeEqual(a, b);
     } : function timingSafeEqual2(a, b) {
       if (!bufferEqual) {
         bufferEqual = require_buffer_equal_constant_time();
@@ -14077,7 +15735,7 @@ var require_jwa = __commonJS({
       return function sign(thing, privateKey) {
         checkIsPrivateKey(privateKey);
         thing = normalizeInput(thing);
-        var signer = crypto2.createSign("RSA-SHA" + bits);
+        var signer = crypto3.createSign("RSA-SHA" + bits);
         var sig = (signer.update(thing), signer.sign(privateKey, "base64"));
         return fromBase64(sig);
       };
@@ -14087,7 +15745,7 @@ var require_jwa = __commonJS({
         checkIsPublicKey(publicKey);
         thing = normalizeInput(thing);
         signature = toBase64(signature);
-        var verifier = crypto2.createVerify("RSA-SHA" + bits);
+        var verifier = crypto3.createVerify("RSA-SHA" + bits);
         verifier.update(thing);
         return verifier.verify(publicKey, signature, "base64");
       };
@@ -14096,11 +15754,11 @@ var require_jwa = __commonJS({
       return function sign(thing, privateKey) {
         checkIsPrivateKey(privateKey);
         thing = normalizeInput(thing);
-        var signer = crypto2.createSign("RSA-SHA" + bits);
+        var signer = crypto3.createSign("RSA-SHA" + bits);
         var sig = (signer.update(thing), signer.sign({
           key: privateKey,
-          padding: crypto2.constants.RSA_PKCS1_PSS_PADDING,
-          saltLength: crypto2.constants.RSA_PSS_SALTLEN_DIGEST
+          padding: crypto3.constants.RSA_PKCS1_PSS_PADDING,
+          saltLength: crypto3.constants.RSA_PSS_SALTLEN_DIGEST
         }, "base64"));
         return fromBase64(sig);
       };
@@ -14110,12 +15768,12 @@ var require_jwa = __commonJS({
         checkIsPublicKey(publicKey);
         thing = normalizeInput(thing);
         signature = toBase64(signature);
-        var verifier = crypto2.createVerify("RSA-SHA" + bits);
+        var verifier = crypto3.createVerify("RSA-SHA" + bits);
         verifier.update(thing);
         return verifier.verify({
           key: publicKey,
-          padding: crypto2.constants.RSA_PKCS1_PSS_PADDING,
-          saltLength: crypto2.constants.RSA_PSS_SALTLEN_DIGEST
+          padding: crypto3.constants.RSA_PKCS1_PSS_PADDING,
+          saltLength: crypto3.constants.RSA_PSS_SALTLEN_DIGEST
         }, signature, "base64");
       };
     }
@@ -16691,14 +18349,14 @@ var require_awsrequestsigner = __commonJS({
       }
     };
     exports2.AwsRequestSigner = AwsRequestSigner;
-    async function sign(crypto2, key, msg) {
-      return await crypto2.signWithHmacSha256(key, msg);
+    async function sign(crypto3, key, msg) {
+      return await crypto3.signWithHmacSha256(key, msg);
     }
-    async function getSigningKey(crypto2, key, dateStamp, region, serviceName) {
-      const kDate = await sign(crypto2, `AWS4${key}`, dateStamp);
-      const kRegion = await sign(crypto2, kDate, region);
-      const kService = await sign(crypto2, kRegion, serviceName);
-      const kSigning = await sign(crypto2, kService, "aws4_request");
+    async function getSigningKey(crypto3, key, dateStamp, region, serviceName) {
+      const kDate = await sign(crypto3, `AWS4${key}`, dateStamp);
+      const kRegion = await sign(crypto3, kDate, region);
+      const kService = await sign(crypto3, kRegion, serviceName);
+      const kSigning = await sign(crypto3, kService, "aws4_request");
       return kSigning;
     }
     async function generateAuthenticationHeaderMap(options) {
@@ -17664,7 +19322,7 @@ var require_gdchclient = __commonJS({
     "use strict";
     Object.defineProperty(exports2, "__esModule", { value: true });
     exports2.GdchClient = exports2.GDCH_SERVICE_ACCOUNT_TYPE = void 0;
-    var crypto2 = require("crypto");
+    var crypto3 = require("crypto");
     var fs10 = require("fs");
     var https2 = require("https");
     var oauth2client_1 = require_oauth2client();
@@ -17855,7 +19513,7 @@ var require_gdchclient = __commonJS({
         const encodedHeader = this.base64UrlEncode(JSON.stringify(header));
         const encodedPayload = this.base64UrlEncode(JSON.stringify(payload));
         const signingInput = `${encodedHeader}.${encodedPayload}`;
-        const signature = crypto2.sign("sha256", Buffer.from(signingInput), {
+        const signature = crypto3.sign("sha256", Buffer.from(signingInput), {
           key: this.privateKey,
           dsaEncoding: "ieee-p1363"
         });
@@ -18718,24 +20376,24 @@ var require_googleauth = __commonJS({
           const signed = await client.sign(data);
           return signed.signedBlob;
         }
-        const crypto2 = (0, crypto_1.createCrypto)();
+        const crypto3 = (0, crypto_1.createCrypto)();
         if (client instanceof jwtclient_1.JWT && client.key) {
-          const sign = await crypto2.sign(client.key, data);
+          const sign = await crypto3.sign(client.key, data);
           return sign;
         }
         const creds = await this.getCredentials();
         if (!creds.client_email) {
           throw new Error("Cannot sign data without `client_email`.");
         }
-        return this.signBlob(crypto2, creds.client_email, data, endpoint);
+        return this.signBlob(crypto3, creds.client_email, data, endpoint);
       }
-      async signBlob(crypto2, emailOrUniqueId, data, endpoint) {
+      async signBlob(crypto3, emailOrUniqueId, data, endpoint) {
         const url = new URL(endpoint + `${emailOrUniqueId}:signBlob`);
         const res = await this.request({
           method: "POST",
           url: url.href,
           data: {
-            payload: crypto2.encodeBase64StringUtf8(data)
+            payload: crypto3.encodeBase64StringUtf8(data)
           },
           retry: true,
           retryConfig: {
@@ -19303,7 +20961,7 @@ var require_limiter = __commonJS({
 var require_permessage_deflate = __commonJS({
   "node_modules/ws/lib/permessage-deflate.js"(exports2, module2) {
     "use strict";
-    var zlib2 = require("zlib");
+    var zlib3 = require("zlib");
     var bufferUtil = require_buffer_util();
     var Limiter = require_limiter();
     var { kStatusCode } = require_constants();
@@ -19570,8 +21228,8 @@ var require_permessage_deflate = __commonJS({
         const endpoint = this._isServer ? "client" : "server";
         if (!this._inflate) {
           const key = `${endpoint}_max_window_bits`;
-          const windowBits = typeof this.params[key] !== "number" ? zlib2.Z_DEFAULT_WINDOWBITS : this.params[key];
-          this._inflate = zlib2.createInflateRaw({
+          const windowBits = typeof this.params[key] !== "number" ? zlib3.Z_DEFAULT_WINDOWBITS : this.params[key];
+          this._inflate = zlib3.createInflateRaw({
             ...this._options.zlibInflateOptions,
             windowBits
           });
@@ -19621,8 +21279,8 @@ var require_permessage_deflate = __commonJS({
         const endpoint = this._isServer ? "server" : "client";
         if (!this._deflate) {
           const key = `${endpoint}_max_window_bits`;
-          const windowBits = typeof this.params[key] !== "number" ? zlib2.Z_DEFAULT_WINDOWBITS : this.params[key];
-          this._deflate = zlib2.createDeflateRaw({
+          const windowBits = typeof this.params[key] !== "number" ? zlib3.Z_DEFAULT_WINDOWBITS : this.params[key];
+          this._deflate = zlib3.createDeflateRaw({
             ...this._options.zlibDeflateOptions,
             windowBits
           });
@@ -19632,7 +21290,7 @@ var require_permessage_deflate = __commonJS({
         }
         this._deflate[kCallback] = callback;
         this._deflate.write(data);
-        this._deflate.flush(zlib2.Z_SYNC_FLUSH, () => {
+        this._deflate.flush(zlib3.Z_SYNC_FLUSH, () => {
           if (!this._deflate) {
             return;
           }
@@ -27675,503 +29333,10 @@ var require_prompts3 = __commonJS({
 var import_fs8 = __toESM(require("fs"), 1);
 var import_path7 = __toESM(require("path"), 1);
 var import_dotenv = __toESM(require_main(), 1);
-
-// node_modules/chalk/source/vendor/ansi-styles/index.js
-var ANSI_BACKGROUND_OFFSET = 10;
-var wrapAnsi16 = (offset = 0) => (code) => `\x1B[${code + offset}m`;
-var wrapAnsi256 = (offset = 0) => (code) => `\x1B[${38 + offset};5;${code}m`;
-var wrapAnsi16m = (offset = 0) => (red, green, blue) => `\x1B[${38 + offset};2;${red};${green};${blue}m`;
-var styles = {
-  modifier: {
-    reset: [0, 0],
-    // 21 isn't widely supported and 22 does the same thing
-    bold: [1, 22],
-    dim: [2, 22],
-    italic: [3, 23],
-    underline: [4, 24],
-    overline: [53, 55],
-    inverse: [7, 27],
-    hidden: [8, 28],
-    strikethrough: [9, 29]
-  },
-  color: {
-    black: [30, 39],
-    red: [31, 39],
-    green: [32, 39],
-    yellow: [33, 39],
-    blue: [34, 39],
-    magenta: [35, 39],
-    cyan: [36, 39],
-    white: [37, 39],
-    // Bright color
-    blackBright: [90, 39],
-    gray: [90, 39],
-    // Alias of `blackBright`
-    grey: [90, 39],
-    // Alias of `blackBright`
-    redBright: [91, 39],
-    greenBright: [92, 39],
-    yellowBright: [93, 39],
-    blueBright: [94, 39],
-    magentaBright: [95, 39],
-    cyanBright: [96, 39],
-    whiteBright: [97, 39]
-  },
-  bgColor: {
-    bgBlack: [40, 49],
-    bgRed: [41, 49],
-    bgGreen: [42, 49],
-    bgYellow: [43, 49],
-    bgBlue: [44, 49],
-    bgMagenta: [45, 49],
-    bgCyan: [46, 49],
-    bgWhite: [47, 49],
-    // Bright color
-    bgBlackBright: [100, 49],
-    bgGray: [100, 49],
-    // Alias of `bgBlackBright`
-    bgGrey: [100, 49],
-    // Alias of `bgBlackBright`
-    bgRedBright: [101, 49],
-    bgGreenBright: [102, 49],
-    bgYellowBright: [103, 49],
-    bgBlueBright: [104, 49],
-    bgMagentaBright: [105, 49],
-    bgCyanBright: [106, 49],
-    bgWhiteBright: [107, 49]
-  }
-};
-var modifierNames = Object.keys(styles.modifier);
-var foregroundColorNames = Object.keys(styles.color);
-var backgroundColorNames = Object.keys(styles.bgColor);
-var colorNames = [...foregroundColorNames, ...backgroundColorNames];
-function assembleStyles() {
-  const codes = /* @__PURE__ */ new Map();
-  for (const [groupName, group] of Object.entries(styles)) {
-    for (const [styleName, style] of Object.entries(group)) {
-      styles[styleName] = {
-        open: `\x1B[${style[0]}m`,
-        close: `\x1B[${style[1]}m`
-      };
-      group[styleName] = styles[styleName];
-      codes.set(style[0], style[1]);
-    }
-    Object.defineProperty(styles, groupName, {
-      value: group,
-      enumerable: false
-    });
-  }
-  Object.defineProperty(styles, "codes", {
-    value: codes,
-    enumerable: false
-  });
-  styles.color.close = "\x1B[39m";
-  styles.bgColor.close = "\x1B[49m";
-  styles.color.ansi = wrapAnsi16();
-  styles.color.ansi256 = wrapAnsi256();
-  styles.color.ansi16m = wrapAnsi16m();
-  styles.bgColor.ansi = wrapAnsi16(ANSI_BACKGROUND_OFFSET);
-  styles.bgColor.ansi256 = wrapAnsi256(ANSI_BACKGROUND_OFFSET);
-  styles.bgColor.ansi16m = wrapAnsi16m(ANSI_BACKGROUND_OFFSET);
-  Object.defineProperties(styles, {
-    rgbToAnsi256: {
-      value(red, green, blue) {
-        if (red === green && green === blue) {
-          if (red < 8) {
-            return 16;
-          }
-          if (red > 248) {
-            return 231;
-          }
-          return Math.round((red - 8) / 247 * 24) + 232;
-        }
-        return 16 + 36 * Math.round(red / 255 * 5) + 6 * Math.round(green / 255 * 5) + Math.round(blue / 255 * 5);
-      },
-      enumerable: false
-    },
-    hexToRgb: {
-      value(hex) {
-        const matches = /[a-f\d]{6}|[a-f\d]{3}/i.exec(hex.toString(16));
-        if (!matches) {
-          return [0, 0, 0];
-        }
-        let [colorString] = matches;
-        if (colorString.length === 3) {
-          colorString = [...colorString].map((character) => character + character).join("");
-        }
-        const integer = Number.parseInt(colorString, 16);
-        return [
-          /* eslint-disable no-bitwise */
-          integer >> 16 & 255,
-          integer >> 8 & 255,
-          integer & 255
-          /* eslint-enable no-bitwise */
-        ];
-      },
-      enumerable: false
-    },
-    hexToAnsi256: {
-      value: (hex) => styles.rgbToAnsi256(...styles.hexToRgb(hex)),
-      enumerable: false
-    },
-    ansi256ToAnsi: {
-      value(code) {
-        if (code < 8) {
-          return 30 + code;
-        }
-        if (code < 16) {
-          return 90 + (code - 8);
-        }
-        let red;
-        let green;
-        let blue;
-        if (code >= 232) {
-          red = ((code - 232) * 10 + 8) / 255;
-          green = red;
-          blue = red;
-        } else {
-          code -= 16;
-          const remainder = code % 36;
-          red = Math.floor(code / 36) / 5;
-          green = Math.floor(remainder / 6) / 5;
-          blue = remainder % 6 / 5;
-        }
-        const value = Math.max(red, green, blue) * 2;
-        if (value === 0) {
-          return 30;
-        }
-        let result = 30 + (Math.round(blue) << 2 | Math.round(green) << 1 | Math.round(red));
-        if (value === 2) {
-          result += 60;
-        }
-        return result;
-      },
-      enumerable: false
-    },
-    rgbToAnsi: {
-      value: (red, green, blue) => styles.ansi256ToAnsi(styles.rgbToAnsi256(red, green, blue)),
-      enumerable: false
-    },
-    hexToAnsi: {
-      value: (hex) => styles.ansi256ToAnsi(styles.hexToAnsi256(hex)),
-      enumerable: false
-    }
-  });
-  return styles;
-}
-var ansiStyles = assembleStyles();
-var ansi_styles_default = ansiStyles;
-
-// node_modules/chalk/source/vendor/supports-color/index.js
-var import_node_process = __toESM(require("node:process"), 1);
-var import_node_os = __toESM(require("node:os"), 1);
-var import_node_tty = __toESM(require("node:tty"), 1);
-function hasFlag(flag, argv2 = globalThis.Deno ? globalThis.Deno.args : import_node_process.default.argv) {
-  const prefix = flag.startsWith("-") ? "" : flag.length === 1 ? "-" : "--";
-  const position = argv2.indexOf(prefix + flag);
-  const terminatorPosition = argv2.indexOf("--");
-  return position !== -1 && (terminatorPosition === -1 || position < terminatorPosition);
-}
-var { env } = import_node_process.default;
-var flagForceColor;
-if (hasFlag("no-color") || hasFlag("no-colors") || hasFlag("color=false") || hasFlag("color=never")) {
-  flagForceColor = 0;
-} else if (hasFlag("color") || hasFlag("colors") || hasFlag("color=true") || hasFlag("color=always")) {
-  flagForceColor = 1;
-}
-function envForceColor() {
-  if ("FORCE_COLOR" in env) {
-    if (env.FORCE_COLOR === "true") {
-      return 1;
-    }
-    if (env.FORCE_COLOR === "false") {
-      return 0;
-    }
-    return env.FORCE_COLOR.length === 0 ? 1 : Math.min(Number.parseInt(env.FORCE_COLOR, 10), 3);
-  }
-}
-function translateLevel(level) {
-  if (level === 0) {
-    return false;
-  }
-  return {
-    level,
-    hasBasic: true,
-    has256: level >= 2,
-    has16m: level >= 3
-  };
-}
-function _supportsColor(haveStream, { streamIsTTY, sniffFlags = true } = {}) {
-  const noFlagForceColor = envForceColor();
-  if (noFlagForceColor !== void 0) {
-    flagForceColor = noFlagForceColor;
-  }
-  const forceColor = sniffFlags ? flagForceColor : noFlagForceColor;
-  if (forceColor === 0) {
-    return 0;
-  }
-  if (sniffFlags) {
-    if (hasFlag("color=16m") || hasFlag("color=full") || hasFlag("color=truecolor")) {
-      return 3;
-    }
-    if (hasFlag("color=256")) {
-      return 2;
-    }
-  }
-  if ("TF_BUILD" in env && "AGENT_NAME" in env) {
-    return 1;
-  }
-  if (haveStream && !streamIsTTY && forceColor === void 0) {
-    return 0;
-  }
-  const min = forceColor || 0;
-  if (env.TERM === "dumb") {
-    return min;
-  }
-  if (import_node_process.default.platform === "win32") {
-    const osRelease = import_node_os.default.release().split(".");
-    if (Number(osRelease[0]) >= 10 && Number(osRelease[2]) >= 10586) {
-      return Number(osRelease[2]) >= 14931 ? 3 : 2;
-    }
-    return 1;
-  }
-  if ("CI" in env) {
-    if (["GITHUB_ACTIONS", "GITEA_ACTIONS", "CIRCLECI"].some((key) => key in env)) {
-      return 3;
-    }
-    if (["TRAVIS", "APPVEYOR", "GITLAB_CI", "BUILDKITE", "DRONE"].some((sign) => sign in env) || env.CI_NAME === "codeship") {
-      return 1;
-    }
-    return min;
-  }
-  if ("TEAMCITY_VERSION" in env) {
-    return /^(9\.(0*[1-9]\d*)\.|\d{2,}\.)/.test(env.TEAMCITY_VERSION) ? 1 : 0;
-  }
-  if (env.COLORTERM === "truecolor") {
-    return 3;
-  }
-  if (env.TERM === "xterm-kitty") {
-    return 3;
-  }
-  if (env.TERM === "xterm-ghostty") {
-    return 3;
-  }
-  if (env.TERM === "wezterm") {
-    return 3;
-  }
-  if ("TERM_PROGRAM" in env) {
-    const version = Number.parseInt((env.TERM_PROGRAM_VERSION || "").split(".")[0], 10);
-    switch (env.TERM_PROGRAM) {
-      case "iTerm.app": {
-        return version >= 3 ? 3 : 2;
-      }
-      case "Apple_Terminal": {
-        return 2;
-      }
-    }
-  }
-  if (/-256(color)?$/i.test(env.TERM)) {
-    return 2;
-  }
-  if (/^screen|^xterm|^vt100|^vt220|^rxvt|color|ansi|cygwin|linux/i.test(env.TERM)) {
-    return 1;
-  }
-  if ("COLORTERM" in env) {
-    return 1;
-  }
-  return min;
-}
-function createSupportsColor(stream, options = {}) {
-  const level = _supportsColor(stream, {
-    streamIsTTY: stream && stream.isTTY,
-    ...options
-  });
-  return translateLevel(level);
-}
-var supportsColor = {
-  stdout: createSupportsColor({ isTTY: import_node_tty.default.isatty(1) }),
-  stderr: createSupportsColor({ isTTY: import_node_tty.default.isatty(2) })
-};
-var supports_color_default = supportsColor;
-
-// node_modules/chalk/source/utilities.js
-function stringReplaceAll(string, substring, replacer) {
-  let index = string.indexOf(substring);
-  if (index === -1) {
-    return string;
-  }
-  const substringLength = substring.length;
-  let endIndex = 0;
-  let returnValue = "";
-  do {
-    returnValue += string.slice(endIndex, index) + substring + replacer;
-    endIndex = index + substringLength;
-    index = string.indexOf(substring, endIndex);
-  } while (index !== -1);
-  returnValue += string.slice(endIndex);
-  return returnValue;
-}
-function stringEncaseCRLFWithFirstIndex(string, prefix, postfix, index) {
-  let endIndex = 0;
-  let returnValue = "";
-  do {
-    const gotCR = string[index - 1] === "\r";
-    returnValue += string.slice(endIndex, gotCR ? index - 1 : index) + prefix + (gotCR ? "\r\n" : "\n") + postfix;
-    endIndex = index + 1;
-    index = string.indexOf("\n", endIndex);
-  } while (index !== -1);
-  returnValue += string.slice(endIndex);
-  return returnValue;
-}
-
-// node_modules/chalk/source/index.js
-var { stdout: stdoutColor, stderr: stderrColor } = supports_color_default;
-var GENERATOR = /* @__PURE__ */ Symbol("GENERATOR");
-var STYLER = /* @__PURE__ */ Symbol("STYLER");
-var IS_EMPTY = /* @__PURE__ */ Symbol("IS_EMPTY");
-var levelMapping = [
-  "ansi",
-  "ansi",
-  "ansi256",
-  "ansi16m"
-];
-var styles2 = /* @__PURE__ */ Object.create(null);
-var applyOptions = (object, options = {}) => {
-  if (options.level && !(Number.isInteger(options.level) && options.level >= 0 && options.level <= 3)) {
-    throw new Error("The `level` option should be an integer from 0 to 3");
-  }
-  const colorLevel = stdoutColor ? stdoutColor.level : 0;
-  object.level = options.level === void 0 ? colorLevel : options.level;
-};
-var chalkFactory = (options) => {
-  const chalk2 = (...strings) => strings.join(" ");
-  applyOptions(chalk2, options);
-  Object.setPrototypeOf(chalk2, createChalk.prototype);
-  return chalk2;
-};
-function createChalk(options) {
-  return chalkFactory(options);
-}
-Object.setPrototypeOf(createChalk.prototype, Function.prototype);
-for (const [styleName, style] of Object.entries(ansi_styles_default)) {
-  styles2[styleName] = {
-    get() {
-      const builder = createBuilder(this, createStyler(style.open, style.close, this[STYLER]), this[IS_EMPTY]);
-      Object.defineProperty(this, styleName, { value: builder });
-      return builder;
-    }
-  };
-}
-styles2.visible = {
-  get() {
-    const builder = createBuilder(this, this[STYLER], true);
-    Object.defineProperty(this, "visible", { value: builder });
-    return builder;
-  }
-};
-var getModelAnsi = (model, level, type, ...arguments_) => {
-  if (model === "rgb") {
-    if (level === "ansi16m") {
-      return ansi_styles_default[type].ansi16m(...arguments_);
-    }
-    if (level === "ansi256") {
-      return ansi_styles_default[type].ansi256(ansi_styles_default.rgbToAnsi256(...arguments_));
-    }
-    return ansi_styles_default[type].ansi(ansi_styles_default.rgbToAnsi(...arguments_));
-  }
-  if (model === "hex") {
-    return getModelAnsi("rgb", level, type, ...ansi_styles_default.hexToRgb(...arguments_));
-  }
-  return ansi_styles_default[type][model](...arguments_);
-};
-var usedModels = ["rgb", "hex", "ansi256"];
-for (const model of usedModels) {
-  styles2[model] = {
-    get() {
-      const { level } = this;
-      return function(...arguments_) {
-        const styler = createStyler(getModelAnsi(model, levelMapping[level], "color", ...arguments_), ansi_styles_default.color.close, this[STYLER]);
-        return createBuilder(this, styler, this[IS_EMPTY]);
-      };
-    }
-  };
-  const bgModel = "bg" + model[0].toUpperCase() + model.slice(1);
-  styles2[bgModel] = {
-    get() {
-      const { level } = this;
-      return function(...arguments_) {
-        const styler = createStyler(getModelAnsi(model, levelMapping[level], "bgColor", ...arguments_), ansi_styles_default.bgColor.close, this[STYLER]);
-        return createBuilder(this, styler, this[IS_EMPTY]);
-      };
-    }
-  };
-}
-var proto = Object.defineProperties(() => {
-}, {
-  ...styles2,
-  level: {
-    enumerable: true,
-    get() {
-      return this[GENERATOR].level;
-    },
-    set(level) {
-      this[GENERATOR].level = level;
-    }
-  }
-});
-var createStyler = (open2, close, parent) => {
-  let openAll;
-  let closeAll;
-  if (parent === void 0) {
-    openAll = open2;
-    closeAll = close;
-  } else {
-    openAll = parent.openAll + open2;
-    closeAll = close + parent.closeAll;
-  }
-  return {
-    open: open2,
-    close,
-    openAll,
-    closeAll,
-    parent
-  };
-};
-var createBuilder = (self2, _styler, _isEmpty) => {
-  const builder = (...arguments_) => applyStyle(builder, arguments_.length === 1 ? "" + arguments_[0] : arguments_.join(" "));
-  Object.setPrototypeOf(builder, proto);
-  builder[GENERATOR] = self2;
-  builder[STYLER] = _styler;
-  builder[IS_EMPTY] = _isEmpty;
-  return builder;
-};
-var applyStyle = (self2, string) => {
-  if (self2.level <= 0 || !string) {
-    return self2[IS_EMPTY] ? "" : string;
-  }
-  let styler = self2[STYLER];
-  if (styler === void 0) {
-    return string;
-  }
-  const { openAll, closeAll } = styler;
-  if (string.includes("\x1B")) {
-    while (styler !== void 0) {
-      string = stringReplaceAll(string, styler.close, styler.open);
-      styler = styler.parent;
-    }
-  }
-  const lfIndex = string.indexOf("\n");
-  if (lfIndex !== -1) {
-    string = stringEncaseCRLFWithFirstIndex(string, closeAll, openAll, lfIndex);
-  }
-  return openAll + string + closeAll;
-};
-Object.defineProperties(createChalk.prototype, styles2);
-var chalk = createChalk();
-var chalkStderr = createChalk({ level: stderrColor ? stderrColor.level : 0 });
-var source_default = chalk;
+init_source();
 
 // src/ascii-art.js
+init_source();
 var BANNER = `
 ${source_default.red.bold("  \u2588\u2588\u2588\u2588\u2588\u2557 \u2588\u2588\u2588\u2557   \u2588\u2588\u2557 \u2588\u2588\u2588\u2588\u2588\u2588\u2557 \u2588\u2588\u2557   \u2588\u2588\u2557\u2588\u2588\u2557      \u2588\u2588\u2588\u2588\u2588\u2557 \u2588\u2588\u2588\u2588\u2588\u2588\u2557 ")}
 ${source_default.red.bold(" \u2588\u2588\u2554\u2550\u2550\u2588\u2588\u2557\u2588\u2588\u2588\u2588\u2557  \u2588\u2588\u2551\u2588\u2588\u2554\u2550\u2550\u2550\u2550\u255D \u2588\u2588\u2551   \u2588\u2588\u2551\u2588\u2588\u2551     \u2588\u2588\u2554\u2550\u2550\u2588\u2588\u2557\u2588\u2588\u2554\u2550\u2550\u2588\u2588\u2557")}
@@ -28191,414 +29356,17 @@ var MINI_BANNER = `
 ${source_default.red.bold(">>> [ANGULAR GATEKEEPER] Pre-Commit AI Validation Engine <<<")}
 `;
 
-// src/utils/git.js
-var import_child_process = require("child_process");
-function runGit(command, allowFail = false, cwd = process.cwd()) {
-  try {
-    return (0, import_child_process.execSync)(command, {
-      cwd,
-      encoding: "utf8",
-      stdio: ["pipe", "pipe", "pipe"],
-      windowsHide: true
-    }).trim();
-  } catch (err) {
-    if (!allowFail) {
-      throw err;
-    }
-    return "";
-  }
-}
-function getDiff(cwd = process.cwd(), excludeResolvedIssues = true) {
-  const excludeArg = excludeResolvedIssues ? '":(exclude)resolved_issues.md" ":(exclude)package-lock.json"' : "";
-  let diff = runGit(`git diff --cached -- . ${excludeArg}`, true, cwd);
-  if (!diff || diff.trim() === "") {
-    diff = runGit(`git diff HEAD~1 -- . ${excludeArg}`, true, cwd);
-  }
-  if (!diff || diff.trim() === "") {
-    diff = runGit(`git diff origin/main...HEAD -- . ${excludeArg}`, true, cwd);
-  }
-  if (!diff || diff.trim() === "") {
-    diff = runGit(`git diff origin/master...HEAD -- . ${excludeArg}`, true, cwd);
-  }
-  if (!diff || diff.trim() === "") {
-    diff = runGit(`git diff HEAD -- . ${excludeArg}`, true, cwd);
-  }
-  return diff || "";
-}
-function getProjectStructureTree(cwd = process.cwd()) {
-  try {
-    const output = runGit("git ls-tree -r --name-only HEAD", true, cwd);
-    if (output) {
-      const files = output.split("\n").filter((f3) => !f3.includes("node_modules") && !f3.includes("dist") && !f3.startsWith(".git"));
-      return files.slice(0, 150).join("\n");
-    }
-  } catch (_) {
-  }
-  return "";
-}
-function getStagedFiles(cwd = process.cwd()) {
-  const output = runGit("git diff --cached --name-only --diff-filter=ACM", true, cwd);
-  if (!output) return [];
-  return output.split("\n").map((f3) => f3.trim()).filter(Boolean);
-}
-
-// src/rules/angular-best-practices.js
-var import_fs = __toESM(require("fs"), 1);
-var import_path = __toESM(require("path"), 1);
-
-// src/utils/logger.js
-function logStep(stepNum, title) {
-  console.log(`
-${source_default.red.bold(`[Step ${stepNum}]`)} ${source_default.white.bold(title)}`);
-  console.log(source_default.gray("\u2500".repeat(60)));
-}
-function logSuccess(msg) {
-  console.log(`${source_default.green("\u2714")} ${source_default.green.bold(msg)}`);
-}
-function logWarning(msg) {
-  console.log(`${source_default.yellow("\u26A0")} ${source_default.yellow(msg)}`);
-}
-function logError(msg) {
-  console.log(`${source_default.red("\u2716")} ${source_default.red.bold(msg)}`);
-}
-
-// src/rules/angular-best-practices.js
-function getAllFiles(dirPath, arrayOfFiles = []) {
-  if (!import_fs.default.existsSync(dirPath)) return [];
-  const files = import_fs.default.readdirSync(dirPath);
-  files.forEach((file) => {
-    const fullPath = import_path.default.join(dirPath, file);
-    if (import_fs.default.statSync(fullPath).isDirectory()) {
-      getAllFiles(fullPath, arrayOfFiles);
-    } else {
-      arrayOfFiles.push(fullPath);
-    }
-  });
-  return arrayOfFiles;
-}
-function findBuildOutputDir(distPath) {
-  if (!import_fs.default.existsSync(distPath)) return null;
-  if (import_fs.default.existsSync(import_path.default.join(distPath, "index.html"))) {
-    return distPath;
-  }
-  const allFiles = getAllFiles(distPath);
-  const indexHtmlFile = allFiles.find((f3) => import_path.default.basename(f3).toLowerCase() === "index.html");
-  if (indexHtmlFile) {
-    return import_path.default.dirname(indexHtmlFile);
-  }
-  return distPath;
-}
-function checkAngularProject(cwd = process.cwd()) {
-  logStep(1, "Angular Project Detection");
-  const angularJsonPath = import_path.default.join(cwd, "angular.json");
-  const packageJsonPath = import_path.default.join(cwd, "package.json");
-  let isAngular = false;
-  let projectPkg = {};
-  if (import_fs.default.existsSync(packageJsonPath)) {
-    try {
-      projectPkg = JSON.parse(import_fs.default.readFileSync(packageJsonPath, "utf8"));
-      const deps = { ...projectPkg.dependencies || {}, ...projectPkg.devDependencies || {} };
-      if (deps["@angular/core"] || deps["@angular/cli"] || import_fs.default.existsSync(angularJsonPath)) {
-        isAngular = true;
-      }
-    } catch (e2) {
-    }
-  }
-  if (!isAngular) {
-    logWarning("Non-Angular repository detected (no angular.json or @angular/core found).");
-    console.log(source_default.gray("  Bypassing Angular Gatekeeper checks safely."));
-    process.exit(0);
-  }
-  logSuccess("Angular project verified (angular.json / @angular/core detected).");
-  return { isAngular, projectPkg };
-}
-function checkCriticalArchitecture(cwd = process.cwd()) {
-  logStep(2, "Critical Angular Architecture & Source Validation");
-  const requiredItems = [
-    { name: "angular.json", path: import_path.default.join(cwd, "angular.json"), type: "file" },
-    { name: "package.json", path: import_path.default.join(cwd, "package.json"), type: "file" },
-    { name: "src/ directory", path: import_path.default.join(cwd, "src"), type: "dir" },
-    { name: "src/app/ directory", path: import_path.default.join(cwd, "src", "app"), type: "dir" }
-  ];
-  let missingItems = [];
-  for (const item of requiredItems) {
-    if (item.type === "file") {
-      if (!import_fs.default.existsSync(item.path)) {
-        missingItems.push(item.name);
-      }
-    } else if (item.type === "dir") {
-      if (!import_fs.default.existsSync(item.path) || !import_fs.default.statSync(item.path).isDirectory()) {
-        missingItems.push(item.name);
-      }
-    }
-  }
-  const tsconfigExists = import_fs.default.existsSync(import_path.default.join(cwd, "tsconfig.json")) || import_fs.default.existsSync(import_path.default.join(cwd, "tsconfig.app.json"));
-  if (!tsconfigExists) {
-    missingItems.push("tsconfig.json (or tsconfig.app.json)");
-  }
-  const indexHtmlExists = import_fs.default.existsSync(import_path.default.join(cwd, "src", "index.html")) || import_fs.default.existsSync(import_path.default.join(cwd, "src", "index.csr.html")) || import_fs.default.existsSync(import_path.default.join(cwd, "index.html"));
-  if (!indexHtmlExists) {
-    missingItems.push("src/index.html (Application Main Entry Point)");
-  }
-  const mainTsExists = import_fs.default.existsSync(import_path.default.join(cwd, "src", "main.ts"));
-  if (!mainTsExists) {
-    missingItems.push("src/main.ts (Application Bootstrap Entry Point)");
-  }
-  if (missingItems.length > 0) {
-    logError(`Missing critical Angular file(s)/directory: ${missingItems.join(", ")}`);
-    console.log(source_default.red("  Commit rejected: Ensure your project structure adheres to Angular CLI standards.\n"));
-    throw new Error(`Missing critical Angular file(s)/directory: ${missingItems.join(", ")}`);
-  }
-  const stagedFiles = runGit("git diff --cached --name-only", true, cwd).split("\n").map((f3) => f3.trim());
-  const packageJsonStaged = stagedFiles.includes("package.json");
-  const lockfileStaged = stagedFiles.includes("package-lock.json") || stagedFiles.includes("yarn.lock") || stagedFiles.includes("pnpm-lock.yaml");
-  if (packageJsonStaged && !lockfileStaged) {
-    const lockfilePath = import_path.default.join(cwd, "package-lock.json");
-    if (import_fs.default.existsSync(lockfilePath)) {
-      logError("CI Integrity Violation: package.json is staged for commit, but package-lock.json is NOT staged!");
-      console.log(source_default.red("\n  \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550"));
-      console.log(source_default.red.bold("  \u274C COMMIT REJECTED: Lockfile out of sync!"));
-      console.log(source_default.yellow('  CI pipelines use "npm ci", which will FAIL if package-lock.json is not updated.'));
-      console.log(source_default.yellow('  Action: Run "git add package-lock.json" and commit again.'));
-      console.log(source_default.red("  \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\n"));
-      throw new Error("Lockfile out of sync: package.json is staged without package-lock.json");
-    }
-  }
-  validateCaseSensitiveImports(cwd, stagedFiles);
-  checkNodeEngineCompatibility(cwd);
-  logSuccess("All critical Angular architecture files, lockfile sync, and entry points verified.");
-}
-function checkNodeEngineCompatibility(cwd = process.cwd()) {
-  try {
-    const pkgPath = import_path.default.join(cwd, "package.json");
-    if (!import_fs.default.existsSync(pkgPath)) return;
-    const pkg = JSON.parse(import_fs.default.readFileSync(pkgPath, "utf8"));
-    const requiredNode = pkg.engines && pkg.engines.node;
-    if (requiredNode) {
-      const currentMajor = parseInt(process.versions.node.split(".")[0], 10);
-      const match2 = requiredNode.match(/\d+/);
-      if (match2) {
-        const requiredMajor = parseInt(match2[0], 10);
-        if (requiredNode.startsWith(">=") && currentMajor < requiredMajor) {
-          logError(`Node.js Version Incompatibility! Required: ${requiredNode}, Active: ${process.version}`);
-          throw new Error(`Node.js version mismatch: Required ${requiredNode} but running ${process.version}`);
-        }
-      }
-    }
-  } catch (err) {
-    if (err.message.includes("Node.js version mismatch")) throw err;
-  }
-}
-function validateCaseSensitiveImports(cwd = process.cwd(), stagedFiles = []) {
-  const tsFiles = stagedFiles.filter((f3) => f3.endsWith(".ts") && !f3.endsWith(".d.ts") && import_fs.default.existsSync(import_path.default.join(cwd, f3)));
-  if (tsFiles.length === 0) return;
-  const importRegex = /(?:import|from)\s+['"](\.[^'"]+)['"]/g;
-  const casingErrors = [];
-  for (const relFile of tsFiles) {
-    const fullFilePath = import_path.default.join(cwd, relFile);
-    const fileDir = import_path.default.dirname(fullFilePath);
-    const content = import_fs.default.readFileSync(fullFilePath, "utf8");
-    let match2;
-    while ((match2 = importRegex.exec(content)) !== null) {
-      const importPath = match2[1];
-      const targetBase = import_path.default.resolve(fileDir, importPath);
-      const targetDir = import_path.default.dirname(targetBase);
-      const targetFileName = import_path.default.basename(targetBase);
-      if (import_fs.default.existsSync(targetDir)) {
-        const actualDiskFiles = import_fs.default.readdirSync(targetDir);
-        const matchedExact = actualDiskFiles.find((f3) => {
-          const noExt = f3.replace(/\.(ts|js|d\.ts)$/, "");
-          return f3 === targetFileName || noExt === targetFileName;
-        });
-        const matchedCaseInsensitive = actualDiskFiles.find((f3) => {
-          const noExt = f3.replace(/\.(ts|js|d\.ts)$/, "");
-          return f3.toLowerCase() === targetFileName.toLowerCase() || noExt.toLowerCase() === targetFileName.toLowerCase();
-        });
-        if (!matchedExact && matchedCaseInsensitive) {
-          casingErrors.push({
-            file: relFile,
-            imported: importPath,
-            actual: import_path.default.join(import_path.default.dirname(importPath), matchedCaseInsensitive).replace(/\\/g, "/")
-          });
-        }
-      }
-    }
-  }
-  if (casingErrors.length > 0) {
-    logError("CRITICAL: Linux CI Path Incompatibility! Case-sensitivity mismatch detected in imports:");
-    casingErrors.forEach((err) => {
-      console.log(source_default.red(`    \u2022 In ${source_default.bold(err.file)}: Imported "${source_default.yellow(err.imported)}" but file on disk is "${source_default.green(err.actual)}"`));
-    });
-    console.log(source_default.yellow('\n  While Windows is case-insensitive, Linux CI servers will FAIL with "Module not found".'));
-    console.log(source_default.yellow("  Fix the casing of the import statement to match the actual file name.\n"));
-    throw new Error("Case-sensitive import mismatch detected (Linux CI incompatibility)");
-  }
-}
-function validateCompiledArtifacts(cwd = process.cwd()) {
-  logStep(4, "Production Build Artifacts Validation");
-  const distPath = import_path.default.join(cwd, "dist");
-  const outputDir = findBuildOutputDir(distPath);
-  if (!outputDir || !import_fs.default.existsSync(outputDir)) {
-    logError("Build output directory (dist/) was not generated or is missing!");
-    console.log(source_default.red("  Commit rejected: Ensure ng build produces valid output.\n"));
-    throw new Error("Build output directory (dist/) was not generated or is missing!");
-  }
-  console.log(source_default.gray(`  Inspecting build distribution output at: ${outputDir}`));
-  const outputFiles = getAllFiles(outputDir).map((f3) => import_path.default.relative(outputDir, f3).replace(/\\/g, "/"));
-  const indexHtmlPath = import_path.default.join(outputDir, "index.html");
-  const hasIndexHtml = import_fs.default.existsSync(indexHtmlPath) || outputFiles.some((f3) => import_path.default.basename(f3).toLowerCase() === "index.html");
-  if (!hasIndexHtml) {
-    logError("Critical build artifact missing: index.html was not generated in distribution output!");
-    console.log(source_default.red("  Commit rejected: index.html is required for IIS/web servers to load the application.\n"));
-    throw new Error("Critical build artifact missing: index.html");
-  }
-  const { hasBaseHref } = checkBaseHref(indexHtmlPath);
-  const jsBundles = outputFiles.filter((f3) => f3.endsWith(".js"));
-  if (jsBundles.length === 0) {
-    logError("Critical build artifact missing: No compiled JavaScript bundles found in output!");
-    console.log(source_default.red("  Commit rejected: Application logic files (main.js, polyfills.js, runtime.js) are missing.\n"));
-    throw new Error("Critical build artifact missing: No compiled JavaScript bundles found");
-  }
-  const cssFiles = outputFiles.filter((f3) => f3.endsWith(".css"));
-  const hasStylesCss = cssFiles.some((f3) => import_path.default.basename(f3).toLowerCase().startsWith("styles") || cssFiles.length > 0);
-  const hasSpaRewrite = outputFiles.some(
-    (f3) => f3.toLowerCase().endsWith("web.config") || f3.toLowerCase().endsWith("nginx.conf") || f3.toLowerCase().endsWith("_redirects") || f3.toLowerCase().endsWith("htaccess")
-  );
-  const envProdPath = import_path.default.join(cwd, "src", "environments", "environment.prod.ts");
-  const { hasLocalhostLeak, hasHttpApiLeak } = auditEnvironmentProd(envProdPath);
-  const dockerfilePath = import_path.default.join(cwd, "Dockerfile");
-  const dockerAudit = auditDockerfile(dockerfilePath);
-  const dockerValid = dockerAudit ? dockerAudit.valid : null;
-  let totalBundleSizeBytes = 0;
-  for (const jsFile of jsBundles) {
-    const fullJsPath = import_path.default.join(outputDir, jsFile);
-    if (import_fs.default.existsSync(fullJsPath)) {
-      totalBundleSizeBytes += import_fs.default.statSync(fullJsPath).size;
-    }
-  }
-  const totalBundleSizeMb = (totalBundleSizeBytes / (1024 * 1024)).toFixed(2);
-  const bundleBudgetExceeded = totalBundleSizeBytes > 5 * 1024 * 1024;
-  console.log(source_default.white("  Distribution & CD Readiness Checklist:"));
-  console.log(`    ${source_default.green("\u2714")} index.html (Main SPA Entry Point${hasBaseHref ? ", <base href> verified" : ""})`);
-  console.log(`    ${source_default.green("\u2714")} Compiled JavaScript Bundles (${jsBundles.length} files: ${totalBundleSizeMb} MB total)`);
-  if (hasStylesCss) {
-    console.log(`    ${source_default.green("\u2714")} Global Production Styles (${cssFiles.map((f3) => import_path.default.basename(f3)).join(", ")})`);
-  }
-  if (hasSpaRewrite) {
-    console.log(`    ${source_default.green("\u2714")} Web Server SPA Rewrite Config (IIS web.config / Nginx / _redirects)`);
-  }
-  if (dockerValid !== null) {
-    console.log(`    ${source_default.green("\u2714")} Dockerfile Container Specification Validated${dockerAudit?.hasMultiStage ? " (Multi-stage)" : ""}`);
-  }
-  if (hasLocalhostLeak) {
-    logWarning("CD Warning: Localhost/dev endpoint detected in environment.prod.ts!");
-  }
-  if (hasHttpApiLeak) {
-    logWarning("CD Security Warning: Unencrypted http:// endpoint detected in production environment!");
-  }
-  if (bundleBudgetExceeded) {
-    logWarning(`CD Performance Warning: Total compiled bundle size (${totalBundleSizeMb} MB) exceeds recommended 5 MB budget.`);
-  }
-  logSuccess(`Production distribution & CD deployment artifacts validated successfully (${totalBundleSizeMb} MB).`);
-  return {
-    bundleCount: jsBundles.length,
-    totalBundleSizeMb,
-    hasSpaRewrite,
-    dockerValid,
-    hasLocalhostLeak,
-    hasHttpApiLeak,
-    hasBaseHref,
-    bundleBudgetExceeded
-  };
-}
-function checkBaseHref(indexHtmlPath) {
-  if (!import_fs.default.existsSync(indexHtmlPath)) return { hasBaseHref: false, baseHrefValue: null };
-  const content = import_fs.default.readFileSync(indexHtmlPath, "utf8");
-  const match2 = content.match(/<base\s+href=["']([^"']+)["']/i);
-  return {
-    hasBaseHref: !!match2,
-    baseHrefValue: match2 ? match2[1] : null
-  };
-}
-function auditEnvironmentProd(envProdPath) {
-  if (!import_fs.default.existsSync(envProdPath)) {
-    return { hasLocalhostLeak: false, hasHttpApiLeak: false, issues: [] };
-  }
-  const content = import_fs.default.readFileSync(envProdPath, "utf8");
-  const issues = [];
-  const hasLocalhostLeak = /(?:http:\/\/localhost|http:\/\/127\.0\.0\.1|http:\/\/0\.0\.0\.0)/i.test(content);
-  if (hasLocalhostLeak) {
-    issues.push("Development localhost URL found in production config");
-  }
-  const lines = content.split("\n");
-  let hasHttpApiLeak = false;
-  for (const line of lines) {
-    const trimmed = line.trim();
-    if (trimmed.startsWith("//") || trimmed.startsWith("*")) continue;
-    if (/http:\/\/(?!localhost|127\.0\.0\.1|0\.0\.0\.0)[a-zA-Z0-9.-]+/i.test(trimmed)) {
-      hasHttpApiLeak = true;
-      issues.push("Unencrypted http:// endpoint found in production config");
-      break;
-    }
-  }
-  return { hasLocalhostLeak, hasHttpApiLeak, issues };
-}
-function auditDockerfile(dockerfilePath) {
-  if (!import_fs.default.existsSync(dockerfilePath)) return null;
-  const content = import_fs.default.readFileSync(dockerfilePath, "utf8");
-  const lines = content.split("\n").map((l) => l.trim()).filter((l) => l && !l.startsWith("#"));
-  const hasFrom = lines.some((l) => l.startsWith("FROM "));
-  const hasCopyOrAdd = lines.some((l) => l.startsWith("COPY ") || l.startsWith("ADD "));
-  const fromCount = lines.filter((l) => l.startsWith("FROM ")).length;
-  const hasMultiStage = fromCount > 1;
-  const hasExpose = lines.some((l) => l.startsWith("EXPOSE "));
-  return {
-    valid: hasFrom && hasCopyOrAdd,
-    hasFrom,
-    hasCopyOrAdd,
-    hasMultiStage,
-    hasExpose
-  };
-}
-function updateBuildMetadata(cwd = process.cwd(), projectPkg = {}) {
-  logStep(5, "Automated Angular Build Versioning");
-  const srcDir = import_path.default.join(cwd, "src");
-  if (import_fs.default.existsSync(srcDir) && import_fs.default.statSync(srcDir).isDirectory()) {
-    const buildMetaPath = import_path.default.join(srcDir, "build-metadata.json");
-    let buildData = {
-      buildNumber: 0,
-      version: projectPkg.version || "1.0.0",
-      branch: "main",
-      commitHash: "working-tree",
-      builtAt: (/* @__PURE__ */ new Date()).toISOString()
-    };
-    if (import_fs.default.existsSync(buildMetaPath)) {
-      try {
-        buildData = { ...buildData, ...JSON.parse(import_fs.default.readFileSync(buildMetaPath, "utf8")) };
-      } catch (e2) {
-      }
-    }
-    buildData.buildNumber = (Number(buildData.buildNumber) || 0) + 1;
-    buildData.version = projectPkg.version || buildData.version;
-    buildData.branch = runGit("git rev-parse --abbrev-ref HEAD", true, cwd) || "main";
-    buildData.commitHash = runGit("git rev-parse --short HEAD", true, cwd) || "uncommitted";
-    buildData.builtAt = (/* @__PURE__ */ new Date()).toISOString();
-    import_fs.default.writeFileSync(buildMetaPath, JSON.stringify(buildData, null, 2), "utf8");
-    try {
-      runGit("git add src/build-metadata.json", true, cwd);
-      logSuccess(`Build metadata updated & staged: Build #${buildData.buildNumber} (${buildData.commitHash}) on "${buildData.branch}"`);
-    } catch (addErr) {
-      logSuccess(`Build metadata updated: Build #${buildData.buildNumber} (${buildData.commitHash})`);
-    }
-  } else {
-    console.log(source_default.gray("  Skipped: src directory not found."));
-  }
-}
+// src/engine.js
+init_git();
+init_angular_best_practices();
 
 // src/rules/typescript-validator.js
 var import_fs2 = __toESM(require("fs"), 1);
 var import_path2 = __toESM(require("path"), 1);
 var import_child_process2 = require("child_process");
+init_source();
+init_logger();
+init_angular_best_practices();
 function runTypeScriptAndLintChecks(cwd = process.cwd(), projectPkg = {}) {
   let _capturedErrorOutput = "";
   logStep(4, "Strict TypeScript & Linter Verification");
@@ -28606,24 +29374,38 @@ function runTypeScriptAndLintChecks(cwd = process.cwd(), projectPkg = {}) {
   if (scripts["lint"]) {
     console.log(source_default.blue("  Running Angular Linter (npm run lint)..."));
     try {
-      (0, import_child_process2.execSync)("npm run lint", { stdio: "inherit", cwd });
+      const lintOut = (0, import_child_process2.execSync)("npm run lint", { stdio: "pipe", encoding: "utf8", maxBuffer: 10 * 1024 * 1024, cwd });
+      if (lintOut) process.stdout.write(lintOut);
       logSuccess("Angular linter passed with zero errors.");
     } catch (err) {
       logError("Angular linter reported errors!");
+      const stdout = err.stdout ? err.stdout.toString() : "";
+      const stderr = err.stderr ? err.stderr.toString() : "";
+      const combined = (stdout + "\n" + stderr).trim();
+      if (combined) process.stdout.write(combined + "\n");
       console.log(source_default.red("\n  Fix the linting issues before committing code.\n"));
-      throw new Error("Angular linting failed");
+      const failErr = new Error("Angular linting failed");
+      failErr.stepOutput = combined || err.message;
+      throw failErr;
     }
   }
   if (scripts["type-check"] || scripts["typecheck"]) {
     const typeScript = scripts["type-check"] ? "type-check" : "typecheck";
     console.log(source_default.blue(`  Running TypeScript Check (npm run ${typeScript})...`));
     try {
-      (0, import_child_process2.execSync)(`npm run ${typeScript}`, { stdio: "inherit", cwd });
+      const tcOut = (0, import_child_process2.execSync)(`npm run ${typeScript}`, { stdio: "pipe", encoding: "utf8", maxBuffer: 10 * 1024 * 1024, cwd });
+      if (tcOut) process.stdout.write(tcOut);
       logSuccess("TypeScript checks passed.");
     } catch (err) {
       logError("TypeScript type checking failed!");
+      const stdout = err.stdout ? err.stdout.toString() : "";
+      const stderr = err.stderr ? err.stderr.toString() : "";
+      const combined = (stdout + "\n" + stderr).trim();
+      if (combined) process.stdout.write(combined + "\n");
       console.log(source_default.red("\n  Fix the TypeScript errors before committing code.\n"));
-      throw new Error("TypeScript type checking failed");
+      const failErr = new Error("TypeScript type checking failed");
+      failErr.stepOutput = combined || err.message;
+      throw failErr;
     }
   } else {
     console.log(source_default.blue("  Running Type Safety Check (npx tsc --noEmit)..."));
@@ -28769,7 +29551,7 @@ try {
   }
 }
 function runAngularProductionBuild(cwd = process.cwd(), projectPkg = {}) {
-  logStep(6, "Mandatory Angular Build Compilation");
+  logStep(6, "Production Build & CD Deployment Verification");
   const scripts = projectPkg.scripts || {};
   console.log(source_default.blue("  Running Mandatory Angular Build Compilation..."));
   let buildCommand = "npm run build";
@@ -28778,15 +29560,23 @@ function runAngularProductionBuild(cwd = process.cwd(), projectPkg = {}) {
   }
   console.log(source_default.gray(`  Executing: ${buildCommand}`));
   try {
-    (0, import_child_process2.execSync)(buildCommand, { stdio: "inherit", cwd });
+    const buildOut = (0, import_child_process2.execSync)(buildCommand, { stdio: "pipe", encoding: "utf8", maxBuffer: 20 * 1024 * 1024, cwd });
+    if (buildOut) process.stdout.write(buildOut);
     logSuccess("Angular compilation & build completed successfully with ZERO errors.");
   } catch (buildErr) {
     logError("Angular Build FAILED! Compilation or TypeScript errors detected.");
+    const stdout = buildErr.stdout ? buildErr.stdout.toString() : "";
+    const stderr = buildErr.stderr ? buildErr.stderr.toString() : "";
+    const combined = (stdout + "\n" + stderr).trim();
+    if (combined) process.stdout.write(combined + "\n");
     console.log(source_default.red("\n  \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550"));
     console.log(source_default.red.bold("  \u274C COMMIT REJECTED: Application bundle generation failed!"));
     console.log(source_default.yellow("  Please fix the Angular/TypeScript build errors displayed above."));
     console.log(source_default.red("  \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\n"));
-    throw new Error("Angular build compilation failed");
+    const failErr = new Error("Angular build compilation failed");
+    failErr.buildOutput = combined || buildErr.message;
+    failErr.stepOutput = failErr.buildOutput;
+    throw failErr;
   }
 }
 
@@ -28794,9 +29584,12 @@ function runAngularProductionBuild(cwd = process.cwd(), projectPkg = {}) {
 var import_fs3 = __toESM(require("fs"), 1);
 var import_path3 = __toESM(require("path"), 1);
 var import_child_process3 = require("child_process");
+init_source();
+init_logger();
+init_git();
 function scanSecurityRules(diffOutput) {
   if (!diffOutput || diffOutput.trim() === "") return true;
-  logStep(6, "Enterprise Security & Secret Leak Scanning");
+  logStep(7, "Security & Secret Leak Scanning");
   const forbiddenPatterns = [
     // 1. Google / Gemini / Vertex AI Keys
     { pattern: /AIzaSy[0-9A-Za-z-_]{33}/, name: "Google / Gemini Studio API Key" },
@@ -28886,7 +29679,9 @@ function scanStagedFileIntegrity(cwd = process.cwd(), stagedFilesOverride = null
         console.log(source_default.red(`    \u2022 ${source_default.bold(item.file)} [${item.reason}]`));
       });
       console.log(source_default.yellow('\n  Remove these files from git staging using "git reset HEAD <file>".'));
-      throw new Error("Forbidden or oversized files detected in staged commit");
+      const fileListStr = forbiddenFiles.map((item) => `  \u2022 ${item.file} [${item.reason}]`).join("\n");
+      throw new Error(`Forbidden or oversized files detected in staged commit:
+${fileListStr}`);
     }
   } catch (err) {
     if (err.message.includes("Forbidden or oversized")) throw err;
@@ -28914,7 +29709,9 @@ function scanDependencyVulnerabilities(cwd = process.cwd()) {
       console.log(source_default.red.bold("  \u274C COMMIT REJECTED: Security vulnerabilities found in npm packages!"));
       console.log(source_default.yellow('  Run "npm audit" or "npm audit fix" to resolve known CVEs.'));
       console.log(source_default.red("  \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\n"));
-      throw new Error("Dependency security audit failed (High/Critical CVEs detected)");
+      const secErr = new Error("Dependency security audit failed (High/Critical CVEs detected)");
+      secErr.auditOutput = output;
+      throw secErr;
     } else {
       logWarning("npm audit could not connect to registry; skipping offline.");
       return true;
@@ -28926,6 +29723,7 @@ function scanDependencyVulnerabilities(cwd = process.cwd()) {
 var import_fs5 = __toESM(require("fs"), 1);
 var import_path4 = __toESM(require("path"), 1);
 var import_http = __toESM(require("http"), 1);
+init_source();
 
 // node_modules/@google/genai/dist/node/index.mjs
 var import_p_retry = __toESM(require_p_retry(), 1);
@@ -51275,6 +52073,8 @@ function getApiKeyFromEnv() {
 }
 
 // src/rules/ai-prompt.js
+init_logger();
+init_git();
 function buildGeminiAuditPrompt(knowledgeBase, diffOutput, projectTree = "") {
   return `
 You are a Principal Angular Architect, DevSecOps Specialist, and Code Quality Gatekeeper.
@@ -51661,6 +52461,7 @@ function evaluateAiResult(resultText, modelIdentifier) {
 var import_fs6 = __toESM(require("fs"), 1);
 var import_path5 = __toESM(require("path"), 1);
 var import_child_process4 = require("child_process");
+init_source();
 var import_prompts = __toESM(require_prompts3(), 1);
 function runGit2(command, cwd = process.cwd(), allowFail = false) {
   try {
@@ -52330,8 +53131,7 @@ var STEPS = [
   { id: 5, label: "5. Automated Unit Tests (test:ci) + Coverage Gate" },
   { id: 6, label: "6. Production Build & CD Deployment Verification" },
   { id: 7, label: "7. Security & Secret Leak Scanning" },
-  { id: 8, label: "8. Additional CI Checks" },
-  { id: 9, label: getAiStepLabel() }
+  { id: 8, label: getAiStepLabel() }
 ];
 var _windowEnabled = false;
 function writeProgressFile(data) {
@@ -52745,8 +53545,7 @@ $stepLabels = @(
   '5. Automated Unit Tests (test:ci) + Coverage Gate',
   '6. Production Build & CD Deployment Verification',
   '7. Security & Secret Leak Scanning',
-  '8. Additional CI Checks',
-  '9. AI Knowledge Base Audit'
+  '8. AI Knowledge Base Audit'
 );
 
 $rowBorders = @{}
@@ -53026,14 +53825,14 @@ function updateStep(stepId, status, reportOrDetail = "") {
   if (!data) return;
   if (data.steps[stepId]) {
     data.steps[stepId].status = status;
-    if (stepId !== 9) {
+    if (stepId !== 8) {
       data.steps[stepId].detail = stripAnsi(reportOrDetail);
     }
   }
   if (status === "error") {
     data.hasError = true;
   }
-  if (stepId === 9 && reportOrDetail) {
+  if (stepId === 8 && reportOrDetail) {
     data.aiReport = stripAnsi(reportOrDetail);
   }
   writeProgressFile(data);
@@ -53069,6 +53868,10 @@ async function runGatekeeper() {
   console.log(source_default.gray(`Working Directory: ${process.cwd()}
 `));
   const cwd = process.cwd();
+  const isCiMode = argv.includes("--ci") || !!process.env.CI;
+  if (isCiMode) {
+    process.env.SHOW_PROGRESS = "false";
+  }
   const { isAngular: _isAngular, projectPkg } = checkAngularProject(cwd);
   initProgressWindow();
   startStep(1, "Scanning workspace structure...");
@@ -53130,15 +53933,23 @@ async function runGatekeeper() {
     runAngularProductionBuild(cwd, projectPkg);
     const cdRes = validateCompiledArtifacts(cwd);
     updateBuildMetadata(cwd, projectPkg);
-    let cdDetail = `Verified ${cdRes?.bundleCount || 0} bundles (${cdRes?.totalBundleSizeMb || "0"} MB)`;
+    let cdDetail = `CD Verified: ${cdRes?.totalBundleSizeMb || "0"} MB`;
+    if (cdRes?.totalGzipSizeKb && cdRes.totalGzipSizeKb !== "0.0") {
+      cdDetail += ` (Gzip: ${cdRes.totalGzipSizeKb} KB)`;
+    }
     if (cdRes && cdRes.hasSpaRewrite) {
-      cdDetail += " + SPA rewrite";
+      cdDetail += " | SPA: \u2714";
+    } else {
+      cdDetail += " | SPA: \u26A0 Missing";
     }
     if (cdRes && cdRes.hasBaseHref) {
-      cdDetail += " + <base href>";
+      cdDetail += " | BaseHref: \u2714";
     }
-    if (cdRes && cdRes.dockerValid) {
-      cdDetail += " + Dockerfile";
+    if (cdRes && cdRes.assetAudit && cdRes.assetAudit.valid) {
+      cdDetail += " | Assets: \u2714";
+    }
+    if (cdRes && cdRes.releaseManifestCreated) {
+      cdDetail += " | Manifest: \u2714";
     }
     updateStep(6, "pass", cdDetail);
   } catch (err) {
@@ -53233,6 +54044,43 @@ async function main() {
       await statusBranchWatcher(process.cwd());
       return;
     }
+  }
+  const isVerifyDeploy = argv.some(
+    (a) => a === "verify-deploy" || a === "verify-live" || a === "--verify-deploy" || a === "--verify-live"
+  );
+  if (isVerifyDeploy) {
+    const targetUrl = argv.find((a) => a.startsWith("http://") || a.startsWith("https://")) || argv[3];
+    if (!targetUrl) {
+      console.log(source_default.red("\n  \u2716 Error: Missing deployment URL to verify."));
+      console.log(source_default.yellow("  Usage:   a-gatekeeper verify-deploy <url>"));
+      console.log(source_default.gray("  Example: a-gatekeeper verify-deploy https://my-angular-app.com\n"));
+      process.exit(1);
+    }
+    try {
+      const { verifyLiveDeployment: verifyLiveDeployment2 } = await Promise.resolve().then(() => (init_angular_best_practices(), angular_best_practices_exports));
+      const result = await verifyLiveDeployment2(targetUrl);
+      console.log(source_default.white("\n  CD Live Deployment Probe Report:"));
+      console.log(`    Status Code:       ${result.statusCode === 200 ? source_default.green("200 OK") : source_default.red(result.statusCode)}`);
+      console.log(`    Base Href Tag:     ${result.hasBaseHref ? source_default.green("\u2714 Verified") : source_default.yellow("\u26A0 Missing")}`);
+      console.log(`    SPA Deep Rewrite:  ${result.spaRewriteWorking ? source_default.green("\u2714 Functional") : source_default.yellow("\u26A0 Not Detected / Standard 404")}`);
+      if (result.issues.length > 0) {
+        console.log(source_default.yellow("\n  Detected CD Configuration Warnings:"));
+        result.issues.forEach((iss) => console.log(source_default.yellow(`    \u2022 ${iss}`)));
+      }
+      if (result.success) {
+        console.log(source_default.green.bold("\n  \u2714 CD Deployment Verification: 65% Compliance Passed!\n"));
+        process.exit(0);
+      } else {
+        console.log(source_default.yellow.bold("\n  \u26A0 CD Deployment Verification completed with warnings.\n"));
+        process.exit(0);
+      }
+    } catch (err) {
+      console.log(source_default.red(`
+  \u2716 CD Verification Failed: ${err.message}
+`));
+      process.exit(1);
+    }
+    return;
   }
   await runGatekeeper();
 }

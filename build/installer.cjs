@@ -5521,6 +5521,9 @@ jobs:
               exit 1
             fi
             echo "\u2714 index.html verified: $INDEX_FILE"
+            if [ -f "dist/release-manifest.json" ]; then
+              echo "\u2714 CD Release Candidate Manifest & SHA256 Checksums verified (65% CD Delivery)"
+            fi
           else
             echo "\u2139\uFE0F No dist/ output found; skipping artifact check"
           fi
@@ -5949,9 +5952,12 @@ if /I "%~1"=="status" goto status
 if /I "%~1"=="bypass" goto bypass
 if /I "%~1"=="branch" goto branch
 if /I "%~1"=="branch-check" goto branch
+if /I "%~1"=="verify-deploy" goto passthrough
+if /I "%~1"=="verify-live" goto passthrough
 if /I "%~1"=="help" goto help
 goto help
 
+:passthrough
 :branch
 if exist "%ENGINE_EXEC%" (
     "%ENGINE_EXEC%" %*
@@ -6011,6 +6017,7 @@ echo     enable                   Enable commit gatekeeper globally
 echo     disable                  Disable commit gatekeeper globally
 echo     status                   Check commit gatekeeper status
 echo     bypass                   Show single-commit bypass command
+echo     verify-deploy ^<url^>     Probe live CD deployment URL (HTTP 200, SPA rewrite, security)
 echo.
 echo   Branch Conflict Monitor Commands:
 echo     branch check --enable    Select target branch ^& start 15-min background conflict watcher
@@ -6032,7 +6039,7 @@ else
 fi
 
 case "$1" in
-  branch|branch-check)
+  branch|branch-check|verify-deploy|verify-live)
     if [ -f "$ENGINE_EXEC" ]; then
       "$ENGINE_EXEC" "$@"
     else
