@@ -669,7 +669,7 @@ async function build() {
       const { execSync } = await import('child_process');
       const zipPath = path.join(distDir, 'Angular-Gatekeeper-Windows-x64.zip');
       if (process.platform === 'win32') {
-        execSync(`powershell -NoProfile -Command "Compress-Archive -Path '${outputFolder}\\*' -DestinationPath '${zipPath}' -Force"`, { stdio: 'inherit' });
+        execSync(`powershell -NoProfile -Command "Add-Type -AssemblyName System.IO.Compression.FileSystem; Remove-Item -Path '${zipPath}' -Force -ErrorAction SilentlyContinue; [System.IO.Compression.ZipFile]::CreateFromDirectory('${outputFolder}', '${zipPath}')"`, { stdio: 'inherit' });
       } else {
         execSync(`cd "${outputFolder}" && zip -r "${zipPath}" .`, { stdio: 'inherit' });
       }
