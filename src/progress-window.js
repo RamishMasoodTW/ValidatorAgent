@@ -51,7 +51,8 @@ const STEPS = [
   { id: 5, label: '5. Automated Unit Tests (test:ci) + Coverage Gate' },
   { id: 6, label: '6. Production Build & CD Deployment Verification' },
   { id: 7, label: '7. Security & Secret Leak Scanning' },
-  { id: 8, label: getAiStepLabel() }
+  { id: 8, label: '8. Additional CI Checks' },
+  { id: 9, label: getAiStepLabel() }
 ];
 
 let _windowEnabled = false;
@@ -467,8 +468,9 @@ $stepLabels = @(
   '5. Automated Unit Tests (test:ci) + Coverage Gate',
   '6. Production Build & CD Deployment Verification',
   '7. Security & Secret Leak Scanning',
-  '8. AI Knowledge Base Audit'
-)
+  '8. Additional CI Checks',
+  '9. AI Knowledge Base Audit'
+);
 
 $rowBorders = @{}
 $rowIcons   = @{}
@@ -646,7 +648,7 @@ $timer.Add_Tick({
         $isFail = ($hasError -or $json.hasError)
     } elseif ($hasError) {
         $msgList = @()
-        for ($k = 1; $k -le 8; $k++) {
+        for ($k = 1; $k -le 9; $k++) {
             $st = $json.steps["$k"]
             if ($st -and $st.status -eq 'error' -and $st.detail) {
                 $msgList += "[$($st.label)] Error: $($st.detail)"
@@ -764,14 +766,14 @@ export function updateStep(stepId, status, reportOrDetail = '') {
   if (!data) return;
   if (data.steps[stepId]) {
     data.steps[stepId].status = status;
-    if (stepId !== 8) {
+    if (stepId !== 9) {
       data.steps[stepId].detail = stripAnsi(reportOrDetail);
     }
   }
   if (status === 'error') {
     data.hasError = true;
   }
-  if (stepId === 8 && reportOrDetail) {
+  if (stepId === 9 && reportOrDetail) {
     data.aiReport = stripAnsi(reportOrDetail);
   }
   writeProgressFile(data);

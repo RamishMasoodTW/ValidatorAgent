@@ -22,6 +22,8 @@
     "test": "npx jest --forceExit",
     "test:ci": "npx jest --ci --coverage --forceExit",
     "test:smoke": "node --check build/engine.cjs && node --check build/installer.cjs && node build/engine.cjs branch --status 2>&1 | node -e \"let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{if(!d.includes('watcher')){process.stderr.write('smoke:engine missing expected output\\n');process.exit(1)}})\" && node build/installer.cjs --status 2>&1 | node -e \"let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{if(!d.includes('Gatekeeper')){process.stderr.write('smoke:installer missing expected output\\n');process.exit(1)}})\"",
+    "typecheck": "tsc --noEmit",
+    "mutest": "npx stryker run",
     "test:watch": "npx jest --watch"
   },
   "keywords": [

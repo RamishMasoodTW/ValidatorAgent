@@ -1,0 +1,60 @@
+name: Pre‑Commit CI
+
+on:
+  push:
+    branches: [main, master, develop]
+  pull_request:
+    branches: [main, master, develop]
+
+jobs:
+  pre-ci:
+    name: 🛠️ Pre‑Commit Checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: ⚙️ Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: 📦 Install Dependencies
+        run: npm ci
+
+      - name: 🔒 Dependency Vulnerability Audit
+        run: npm audit --audit-level=high
+
+      - name: 🔍 ESLint – Static Analysis
+        run: npm run lint
+
+      - name: 🧪 Unit Tests with Coverage
+        run: npm run test:ci
+
+      - name: 📊 Enforce Coverage Threshold (80%)
+        run: |
+          COVERAGE=$(jq '.total.statements.pct' coverage/coverage-summary.json)
+          echo "Coverage: $COVERAGE%"
+          if (( $(echo "$COVERAGE < 80" | bc -l) )); then
+            echo "❌ Coverage below 80%"
+            exit 1
+          fi
+
+      - name: 🔑 Secrets Scan (Gitleaks)
+        uses: gitleaks/gitleaks-action@v3
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 📋 Publish Pre‑Commit Summary
+        if: always()
+        run: |
+          echo "## 📋 Pre‑Commit CI Summary" >> $GITHUB_STEP_SUMMARY
+          echo "| Check | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Lint | ${{ steps.lint.outcome }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Tests | ${{ steps.test.outcome }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Coverage | ${{ steps.test.outcome }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Audit | ${{ steps.audit.outcome }} |" >> $GITHUB_STEP_SUMMARY
