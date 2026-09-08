@@ -36,24 +36,27 @@
 
 ---
 
-## 📊 3. CI / CD Compliance & Issue Resolution Breakdown
+## 📊 3. Architectural Scope: CI/CD Lifecycle Alignment & Real-World Boundaries
 
 ```text
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                        CI / CD COMPLIANCE BENCHMARK                         │
+│             DEVOPS LIFECYCLE ALIGNMENT & ARCHITECTURAL BOUNDARIES           │
 ├──────────────────────────────────────┬──────────────────────────────────────┤
-│    🚀 CONTINUOUS INTEGRATION (CI)    │ 🚢 CONTINUOUS DELIVERY / DEPLOY (CD) │
-│           ⭐ 95% COMPLIANCE          │           ⭐ 65% COMPLIANCE          │
+│    🚀 SHIFT-LEFT CI QUALITY GATE     │ 🚢 RELEASE PACKAGING & CD READINESS  │
+│       ⭐ ~85% - 90% Local Prevention │    ⭐ 100% Client & Build Scope      │
+│       ⭐ 100% Remote Pipeline Parity │    ⭐ ~25% - 30% End-to-End Cloud CD │
 ├──────────────────────────────────────┴──────────────────────────────────────┤
-│             🎯 COMBINED REAL-WORLD LIFECYCLE COVERAGE: ~85% - 88%           │
+│ 🎯 ARCHITECTURAL ROLE: Local shift-left filter + automated CI/CD coordinator│
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
-### 🚀 CI (Continuous Integration) — 95% Compliance
-CI answers: *"Does the code compile cleanly, pass strict type tests, pass unit tests, maintain cross-OS compatibility, verify cleanroom staging, and stay secure?"*
+### 🚀 3.1 Continuous Integration (CI) — Shift-Left Quality & Error Prevention
+> **DevOps Definition & Gatekeeper's Role:**
+> True Continuous Integration is a team-wide discipline where developers continuously integrate code into a central shared mainline, verified by automated remote build runners.
+> A local pre-commit hook runs on an individual workstation before code is integrated. **Angular Gatekeeper acts as a Shift-Left CI Prevention Gate**: it simulates full CI verification locally so that 85%–90% of avoidable CI build failures are stopped on the developer's laptop before code ever leaves the machine. Furthermore, `a-gatekeeper enable` provides **100% Server CI Parity** by auto-generating `.github/workflows/ci.yml` and supporting `--ci` headless runner execution.
 
 | Specific CI Issue Resolved | Impact | How Gatekeeper Resolves It Locally & On CI Runners |
-| :--- | :--- | :--- |
+| :--- | :---: | :--- |
 | **Linux CI "Module Not Found" Errors** | 100% | Scans all relative TypeScript imports and validates exact case-sensitivity against physical disk files before committing (prevents Windows-vs-Linux casing mismatches). |
 | **CI Server npm ci Lockfile Crashes** | 100% | Detects when `package.json` is modified/staged without `package-lock.json` and blocks the commit immediately. |
 | **CI Cleanroom Staging Drift** | 95% | Scans `git status --porcelain` to detect unstaged modifications on staged files, preventing false-positive local passes ("works on my machine"). |
@@ -72,17 +75,21 @@ CI answers: *"Does the code compile cleanly, pass strict type tests, pass unit t
 
 ---
 
-### 🚢 CD (Continuous Delivery & Deployment Readiness) — 65% Compliance
-CD answers: *"Are production distribution bundles verified, are cryptographic manifests created, is web server routing configured, is SemVer bumped, and will live sub-routes load without 404s?"*
+### 🚢 3.2 Continuous Delivery (CD) — Release Packaging & Deployment Pre-Flight
+> **DevOps Definition & Scope Clarification:**
+> Continuous Delivery (CD) ensures software is always in a releasable state and can be deployed to any environment on demand. Full Continuous Deployment (CDep) automates the entire journey from build to cloud production infrastructure.
+>
+> **Honest Architectural Boundary:**
+> Gatekeeper operates at the **Client-Side & Build Pipeline Boundary (100% of Packaging & Pre-Flight Scope)**. In the complete end-to-end cloud delivery lifecycle, this represents roughly **~25% to 30% of CD**. Gatekeeper ensures that the compiled artifact is pristine, secure, correctly routed, and cryptographically verified. It does **not** manage cloud runtime infrastructure (the remaining ~70% to 75%: Kubernetes cluster orchestration, AWS/Azure hosting, multi-environment promotion, blue/green traffic switching, and database migrations).
 
 | Specific CD Issue Resolved | Impact | How Gatekeeper Resolves It Locally & Across Pipelines |
-| :--- | :--- | :--- |
+| :--- | :---: | :--- |
 | **SPA 404 Refresh Failures on Servers** | 100% | Validates that web server URL rewrite configurations (`web.config` for IIS, `nginx.conf`, or `_redirects` for Cloudflare/Netlify) exist in distribution output so page refreshes don't 404. |
 | **IIS web.config Syntax & Malformation Errors** | 100% | Parses XML structure of `web.config`, validates rewrite rules, checks MIME types, and warns if `web.config` is missing from `angular.json` assets (prevents IIS 500.19 errors). |
 | **Missing Distribution Static Assets** | 95% | Scans `index.html` in compiled distribution output to ensure all referenced local script, style, and icon assets physically exist on disk. |
 | **SPA Client-Side Route Base-Href Breakages** | 100% | Verifies `<base href="...">` exists in `index.html` to ensure router links and relative static assets resolve correctly after deployment. |
 | **Release Candidate Manifest & Cryptographic Hashes** | 100% | Automatically generates `dist/release-manifest.json` containing SHA256 hashes of all compiled bundles, bundle metrics, and deployment metadata. |
-| **Automated SemVer Bump (Conventional Commits)** | 95% | Analyzes commit messages (`feat:` → minor, `fix:`/`perf:` → patch, `BREAKING CHANGE:` → major) and stamps `nextSemVer` and `cdCompliance: "65%"` into `src/build-metadata.json`. |
+| **Automated SemVer Bump (Conventional Commits)** | 95% | Analyzes commit messages (`feat:` → minor, `fix:`/`perf:` → patch, `BREAKING CHANGE:` → major) and stamps `nextSemVer` and packaging metadata into `src/build-metadata.json`. |
 | **Live Post-Deploy Health & SPA Probing** | 90% | Provides `a-gatekeeper verify-deploy <url>` to probe live deployed sites for HTTP 200, `<base href>`, security headers (HSTS, CSP), and SPA deep routing. |
 | **Production Localhost / Dev URL Leaks** | 95% | Scans `environment.prod.ts` to ensure development URLs (`http://localhost:3000`, `127.0.0.1`) do not leak into live production. |
 | **Insecure HTTP API Endpoints in Prod** | 90% | Audits production environment configurations for unencrypted `http://` API calls to enforce transport-layer security (HTTPS). |
@@ -92,7 +99,8 @@ CD answers: *"Are production distribution bundles verified, are cryptographic ma
 | **Automated Build Version Tracking** | 100% | Automatically stamps build number, Git commit hash, active branch, and timestamp into `src/build-metadata.json`. |
 | **Automated CD Delivery Artifact Archiving** | 100% | Generated pipeline includes a dedicated `delivery-readiness` CD job that verifies distribution bundles, release manifests, and archives production artifacts via GitHub Actions. |
 
-> **Note on Remaining CD (35%):** Full autonomous Continuous Deployment (100%) involves cloud runtime infrastructure that physically exists only in production clouds (e.g., Kubernetes cluster orchestration, canary traffic routing, live database schema migrations, and real-time APM telemetry). 65% represents the true maximum achievable by a client-side and build-pipeline release coordinator.
+> **DevOps Reality Note (The Cloud Infrastructure Boundary):**
+> Gatekeeper provides complete pre-flight packaging and artifact verification (~25%–30% of total CD lifecycle). The remaining ~70%–75% of full Continuous Deployment (deploying containers to Kubernetes/ECS, cloud CDN invalidations, Blue/Green canary routing, live database schema migrations, and real-time APM telemetry) belongs exclusively to cloud runtime platforms (AWS, Azure, GCP, Cloudflare) and cannot be executed on a developer's workstation.
 
 ---
 
