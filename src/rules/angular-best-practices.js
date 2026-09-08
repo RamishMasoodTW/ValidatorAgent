@@ -5,6 +5,7 @@ import zlib from 'zlib';
 import chalk from 'chalk';
 import { logStep, logSuccess, logError, logWarning } from '../utils/logger.js';
 import { runGit } from '../utils/git.js';
+import { validateCommitMessage } from './security-rules.js';
 
 /**
  * Recursively find all files in a directory
@@ -161,6 +162,23 @@ export function checkCriticalArchitecture(cwd = process.cwd()) {
 
   // 7. Template Security & Safe DOM Scanner (Stops XSS and direct DOM mutations)
   auditTemplateSecurity(cwd, stagedFiles);
+
+  // 8. Conventional Commit Message Verification (if commit message is present in .git/COMMIT_EDITMSG)
+  const commitMsgFile = path.join(cwd, '.git', 'COMMIT_EDITMSG');
+  if (fs.existsSync(commitMsgFile)) {
+    try {
+      const msg = fs.readFileSync(commitMsgFile, 'utf8').trim();
+      const firstLine = msg.split('\n')[0].trim();
+      if (firstLine && !firstLine.startsWith('#')) {
+        const check = validateCommitMessage(firstLine);
+        if (!check.valid) {
+          logWarning(`Conventional Commit Notice: ${check.error}`);
+        } else {
+          console.log(chalk.gray(`  ✔ Conventional Commit syntax verified (${check.type}${check.scope ? `(${check.scope})` : ''})`));
+        }
+      }
+    } catch (_) {}
+  }
 
   logSuccess('All critical Angular architecture files, lockfile sync, and entry points verified.');
 }

@@ -213,11 +213,11 @@ describe('scanStagedFileIntegrity()', () => {
 // Dependency Vulnerability Audit
 // ─────────────────────────────────────────────────
 describe('scanDependencyVulnerabilities()', () => {
-  test('skips audit gracefully if no lockfile is present in directory', () => {
+  test('skips audit gracefully if no lockfile is present in directory', async () => {
     const emptyDir = path.join(os.tmpdir(), 'gatekeeper-empty-lock-' + Date.now());
     fs.mkdirSync(emptyDir, { recursive: true });
     try {
-      const res = scanDependencyVulnerabilities(emptyDir);
+      const res = await scanDependencyVulnerabilities(emptyDir);
       expect(res).toBe(true);
     } finally {
       fs.rmSync(emptyDir, { recursive: true, force: true });

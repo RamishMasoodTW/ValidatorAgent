@@ -4,6 +4,7 @@ import { execSync } from 'child_process';
 import chalk from 'chalk';
 import { logStep, logWarning, logError, logSuccess } from '../utils/logger.js';
 import { getStagedFiles } from '../utils/git.js';
+import { execStreaming } from '../utils/exec.js';
 
 /**
  * Enterprise-Grade Security & Secret Leak Scanner
@@ -149,7 +150,7 @@ export function scanStagedFileIntegrity(cwd = process.cwd(), stagedFilesOverride
  * Enterprise Dependency Security & Vulnerability Audit
  * Checks package dependencies for High/Critical CVEs
  */
-export function scanDependencyVulnerabilities(cwd = process.cwd()) {
+export async function scanDependencyVulnerabilities(cwd = process.cwd()) {
   logStep(3, 'Dependency Vulnerability & Security Audit (npm audit)');
   
   const pkgLockExists = fs.existsSync(path.join(cwd, 'package-lock.json')) ||
@@ -163,13 +164,11 @@ export function scanDependencyVulnerabilities(cwd = process.cwd()) {
 
   console.log(chalk.blue('  Running dependency security audit (npm audit --audit-level=high)...'));
   try {
-    execSync('npm audit --audit-level=high', { stdio: 'pipe', cwd });
+    await execStreaming('npm audit --audit-level=high', { cwd });
     logSuccess('Dependency vulnerability audit passed: 0 High/Critical CVEs.');
     return true;
   } catch (err) {
-    const stdout = err.stdout ? err.stdout.toString() : '';
-    const stderr = err.stderr ? err.stderr.toString() : '';
-    const output = (stdout + '\n' + stderr).trim();
+    const output = (err.combined || err.stdout || err.stderr || err.message || '').trim();
 
     // Check if it's actual vulnerabilities or just no network / npm error
     if (output.includes('vulnerabilities') || output.includes('severity')) {

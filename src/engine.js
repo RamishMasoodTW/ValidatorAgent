@@ -39,8 +39,39 @@ import {
   initProgressWindow,
   startStep,
   updateStep,
+  appendStepLog,
   finalizeProgress
 } from './progress-window.js';
+
+let _activeStepNum = null;
+let _stdioHooked = false;
+
+function setupStdioHook() {
+  if (_stdioHooked) return;
+  _stdioHooked = true;
+  const origStdoutWrite = process.stdout.write.bind(process.stdout);
+  const origStderrWrite = process.stderr.write.bind(process.stderr);
+
+  process.stdout.write = (chunk, encoding, cb) => {
+    origStdoutWrite(chunk, encoding, cb);
+    if (_activeStepNum && process.env.SHOW_PROGRESS === 'true') {
+      try {
+        const text = typeof chunk === 'string' ? chunk : chunk.toString(encoding || 'utf8');
+        appendStepLog(_activeStepNum, text);
+      } catch (_) {}
+    }
+  };
+
+  process.stderr.write = (chunk, encoding, cb) => {
+    origStderrWrite(chunk, encoding, cb);
+    if (_activeStepNum && process.env.SHOW_PROGRESS === 'true') {
+      try {
+        const text = typeof chunk === 'string' ? chunk : chunk.toString(encoding || 'utf8');
+        appendStepLog(_activeStepNum, text);
+      } catch (_) {}
+    }
+  };
+}
 
 // Resolve configuration directory (%APPDATA%/FrontendGatekeeper on Windows)
 const appDataDir = process.env.APPDATA
@@ -66,56 +97,76 @@ async function runGatekeeper() {
     process.env.SHOW_PROGRESS = 'false';
   }
 
+  setupStdioHook();
+
   // STEP 1: Angular Project Detection (Safe Bypass for non-Angular)
+  _activeStepNum = 1;
   const { isAngular: _isAngular, projectPkg } = checkAngularProject(cwd);
   initProgressWindow();
   startStep(1, 'Scanning workspace structure...');
+  appendStepLog(1, `[Gatekeeper] Detecting Angular project root: ${cwd}\n`);
   const deps = { ...(projectPkg.dependencies || {}), ...(projectPkg.devDependencies || {}) };
   const rawVer = deps['@angular/core'] || deps['@angular/cli'] || '';
   const cleanVer = rawVer.replace(/[\^~>=<]/g, '').trim();
   const versionDisplay = cleanVer ? `v${cleanVer}` : 'Standard Workspace';
+  appendStepLog(1, `[Gatekeeper] Project: ${projectPkg.name || 'Angular Project'} (Core: ${versionDisplay})\n`);
+  appendStepLog(1, `✔ Workspace verified: valid Angular structure detected\n`);
   updateStep(1, 'pass', `Angular workspace verified (${versionDisplay})`);
 
   // STEP 2: Critical Architecture & Entry Point Validation
+  _activeStepNum = 2;
   startStep(2, 'Validating tsconfig, angular.json & entry points...');
+  appendStepLog(2, `[Gatekeeper] Checking critical architecture files & entry points in ${cwd}...\n`);
   try {
     checkCriticalArchitecture(cwd);
+    appendStepLog(2, `✔ Entry points, tsconfig, angular.json & lockfile sync verified\n`);
     updateStep(2, 'pass', 'Entry points, lockfile sync & Linux case-sensitivity verified');
   } catch (err) {
     const errorMsg = err.message || 'Missing critical architecture files';
+    appendStepLog(2, `\n✖ [Error] ${errorMsg}\n`);
     updateStep(2, 'error', errorMsg);
     finalizeProgress(false, '', '[Step 2: Architecture Integrity Error]\n' + stripAnsi(errorMsg));
     throw err;
   }
 
   // STEP 3: Dependency Security & Vulnerability Audit (npm audit)
+  _activeStepNum = 3;
   startStep(3, 'Auditing package dependencies (npm audit)...');
+  appendStepLog(3, `[Gatekeeper] Running dependency vulnerability scan (npm audit)...\n`);
   try {
-    scanDependencyVulnerabilities(cwd);
+    await scanDependencyVulnerabilities(cwd);
+    appendStepLog(3, `✔ 0 High/Critical CVE vulnerabilities found in dependencies\n`);
     updateStep(3, 'pass', '0 High/Critical CVE vulnerabilities found in dependencies');
   } catch (err) {
     const errorMsg = err.auditOutput || err.message || 'High/Critical CVEs detected in package dependencies';
+    appendStepLog(3, `\n✖ [Error] ${errorMsg}\n`);
     updateStep(3, 'error', 'High/Critical CVEs detected in package dependencies');
     finalizeProgress(false, '', '[Step 3: Dependency Security Audit]\n' + stripAnsi(errorMsg));
     throw err;
   }
 
   // STEP 4: Strict TypeScript Compilation & Linter Verification
+  _activeStepNum = 4;
   startStep(4, 'Executing TypeScript compilation & lint check...');
+  appendStepLog(4, `[Gatekeeper] Executing TypeScript compilation & Angular lint check...\n`);
   try {
-    runTypeScriptAndLintChecks(cwd, projectPkg);
+    await runTypeScriptAndLintChecks(cwd, projectPkg);
+    appendStepLog(4, `✔ TypeScript compilation & lint passed with 0 errors\n`);
     updateStep(4, 'pass', 'TypeScript compilation passed with 0 type errors');
   } catch (err) {
     const errorMsg = err.stepOutput || err.stdout?.toString() || err.stderr?.toString() || err.message || 'TypeScript type-check or linter failed';
+    appendStepLog(4, `\n✖ [Error] ${errorMsg}\n`);
     updateStep(4, 'error', 'TypeScript type-check or linter failed');
     finalizeProgress(false, '', '[Step 4: TypeScript / Lint Error]\n' + stripAnsi(errorMsg));
     throw err;
   }
 
   // STEP 5: Automated Unit Tests & CI Regression Suite (npm run test:ci)
+  _activeStepNum = 5;
   startStep(5, 'Running headless test runner...');
+  appendStepLog(5, `[Gatekeeper] Running automated unit test suite...\n`);
   try {
-    const testRes = runAutomatedUnitTests(cwd, projectPkg);
+    const testRes = await runAutomatedUnitTests(cwd, projectPkg);
     let detailText = 'Unit tests passed (0 failures)';
     if (testRes && testRes.autoInjected) {
       detailText = 'Auto-injected smoke spec verified & safely cleaned up (0 failures)';
@@ -124,18 +175,23 @@ async function runGatekeeper() {
     } else if (testRes && testRes.skipped) {
       detailText = 'Skipped: missing testing browser provider';
     }
+    appendStepLog(5, `✔ ${detailText}\n`);
     updateStep(5, 'pass', detailText);
   } catch (err) {
     const errorMsg = err.testOutput || err.stepOutput || err.stdout?.toString() || err.stderr?.toString() || err.message || 'Unit test specs reported failure';
+    appendStepLog(5, `\n✖ [Error] ${errorMsg}\n`);
     updateStep(5, 'error', 'Unit test specs reported failure');
     finalizeProgress(false, '', '[Step 5: Automated Unit Tests Failure]\n' + stripAnsi(errorMsg));
     throw err;
   }
 
   // STEP 6: Production Build & CD Deployment Readiness Verification
+  _activeStepNum = 6;
   startStep(6, 'Compiling production bundle & verifying CD readiness...');
+  appendStepLog(6, `[Gatekeeper] Compiling Angular production build & verifying CD readiness in ${cwd}...\n`);
   try {
-    runAngularProductionBuild(cwd, projectPkg);
+    await runAngularProductionBuild(cwd, projectPkg);
+    appendStepLog(6, `\n[Gatekeeper] Validating compiled distribution artifacts in dist/...\n`);
     const cdRes = validateCompiledArtifacts(cwd);
     updateBuildMetadata(cwd, projectPkg);
     let cdDetail = `CD Verified: ${cdRes?.totalBundleSizeMb || '0'} MB`;
@@ -144,41 +200,54 @@ async function runGatekeeper() {
     }
     if (cdRes && cdRes.hasSpaRewrite) {
       cdDetail += ' | SPA: ✔';
+      appendStepLog(6, `✔ SPA Deep Rewrite rule confirmed\n`);
     } else {
       cdDetail += ' | SPA: ⚠ Missing';
+      appendStepLog(6, `⚠ SPA Deep Rewrite rule missing\n`);
     }
     if (cdRes && cdRes.hasBaseHref) {
       cdDetail += ' | BaseHref: ✔';
+      appendStepLog(6, `✔ Base href verified in index.html\n`);
     }
     if (cdRes && cdRes.assetAudit && cdRes.assetAudit.valid) {
       cdDetail += ' | Assets: ✔';
+      appendStepLog(6, `✔ Asset integrity audit passed\n`);
     }
     if (cdRes && cdRes.releaseManifestCreated) {
       cdDetail += ' | Manifest: ✔';
+      appendStepLog(6, `✔ CD Release Candidate Manifest created\n`);
     }
+    appendStepLog(6, `✔ Production bundle verified: ${cdRes?.totalBundleSizeMb || '0'} MB\n`);
     updateStep(6, 'pass', cdDetail);
   } catch (err) {
     const errorMsg = err.buildOutput || err.stepOutput || err.stdout?.toString() || err.stderr?.toString() || err.message || 'Production build compilation failed';
+    appendStepLog(6, `\n✖ [Error] ${errorMsg}\n`);
     updateStep(6, 'error', 'Production build compilation or CD artifact verification failed');
     finalizeProgress(false, '', '[Step 6: Production Build Failure]\n' + stripAnsi(errorMsg));
     throw err;
   }
 
   // STEP 7: Security & Secret Leak Scanning (API keys, Tokens, Heavy Files)
+  _activeStepNum = 7;
   startStep(7, 'Scanning staged diff & files for credentials or repo bloat...');
+  appendStepLog(7, `[Gatekeeper] Scanning staged changes for credentials, API tokens, merge conflicts, and oversized files...\n`);
   try {
     const diffOutput = getDiff(cwd);
     scanSecurityRules(diffOutput);
+    appendStepLog(7, `✔ 0 leaked secrets, 0 conflict markers, clean file stage (<10MB)\n`);
     updateStep(7, 'pass', '0 leaked secrets, 0 conflict markers, clean file stage (<10MB)');
   } catch (err) {
     const errorMsg = err.message || 'Secret credentials, forbidden files, or conflict markers detected';
+    appendStepLog(7, `\n✖ [Error] ${errorMsg}\n`);
     updateStep(7, 'error', 'Secret credentials, forbidden files, or conflict markers detected');
     finalizeProgress(false, '', '[Step 7: Security & Secret Leak Warning]\n' + stripAnsi(errorMsg));
     throw err;
   }
 
   // STEP 8: AI Knowledge Base Audit (Gemini, Ollama, vLLM / OpenAI-compatible)
+  _activeStepNum = 8;
   startStep(8, 'Auditing regression against knowledge base...');
+  appendStepLog(8, `[Gatekeeper] Performing AI Knowledge Base regression audit...\n`);
   const aiConfig = {
     AI_PROVIDER: process.env.AI_PROVIDER,
     GEMINI_API_KEY: process.env.GEMINI_API_KEY,
@@ -201,6 +270,7 @@ async function runGatekeeper() {
     if (auditRes) {
       aiReport = auditRes.report || '';
       if (!auditRes.passed) {
+        appendStepLog(8, `\n✖ [AI Audit Failed]\n${aiReport}\n`);
         updateStep(8, 'error', aiReport);
         finalizeProgress(false, aiReport);
         process.exit(1);
@@ -212,6 +282,7 @@ async function runGatekeeper() {
       updateStep(8, 'skip');
     }
   } catch (_err) {
+    appendStepLog(8, `\n✖ [AI Audit Error] ${_err.message}\n`);
     updateStep(8, 'error', _err.message);
     finalizeProgress(false, _err.message);
     throw _err;

@@ -15,7 +15,7 @@ describe('Step 5: Automated Unit Tests Execution & Runner Robustness', () => {
     fs.rmSync(tmpDir, { recursive: true, force: true });
   });
 
-  test('executes clean command for Angular CLI projects without unsupported --passWithNoTests flag', () => {
+  test('executes clean command for Angular CLI projects without unsupported --passWithNoTests flag', async () => {
     // Write runner.js that rejects --passWithNoTests
     const runnerScript = `
       const args = process.argv.slice(2);
@@ -37,14 +37,14 @@ describe('Step 5: Automated Unit Tests Execution & Runner Robustness', () => {
     fs.writeFileSync(path.join(tmpDir, 'package.json'), JSON.stringify(pkg, null, 2), 'utf8');
     fs.writeFileSync(path.join(tmpDir, 'src', 'app', 'app.component.spec.ts'), '// test spec', 'utf8');
 
-    const result = runAutomatedUnitTests(tmpDir, pkg);
+    const result = await runAutomatedUnitTests(tmpDir, pkg);
     expect(result).toBeDefined();
     expect(result.command).toBe('npm test -- --watch=false');
     expect(result.command).not.toContain('--passWithNoTests');
     expect(result.specCount).toBe(1);
   });
 
-  test('recovers and retries cleanly if test runner reports Unknown argument: passWithNoTests', () => {
+  test('recovers and retries cleanly if test runner reports Unknown argument: passWithNoTests', async () => {
     // Write runner.js that fails if --passWithNoTests is present, passes otherwise
     const runnerScript = `
       const args = process.argv.slice(2);
@@ -66,12 +66,12 @@ describe('Step 5: Automated Unit Tests Execution & Runner Robustness', () => {
     fs.writeFileSync(path.join(tmpDir, 'package.json'), JSON.stringify(pkg, null, 2), 'utf8');
     fs.writeFileSync(path.join(tmpDir, 'src', 'app', 'test.spec.ts'), '// test spec', 'utf8');
 
-    const result = runAutomatedUnitTests(tmpDir, pkg);
+    const result = await runAutomatedUnitTests(tmpDir, pkg);
     expect(result).toBeDefined();
     expect(result.command).toBe('npm run test:ci');
   });
 
-  test('skips test gracefully if test provider or binary is missing instead of failing commit', () => {
+  test('skips test gracefully if test provider or binary is missing instead of failing commit', async () => {
     const runnerScript = `
       console.error('No binary for Chrome browser on your platform');
       process.exit(1);
@@ -87,11 +87,11 @@ describe('Step 5: Automated Unit Tests Execution & Runner Robustness', () => {
     fs.writeFileSync(path.join(tmpDir, 'package.json'), JSON.stringify(pkg, null, 2), 'utf8');
     fs.writeFileSync(path.join(tmpDir, 'src', 'app', 'test.spec.ts'), '// test spec', 'utf8');
 
-    const result = runAutomatedUnitTests(tmpDir, pkg);
+    const result = await runAutomatedUnitTests(tmpDir, pkg);
     expect(result.skipped).toBe(true);
   });
 
-  test('injects and cleans up gatekeeper-smoke.spec.ts when no specs exist in project', () => {
+  test('injects and cleans up gatekeeper-smoke.spec.ts when no specs exist in project', async () => {
     const runnerScript = `
       console.log('Smoke test passed');
       process.exit(0);
@@ -106,12 +106,12 @@ describe('Step 5: Automated Unit Tests Execution & Runner Robustness', () => {
     };
     fs.writeFileSync(path.join(tmpDir, 'package.json'), JSON.stringify(pkg, null, 2), 'utf8');
 
-    const result = runAutomatedUnitTests(tmpDir, pkg);
+    const result = await runAutomatedUnitTests(tmpDir, pkg);
     expect(result.autoInjected).toBe(true);
     expect(fs.existsSync(path.join(tmpDir, 'src', 'app', 'gatekeeper-smoke.spec.ts'))).toBe(false);
   });
 
-  test('injects Vitest-compatible smoke spec with explicit imports when vitest is in devDependencies', () => {
+  test('injects Vitest-compatible smoke spec with explicit imports when vitest is in devDependencies', async () => {
     const runnerScript = `
       const fs = require('fs');
       const path = require('path');
@@ -139,9 +139,8 @@ describe('Step 5: Automated Unit Tests Execution & Runner Robustness', () => {
     };
     fs.writeFileSync(path.join(tmpDir, 'package.json'), JSON.stringify(pkg, null, 2), 'utf8');
 
-    const result = runAutomatedUnitTests(tmpDir, pkg);
+    const result = await runAutomatedUnitTests(tmpDir, pkg);
     expect(result.autoInjected).toBe(true);
     expect(fs.existsSync(path.join(tmpDir, 'src', 'app', 'gatekeeper-smoke.spec.ts'))).toBe(false);
   });
 });
-

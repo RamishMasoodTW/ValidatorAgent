@@ -952,6 +952,247 @@ var init_logger = __esm({
   }
 });
 
+// src/utils/exec.js
+function execStreaming(command, options = {}) {
+  const {
+    cwd = process.cwd(),
+    env: env3 = process.env,
+    onData = null
+  } = options;
+  return new Promise((resolve, reject) => {
+    const child = (0, import_child_process2.spawn)(command, {
+      cwd,
+      shell: true,
+      env: {
+        ...env3,
+        FORCE_COLOR: "0",
+        CI: "true"
+      },
+      windowsHide: true
+    });
+    let stdout = "";
+    let stderr = "";
+    let combined = "";
+    const handleChunk = (chunk, isStderr = false) => {
+      const text = chunk.toString("utf8");
+      if (isStderr) {
+        stderr += text;
+        process.stderr.write(text);
+      } else {
+        stdout += text;
+        process.stdout.write(text);
+      }
+      combined += text;
+      if (onData) {
+        try {
+          onData(text, isStderr);
+        } catch (_) {
+        }
+      }
+    };
+    if (child.stdout) {
+      child.stdout.on("data", (chunk) => handleChunk(chunk, false));
+    }
+    if (child.stderr) {
+      child.stderr.on("data", (chunk) => handleChunk(chunk, true));
+    }
+    child.on("error", (err) => {
+      reject(err);
+    });
+    child.on("close", (code) => {
+      if (code === 0) {
+        resolve({ stdout, stderr, combined, code });
+      } else {
+        const error = new Error(`Command failed with exit code ${code}: ${command}`);
+        error.code = code;
+        error.stdout = stdout;
+        error.stderr = stderr;
+        error.combined = combined;
+        error.stepOutput = combined || error.message;
+        reject(error);
+      }
+    });
+  });
+}
+var import_child_process2;
+var init_exec = __esm({
+  "src/utils/exec.js"() {
+    import_child_process2 = require("child_process");
+  }
+});
+
+// src/rules/security-rules.js
+function scanSecurityRules(diffOutput) {
+  if (!diffOutput || diffOutput.trim() === "") return true;
+  logStep(7, "Security & Secret Leak Scanning");
+  const forbiddenPatterns = [
+    // 1. Google / Gemini / Vertex AI Keys
+    { pattern: /AIzaSy[0-9A-Za-z-_]{33}/, name: "Google / Gemini Studio API Key" },
+    { pattern: /AQ\.[0-9A-Za-z_-]{40,}/, name: "Google Cloud / Vertex AI Bearer Token (AQ...)" },
+    { pattern: /ya29\.[0-9A-Za-z_-]{70,}/, name: "Google OAuth Access Token (ya29...)" },
+    // 2. OpenAI & AI Providers
+    { pattern: /sk-(?:proj-|admin-|none-)?[a-zA-Z0-9_-]{20,}/, name: "OpenAI Secret API Key" },
+    { pattern: /sk-ant-api[0-9]{2}-[a-zA-Z0-9_-]{80,}/, name: "Anthropic Claude API Key" },
+    { pattern: /hf_[a-zA-Z0-9]{34,}/, name: "HuggingFace Access Token" },
+    { pattern: /co-[a-zA-Z0-9]{40,}/, name: "Cohere API Key" },
+    // 3. Cloud Providers (AWS, Azure, GCP)
+    { pattern: /(?:A3T[A-Z0-9]|AKIA|AGPA|AIDA|AROA|AIPA|ANPA|ANVA|ASIA)[0-9A-Z]{16}/, name: "AWS Access Key ID" },
+    { pattern: /(?:aws_secret_access_key|aws_access_key_id)\s*=\s*['"][A-Za-z0-9\/+=]{20,}['"]/i, name: "AWS Secret Access Key" },
+    { pattern: /(?:AccountKey=[a-zA-Z0-9+\/=]{80,}|DefaultEndpointsProtocol=https;AccountName=)/i, name: "Azure Storage Connection String" },
+    // 4. Source Control & Developer Platforms (GitHub, GitLab, NPM)
+    { pattern: /gh[pousr]_[0-9a-zA-Z]{36,}/, name: "GitHub Token (Personal / OAuth / User / Refresh)" },
+    { pattern: /glpat-[0-9a-zA-Z\-_]{20,}/, name: "GitLab Personal Access Token" },
+    { pattern: /npm_[0-9a-zA-Z]{36}/, name: "NPM Access Token" },
+    // 5. Payment & Communication (Stripe, Twilio, Slack, SendGrid)
+    { pattern: /(?:sk|rk)_(?:test|live)_[0-9a-zA-Z]{24,}/, name: "Stripe Secret API Key" },
+    { pattern: /xox[baprs]-[0-9a-zA-Z]{10,48}/, name: "Slack Bot / User Token" },
+    { pattern: /SG\.[0-9A-Za-z-_]{22}\.[0-9A-Za-z-_]{43}/, name: "SendGrid API Key" },
+    { pattern: /SK[0-9a-fA-F]{32}/, name: "Twilio API Key" },
+    // 6. Database Connection Strings & Generic Secrets
+    { pattern: /(?:mongodb(?:\+srv)?|postgres|postgresql|mysql|redis):\/\/[^:\s]+:[^@\s]+@[^\s/]+/i, name: "Database Connection String with Password" },
+    { pattern: /(?:password|secret|passwd|pwd)\s*[:=]\s*['"][^'"\s]{8,}['"]/i, name: "Hardcoded Password Assignment" },
+    // 7. Cryptographic Keys & Certificates
+    { pattern: /-----BEGIN\s+(?:RSA\s+|EC\s+|DSA\s+|OPENSSH\s+)?PRIVATE\s+KEY-----/, name: "Unencrypted Private Key (PEM/RSA/EC)" },
+    { pattern: /-----BEGIN\s+CERTIFICATE-----/, name: "Raw SSL/TLS Certificate Block" },
+    // 8. Git Merge Conflict Markers (Stops CI Syntax/Compilation Disasters)
+    { pattern: /<{7}\s+HEAD/, name: "Unresolved Git Merge Conflict Marker (<<<<<<< HEAD)" },
+    { pattern: /={7}/, name: "Unresolved Git Merge Conflict Separator (=======)" },
+    { pattern: />{7}\s+/, name: "Unresolved Git Merge Conflict Marker (>>>>>>> branch)" }
+  ];
+  let violations = [];
+  const lines = diffOutput.split("\n");
+  const addedLines = lines.filter((l) => l.startsWith("+") && !l.startsWith("+++"));
+  for (const item of forbiddenPatterns) {
+    for (const line of addedLines) {
+      if (item.pattern.test(line)) {
+        const match2 = line.match(item.pattern);
+        const snippet = match2 ? match2[0].substring(0, 8) + "..." + match2[0].slice(-4) : "***";
+        violations.push({ name: item.name, snippet, rawLine: line.substring(1).trim() });
+        break;
+      }
+    }
+  }
+  if (violations.length > 0) {
+    logError("CRITICAL SECURITY ALERT: Hardcoded credentials / secret tokens detected in staged commit!");
+    console.log(source_default.red("\n  \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550"));
+    console.log(source_default.red.bold("  \u274C COMMIT REJECTED: Sensitive credentials found in your staged files:"));
+    violations.forEach((v) => {
+      console.log(source_default.red(`    \u2022 ${source_default.bold(v.name)} [Pattern: ${source_default.yellow(v.snippet)}]`));
+      if (v.rawLine) {
+        console.log(source_default.gray(`      Code: "${v.rawLine.substring(0, 60)}${v.rawLine.length > 60 ? "..." : ""}"`));
+      }
+    });
+    console.log(source_default.yellow("\n  Security Requirement:"));
+    console.log(source_default.yellow("  Never commit secrets to Git. Move credentials to .env / environment variables."));
+    console.log(source_default.red("  \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\n"));
+    throw new Error(`Hardcoded secrets detected: ${violations.map((v) => v.name).join(", ")}`);
+  }
+  scanStagedFileIntegrity();
+  logSuccess("Security scan passed: Zero leaked API keys, tokens, or private credentials.");
+  return true;
+}
+function scanStagedFileIntegrity(cwd = process.cwd(), stagedFilesOverride = null) {
+  try {
+    const files = stagedFilesOverride || getStagedFiles(cwd);
+    const forbiddenFiles = [];
+    for (const f3 of files) {
+      const base = import_path.default.basename(f3).toLowerCase();
+      if (base.startsWith(".env") && !base.endsWith(".example") && !base.endsWith(".template") || base.endsWith(".pem") || base.endsWith(".key") || base.endsWith(".pfx") || base.endsWith(".p12") || base === "thumbs.db" || base === ".ds_store") {
+        forbiddenFiles.push({ file: f3, reason: "Sensitive / Local OS environment file" });
+      }
+      const fullPath = import_path.default.join(cwd, f3);
+      if (import_fs.default.existsSync(fullPath)) {
+        const stats = import_fs.default.statSync(fullPath);
+        if (stats.size > 10 * 1024 * 1024) {
+          forbiddenFiles.push({ file: f3, reason: `Oversized binary file (${(stats.size / (1024 * 1024)).toFixed(2)} MB exceeds 10MB limit)` });
+        }
+      }
+    }
+    if (forbiddenFiles.length > 0) {
+      logError("CRITICAL: Forbidden or oversized files detected in active commit stage:");
+      forbiddenFiles.forEach((item) => {
+        console.log(source_default.red(`    \u2022 ${source_default.bold(item.file)} [${item.reason}]`));
+      });
+      console.log(source_default.yellow('\n  Remove these files from git staging using "git reset HEAD <file>".'));
+      const fileListStr = forbiddenFiles.map((item) => `  \u2022 ${item.file} [${item.reason}]`).join("\n");
+      throw new Error(`Forbidden or oversized files detected in staged commit:
+${fileListStr}`);
+    }
+  } catch (err) {
+    if (err.message.includes("Forbidden or oversized")) throw err;
+  }
+}
+async function scanDependencyVulnerabilities(cwd = process.cwd()) {
+  logStep(3, "Dependency Vulnerability & Security Audit (npm audit)");
+  const pkgLockExists = import_fs.default.existsSync(import_path.default.join(cwd, "package-lock.json")) || import_fs.default.existsSync(import_path.default.join(cwd, "yarn.lock")) || import_fs.default.existsSync(import_path.default.join(cwd, "pnpm-lock.yaml"));
+  if (!pkgLockExists) {
+    logWarning("No package lockfile found (package-lock.json). Skipping dependency vulnerability audit.");
+    return true;
+  }
+  console.log(source_default.blue("  Running dependency security audit (npm audit --audit-level=high)..."));
+  try {
+    await execStreaming("npm audit --audit-level=high", { cwd });
+    logSuccess("Dependency vulnerability audit passed: 0 High/Critical CVEs.");
+    return true;
+  } catch (err) {
+    const output = (err.combined || err.stdout || err.stderr || err.message || "").trim();
+    if (output.includes("vulnerabilities") || output.includes("severity")) {
+      logError("CRITICAL: High or Critical security vulnerabilities detected in dependencies!");
+      console.log(source_default.red("\n  \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550"));
+      console.log(source_default.red.bold("  \u274C COMMIT REJECTED: Security vulnerabilities found in npm packages!"));
+      console.log(source_default.yellow('  Run "npm audit" or "npm audit fix" to resolve known CVEs.'));
+      console.log(source_default.red("  \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\n"));
+      const secErr = new Error("Dependency security audit failed (High/Critical CVEs detected)");
+      secErr.auditOutput = output;
+      throw secErr;
+    } else {
+      logWarning("npm audit could not connect to registry; skipping offline.");
+      return true;
+    }
+  }
+}
+function validateCommitMessage(message) {
+  if (!message || typeof message !== "string") {
+    return { valid: false, error: "Commit message is empty" };
+  }
+  const clean = message.trim().split("\n")[0].trim();
+  if (!clean) {
+    return { valid: false, error: "Commit message is empty" };
+  }
+  const lazyPatterns = /^(wip|fix|update|test|stuff|changes|commit|done|temp)$/i;
+  if (lazyPatterns.test(clean)) {
+    return {
+      valid: false,
+      error: `Commit message "${clean}" is too vague. Follow Conventional Commits (e.g. "feat: add user profile page").`
+    };
+  }
+  const convRegex = /^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(?:\(([a-zA-Z0-9_.\-/]+)\))?!?:\s*(.+)$/i;
+  const match2 = clean.match(convRegex);
+  if (!match2) {
+    return {
+      valid: false,
+      error: `Commit message does not adhere to Conventional Commits format ("type(scope): description"). Received: "${clean}"`
+    };
+  }
+  return {
+    valid: true,
+    type: match2[1].toLowerCase(),
+    scope: match2[2] || null,
+    description: match2[3].trim()
+  };
+}
+var import_fs, import_path;
+var init_security_rules = __esm({
+  "src/rules/security-rules.js"() {
+    import_fs = __toESM(require("fs"), 1);
+    import_path = __toESM(require("path"), 1);
+    init_source();
+    init_logger();
+    init_git();
+    init_exec();
+  }
+});
+
 // src/rules/angular-best-practices.js
 var angular_best_practices_exports = {};
 __export(angular_best_practices_exports, {
@@ -979,11 +1220,11 @@ __export(angular_best_practices_exports, {
   verifyStagedCleanroom: () => verifyStagedCleanroom
 });
 function getAllFiles(dirPath, arrayOfFiles = []) {
-  if (!import_fs.default.existsSync(dirPath)) return [];
-  const files = import_fs.default.readdirSync(dirPath);
+  if (!import_fs2.default.existsSync(dirPath)) return [];
+  const files = import_fs2.default.readdirSync(dirPath);
   files.forEach((file) => {
-    const fullPath = import_path.default.join(dirPath, file);
-    if (import_fs.default.statSync(fullPath).isDirectory()) {
+    const fullPath = import_path2.default.join(dirPath, file);
+    if (import_fs2.default.statSync(fullPath).isDirectory()) {
       getAllFiles(fullPath, arrayOfFiles);
     } else {
       arrayOfFiles.push(fullPath);
@@ -992,28 +1233,28 @@ function getAllFiles(dirPath, arrayOfFiles = []) {
   return arrayOfFiles;
 }
 function findBuildOutputDir(distPath) {
-  if (!import_fs.default.existsSync(distPath)) return null;
-  if (import_fs.default.existsSync(import_path.default.join(distPath, "index.html"))) {
+  if (!import_fs2.default.existsSync(distPath)) return null;
+  if (import_fs2.default.existsSync(import_path2.default.join(distPath, "index.html"))) {
     return distPath;
   }
   const allFiles = getAllFiles(distPath);
-  const indexHtmlFile = allFiles.find((f3) => import_path.default.basename(f3).toLowerCase() === "index.html");
+  const indexHtmlFile = allFiles.find((f3) => import_path2.default.basename(f3).toLowerCase() === "index.html");
   if (indexHtmlFile) {
-    return import_path.default.dirname(indexHtmlFile);
+    return import_path2.default.dirname(indexHtmlFile);
   }
   return distPath;
 }
 function checkAngularProject(cwd = process.cwd()) {
   logStep(1, "Angular Project Detection");
-  const angularJsonPath = import_path.default.join(cwd, "angular.json");
-  const packageJsonPath = import_path.default.join(cwd, "package.json");
+  const angularJsonPath = import_path2.default.join(cwd, "angular.json");
+  const packageJsonPath = import_path2.default.join(cwd, "package.json");
   let isAngular = false;
   let projectPkg = {};
-  if (import_fs.default.existsSync(packageJsonPath)) {
+  if (import_fs2.default.existsSync(packageJsonPath)) {
     try {
-      projectPkg = JSON.parse(import_fs.default.readFileSync(packageJsonPath, "utf8"));
+      projectPkg = JSON.parse(import_fs2.default.readFileSync(packageJsonPath, "utf8"));
       const deps = { ...projectPkg.dependencies || {}, ...projectPkg.devDependencies || {} };
-      if (deps["@angular/core"] || deps["@angular/cli"] || import_fs.default.existsSync(angularJsonPath)) {
+      if (deps["@angular/core"] || deps["@angular/cli"] || import_fs2.default.existsSync(angularJsonPath)) {
         isAngular = true;
       }
     } catch (e2) {
@@ -1030,32 +1271,32 @@ function checkAngularProject(cwd = process.cwd()) {
 function checkCriticalArchitecture(cwd = process.cwd()) {
   logStep(2, "Critical Angular Architecture & Source Validation");
   const requiredItems = [
-    { name: "angular.json", path: import_path.default.join(cwd, "angular.json"), type: "file" },
-    { name: "package.json", path: import_path.default.join(cwd, "package.json"), type: "file" },
-    { name: "src/ directory", path: import_path.default.join(cwd, "src"), type: "dir" },
-    { name: "src/app/ directory", path: import_path.default.join(cwd, "src", "app"), type: "dir" }
+    { name: "angular.json", path: import_path2.default.join(cwd, "angular.json"), type: "file" },
+    { name: "package.json", path: import_path2.default.join(cwd, "package.json"), type: "file" },
+    { name: "src/ directory", path: import_path2.default.join(cwd, "src"), type: "dir" },
+    { name: "src/app/ directory", path: import_path2.default.join(cwd, "src", "app"), type: "dir" }
   ];
   let missingItems = [];
   for (const item of requiredItems) {
     if (item.type === "file") {
-      if (!import_fs.default.existsSync(item.path)) {
+      if (!import_fs2.default.existsSync(item.path)) {
         missingItems.push(item.name);
       }
     } else if (item.type === "dir") {
-      if (!import_fs.default.existsSync(item.path) || !import_fs.default.statSync(item.path).isDirectory()) {
+      if (!import_fs2.default.existsSync(item.path) || !import_fs2.default.statSync(item.path).isDirectory()) {
         missingItems.push(item.name);
       }
     }
   }
-  const tsconfigExists = import_fs.default.existsSync(import_path.default.join(cwd, "tsconfig.json")) || import_fs.default.existsSync(import_path.default.join(cwd, "tsconfig.app.json"));
+  const tsconfigExists = import_fs2.default.existsSync(import_path2.default.join(cwd, "tsconfig.json")) || import_fs2.default.existsSync(import_path2.default.join(cwd, "tsconfig.app.json"));
   if (!tsconfigExists) {
     missingItems.push("tsconfig.json (or tsconfig.app.json)");
   }
-  const indexHtmlExists = import_fs.default.existsSync(import_path.default.join(cwd, "src", "index.html")) || import_fs.default.existsSync(import_path.default.join(cwd, "src", "index.csr.html")) || import_fs.default.existsSync(import_path.default.join(cwd, "index.html"));
+  const indexHtmlExists = import_fs2.default.existsSync(import_path2.default.join(cwd, "src", "index.html")) || import_fs2.default.existsSync(import_path2.default.join(cwd, "src", "index.csr.html")) || import_fs2.default.existsSync(import_path2.default.join(cwd, "index.html"));
   if (!indexHtmlExists) {
     missingItems.push("src/index.html (Application Main Entry Point)");
   }
-  const mainTsExists = import_fs.default.existsSync(import_path.default.join(cwd, "src", "main.ts"));
+  const mainTsExists = import_fs2.default.existsSync(import_path2.default.join(cwd, "src", "main.ts"));
   if (!mainTsExists) {
     missingItems.push("src/main.ts (Application Bootstrap Entry Point)");
   }
@@ -1068,8 +1309,8 @@ function checkCriticalArchitecture(cwd = process.cwd()) {
   const packageJsonStaged = stagedFiles.includes("package.json");
   const lockfileStaged = stagedFiles.includes("package-lock.json") || stagedFiles.includes("yarn.lock") || stagedFiles.includes("pnpm-lock.yaml");
   if (packageJsonStaged && !lockfileStaged) {
-    const lockfilePath = import_path.default.join(cwd, "package-lock.json");
-    if (import_fs.default.existsSync(lockfilePath)) {
+    const lockfilePath = import_path2.default.join(cwd, "package-lock.json");
+    if (import_fs2.default.existsSync(lockfilePath)) {
       logError("CI Integrity Violation: package.json is staged for commit, but package-lock.json is NOT staged!");
       console.log(source_default.red("\n  \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550"));
       console.log(source_default.red.bold("  \u274C COMMIT REJECTED: Lockfile out of sync!"));
@@ -1085,13 +1326,29 @@ function checkCriticalArchitecture(cwd = process.cwd()) {
   verifyAngularBootstrapIntegrity(cwd);
   detectCircularDependencies(cwd);
   auditTemplateSecurity(cwd, stagedFiles);
+  const commitMsgFile = import_path2.default.join(cwd, ".git", "COMMIT_EDITMSG");
+  if (import_fs2.default.existsSync(commitMsgFile)) {
+    try {
+      const msg = import_fs2.default.readFileSync(commitMsgFile, "utf8").trim();
+      const firstLine = msg.split("\n")[0].trim();
+      if (firstLine && !firstLine.startsWith("#")) {
+        const check = validateCommitMessage(firstLine);
+        if (!check.valid) {
+          logWarning(`Conventional Commit Notice: ${check.error}`);
+        } else {
+          console.log(source_default.gray(`  \u2714 Conventional Commit syntax verified (${check.type}${check.scope ? `(${check.scope})` : ""})`));
+        }
+      }
+    } catch (_) {
+    }
+  }
   logSuccess("All critical Angular architecture files, lockfile sync, and entry points verified.");
 }
 function checkNodeEngineCompatibility(cwd = process.cwd()) {
   try {
-    const pkgPath = import_path.default.join(cwd, "package.json");
-    if (!import_fs.default.existsSync(pkgPath)) return;
-    const pkg = JSON.parse(import_fs.default.readFileSync(pkgPath, "utf8"));
+    const pkgPath = import_path2.default.join(cwd, "package.json");
+    if (!import_fs2.default.existsSync(pkgPath)) return;
+    const pkg = JSON.parse(import_fs2.default.readFileSync(pkgPath, "utf8"));
     const requiredNode = pkg.engines && pkg.engines.node;
     if (requiredNode) {
       const currentMajor = parseInt(process.versions.node.split(".")[0], 10);
@@ -1109,22 +1366,22 @@ function checkNodeEngineCompatibility(cwd = process.cwd()) {
   }
 }
 function validateCaseSensitiveImports(cwd = process.cwd(), stagedFiles = []) {
-  const tsFiles = stagedFiles.filter((f3) => f3.endsWith(".ts") && !f3.endsWith(".d.ts") && import_fs.default.existsSync(import_path.default.join(cwd, f3)));
+  const tsFiles = stagedFiles.filter((f3) => f3.endsWith(".ts") && !f3.endsWith(".d.ts") && import_fs2.default.existsSync(import_path2.default.join(cwd, f3)));
   if (tsFiles.length === 0) return;
   const importRegex = /(?:import|from)\s+['"](\.[^'"]+)['"]/g;
   const casingErrors = [];
   for (const relFile of tsFiles) {
-    const fullFilePath = import_path.default.join(cwd, relFile);
-    const fileDir = import_path.default.dirname(fullFilePath);
-    const content = import_fs.default.readFileSync(fullFilePath, "utf8");
+    const fullFilePath = import_path2.default.join(cwd, relFile);
+    const fileDir = import_path2.default.dirname(fullFilePath);
+    const content = import_fs2.default.readFileSync(fullFilePath, "utf8");
     let match2;
     while ((match2 = importRegex.exec(content)) !== null) {
       const importPath = match2[1];
-      const targetBase = import_path.default.resolve(fileDir, importPath);
-      const targetDir = import_path.default.dirname(targetBase);
-      const targetFileName = import_path.default.basename(targetBase);
-      if (import_fs.default.existsSync(targetDir)) {
-        const actualDiskFiles = import_fs.default.readdirSync(targetDir);
+      const targetBase = import_path2.default.resolve(fileDir, importPath);
+      const targetDir = import_path2.default.dirname(targetBase);
+      const targetFileName = import_path2.default.basename(targetBase);
+      if (import_fs2.default.existsSync(targetDir)) {
+        const actualDiskFiles = import_fs2.default.readdirSync(targetDir);
         const matchedExact = actualDiskFiles.find((f3) => {
           const noExt = f3.replace(/\.(ts|js|d\.ts)$/, "");
           return f3 === targetFileName || noExt === targetFileName;
@@ -1137,7 +1394,7 @@ function validateCaseSensitiveImports(cwd = process.cwd(), stagedFiles = []) {
           casingErrors.push({
             file: relFile,
             imported: importPath,
-            actual: import_path.default.join(import_path.default.dirname(importPath), matchedCaseInsensitive).replace(/\\/g, "/")
+            actual: import_path2.default.join(import_path2.default.dirname(importPath), matchedCaseInsensitive).replace(/\\/g, "/")
           });
         }
       }
@@ -1154,27 +1411,27 @@ function validateCaseSensitiveImports(cwd = process.cwd(), stagedFiles = []) {
   }
 }
 function detectSpaRewrite(cwd = process.cwd(), outputDir = null, distPath = null) {
-  if (outputDir && import_fs.default.existsSync(outputDir)) {
+  if (outputDir && import_fs2.default.existsSync(outputDir)) {
     const outputFiles = getAllFiles(outputDir);
     const match2 = outputFiles.find((f3) => {
-      const b = import_path.default.basename(f3).toLowerCase();
+      const b = import_path2.default.basename(f3).toLowerCase();
       return b === "web.config" || b === "nginx.conf" || b === "_redirects" || b === ".htaccess" || b === "htaccess";
     });
-    if (match2) return { hasSpaRewrite: true, file: import_path.default.basename(match2), source: "dist" };
+    if (match2) return { hasSpaRewrite: true, file: import_path2.default.basename(match2), source: "dist" };
   }
-  if (distPath && import_fs.default.existsSync(distPath) && distPath !== outputDir) {
+  if (distPath && import_fs2.default.existsSync(distPath) && distPath !== outputDir) {
     const distFiles = getAllFiles(distPath);
     const match2 = distFiles.find((f3) => {
-      const b = import_path.default.basename(f3).toLowerCase();
+      const b = import_path2.default.basename(f3).toLowerCase();
       return b === "web.config" || b === "nginx.conf" || b === "_redirects" || b === ".htaccess" || b === "htaccess";
     });
-    if (match2) return { hasSpaRewrite: true, file: import_path.default.basename(match2), source: "dist" };
+    if (match2) return { hasSpaRewrite: true, file: import_path2.default.basename(match2), source: "dist" };
   }
-  const srcDir = import_path.default.join(cwd, "src");
-  if (import_fs.default.existsSync(srcDir)) {
+  const srcDir = import_path2.default.join(cwd, "src");
+  if (import_fs2.default.existsSync(srcDir)) {
     const srcCandidates = ["web.config", "nginx.conf", "_redirects", ".htaccess"];
     for (const c of srcCandidates) {
-      if (import_fs.default.existsSync(import_path.default.join(srcDir, c))) {
+      if (import_fs2.default.existsSync(import_path2.default.join(srcDir, c))) {
         return { hasSpaRewrite: true, file: `src/${c}`, source: "src" };
       }
     }
@@ -1190,11 +1447,11 @@ function detectSpaRewrite(cwd = process.cwd(), outputDir = null, distPath = null
     "staticwebapp.config.json"
   ];
   for (const c of rootCandidates) {
-    const p = import_path.default.join(cwd, c);
-    if (import_fs.default.existsSync(p)) {
+    const p = import_path2.default.join(cwd, c);
+    if (import_fs2.default.existsSync(p)) {
       if (c === "firebase.json") {
         try {
-          const fb = JSON.parse(import_fs.default.readFileSync(p, "utf8"));
+          const fb = JSON.parse(import_fs2.default.readFileSync(p, "utf8"));
           if (fb.hosting && (fb.hosting.rewrites || Array.isArray(fb.hosting) && fb.hosting.some((h2) => h2.rewrites))) {
             return { hasSpaRewrite: true, file: c, source: "root" };
           }
@@ -1202,7 +1459,7 @@ function detectSpaRewrite(cwd = process.cwd(), outputDir = null, distPath = null
         }
       } else if (c === "vercel.json") {
         try {
-          const vj = JSON.parse(import_fs.default.readFileSync(p, "utf8"));
+          const vj = JSON.parse(import_fs2.default.readFileSync(p, "utf8"));
           if (vj.rewrites || vj.routes) {
             return { hasSpaRewrite: true, file: c, source: "root" };
           }
@@ -1213,10 +1470,10 @@ function detectSpaRewrite(cwd = process.cwd(), outputDir = null, distPath = null
       }
     }
   }
-  const angularJsonPath = import_path.default.join(cwd, "angular.json");
-  if (import_fs.default.existsSync(angularJsonPath)) {
+  const angularJsonPath = import_path2.default.join(cwd, "angular.json");
+  if (import_fs2.default.existsSync(angularJsonPath)) {
     try {
-      const content = import_fs.default.readFileSync(angularJsonPath, "utf8");
+      const content = import_fs2.default.readFileSync(angularJsonPath, "utf8");
       if (content.includes("web.config") || content.includes("_redirects") || content.includes("nginx.conf")) {
         return { hasSpaRewrite: true, file: "angular.json (assets)", source: "angular.json" };
       }
@@ -1227,17 +1484,17 @@ function detectSpaRewrite(cwd = process.cwd(), outputDir = null, distPath = null
 }
 function validateCompiledArtifacts(cwd = process.cwd()) {
   console.log(source_default.blue("\n  Validating Compiled Production Distribution Artifacts (CD Readiness)..."));
-  const distPath = import_path.default.join(cwd, "dist");
+  const distPath = import_path2.default.join(cwd, "dist");
   const outputDir = findBuildOutputDir(distPath);
-  if (!outputDir || !import_fs.default.existsSync(outputDir)) {
+  if (!outputDir || !import_fs2.default.existsSync(outputDir)) {
     logError("Build output directory (dist/) was not generated or is missing!");
     console.log(source_default.red("  Commit rejected: Ensure ng build produces valid output.\n"));
     throw new Error("Build output directory (dist/) was not generated or is missing!");
   }
   console.log(source_default.gray(`  Inspecting build distribution output at: ${outputDir}`));
-  const outputFiles = getAllFiles(outputDir).map((f3) => import_path.default.relative(outputDir, f3).replace(/\\/g, "/"));
-  const indexHtmlPath = import_path.default.join(outputDir, "index.html");
-  const hasIndexHtml = import_fs.default.existsSync(indexHtmlPath) || outputFiles.some((f3) => import_path.default.basename(f3).toLowerCase() === "index.html");
+  const outputFiles = getAllFiles(outputDir).map((f3) => import_path2.default.relative(outputDir, f3).replace(/\\/g, "/"));
+  const indexHtmlPath = import_path2.default.join(outputDir, "index.html");
+  const hasIndexHtml = import_fs2.default.existsSync(indexHtmlPath) || outputFiles.some((f3) => import_path2.default.basename(f3).toLowerCase() === "index.html");
   if (!hasIndexHtml) {
     logError("Critical build artifact missing: index.html was not generated in distribution output!");
     console.log(source_default.red("  Commit rejected: index.html is required for IIS/web servers to load the application.\n"));
@@ -1251,19 +1508,19 @@ function validateCompiledArtifacts(cwd = process.cwd()) {
     throw new Error("Critical build artifact missing: No compiled JavaScript bundles found");
   }
   const cssFiles = outputFiles.filter((f3) => f3.endsWith(".css"));
-  const hasStylesCss = cssFiles.some((f3) => import_path.default.basename(f3).toLowerCase().startsWith("styles") || cssFiles.length > 0);
+  const hasStylesCss = cssFiles.some((f3) => import_path2.default.basename(f3).toLowerCase().startsWith("styles") || cssFiles.length > 0);
   const spaAudit = detectSpaRewrite(cwd, outputDir, distPath);
   const hasSpaRewrite = spaAudit.hasSpaRewrite;
-  const envProdPath = import_path.default.join(cwd, "src", "environments", "environment.prod.ts");
+  const envProdPath = import_path2.default.join(cwd, "src", "environments", "environment.prod.ts");
   const { hasLocalhostLeak, hasHttpApiLeak } = auditEnvironmentProd(envProdPath);
-  const dockerfilePath = import_path.default.join(cwd, "Dockerfile");
+  const dockerfilePath = import_path2.default.join(cwd, "Dockerfile");
   const dockerAudit = auditDockerfile(dockerfilePath);
   const dockerValid = dockerAudit ? dockerAudit.valid : null;
   let totalBundleSizeBytes = 0;
   for (const jsFile of jsBundles) {
-    const fullJsPath = import_path.default.join(outputDir, jsFile);
-    if (import_fs.default.existsSync(fullJsPath)) {
-      totalBundleSizeBytes += import_fs.default.statSync(fullJsPath).size;
+    const fullJsPath = import_path2.default.join(outputDir, jsFile);
+    if (import_fs2.default.existsSync(fullJsPath)) {
+      totalBundleSizeBytes += import_fs2.default.statSync(fullJsPath).size;
     }
   }
   const totalBundleSizeMb = (totalBundleSizeBytes / (1024 * 1024)).toFixed(2);
@@ -1276,7 +1533,7 @@ function validateCompiledArtifacts(cwd = process.cwd()) {
   console.log(`    ${source_default.green("\u2714")} index.html (Main SPA Entry Point${hasBaseHref ? ", <base href> verified" : ""})`);
   console.log(`    ${source_default.green("\u2714")} Compiled JavaScript Bundles (${jsBundles.length} files: ${totalBundleSizeMb} MB total | Gzip: ${gzipMetrics.totalGzipSizeKb} KB)`);
   if (hasStylesCss) {
-    console.log(`    ${source_default.green("\u2714")} Global Production Styles (${cssFiles.map((f3) => import_path.default.basename(f3)).join(", ")})`);
+    console.log(`    ${source_default.green("\u2714")} Global Production Styles (${cssFiles.map((f3) => import_path2.default.basename(f3)).join(", ")})`);
   }
   if (hasSpaRewrite) {
     console.log(`    ${source_default.green("\u2714")} Web Server SPA Rewrite Config (${spaAudit.file || "web.config / nginx / _redirects"})`);
@@ -1289,7 +1546,7 @@ function validateCompiledArtifacts(cwd = process.cwd()) {
       iisAudit.isValidXml ? "XML: \u2714" : "XML: \u2716 Error",
       iisAudit.isSyncedInAngularJson ? "Assets Sync: \u2714" : "Assets Sync: \u26A0 Missing"
     ].join(" | ");
-    console.log(`    ${source_default.green("\u2714")} IIS Server Config (${import_path.default.basename(iisAudit.filePath)} [${iisStatusStr}])`);
+    console.log(`    ${source_default.green("\u2714")} IIS Server Config (${import_path2.default.basename(iisAudit.filePath)} [${iisStatusStr}])`);
     iisAudit.warnings.forEach((w) => logWarning(`IIS Notice: ${w}`));
   }
   if (assetAudit.valid) {
@@ -1317,12 +1574,12 @@ function validateCompiledArtifacts(cwd = process.cwd()) {
   }
   let releaseManifestCreated = false;
   try {
-    const manifestPath = import_path.default.join(outputDir, "release-manifest.json");
+    const manifestPath = import_path2.default.join(outputDir, "release-manifest.json");
     const artifactManifest = [];
     for (const f3 of jsBundles) {
-      const fullPath = import_path.default.join(outputDir, f3);
-      if (import_fs.default.existsSync(fullPath)) {
-        const fileBuf = import_fs.default.readFileSync(fullPath);
+      const fullPath = import_path2.default.join(outputDir, f3);
+      if (import_fs2.default.existsSync(fullPath)) {
+        const fileBuf = import_fs2.default.readFileSync(fullPath);
         const hash = import_crypto.default.createHash("sha256").update(fileBuf).digest("hex");
         artifactManifest.push({
           file: f3,
@@ -1346,9 +1603,9 @@ function validateCompiledArtifacts(cwd = process.cwd()) {
       dockerValid,
       artifacts: artifactManifest
     };
-    import_fs.default.writeFileSync(manifestPath, JSON.stringify(manifestData, null, 2), "utf8");
-    if (outputDir !== distPath && import_fs.default.existsSync(distPath)) {
-      import_fs.default.writeFileSync(import_path.default.join(distPath, "release-manifest.json"), JSON.stringify(manifestData, null, 2), "utf8");
+    import_fs2.default.writeFileSync(manifestPath, JSON.stringify(manifestData, null, 2), "utf8");
+    if (outputDir !== distPath && import_fs2.default.existsSync(distPath)) {
+      import_fs2.default.writeFileSync(import_path2.default.join(distPath, "release-manifest.json"), JSON.stringify(manifestData, null, 2), "utf8");
     }
     releaseManifestCreated = true;
     console.log(`    ${source_default.green("\u2714")} CD Release Manifest & SHA256 Checksums Generated (dist/release-manifest.json)`);
@@ -1374,8 +1631,8 @@ function validateCompiledArtifacts(cwd = process.cwd()) {
   };
 }
 function checkBaseHref(indexHtmlPath) {
-  if (!import_fs.default.existsSync(indexHtmlPath)) return { hasBaseHref: false, baseHrefValue: null };
-  const content = import_fs.default.readFileSync(indexHtmlPath, "utf8");
+  if (!import_fs2.default.existsSync(indexHtmlPath)) return { hasBaseHref: false, baseHrefValue: null };
+  const content = import_fs2.default.readFileSync(indexHtmlPath, "utf8");
   const match2 = content.match(/<base\s+href=["']([^"']+)["']/i);
   return {
     hasBaseHref: !!match2,
@@ -1383,10 +1640,10 @@ function checkBaseHref(indexHtmlPath) {
   };
 }
 function auditEnvironmentProd(envProdPath) {
-  if (!import_fs.default.existsSync(envProdPath)) {
+  if (!import_fs2.default.existsSync(envProdPath)) {
     return { hasLocalhostLeak: false, hasHttpApiLeak: false, issues: [] };
   }
-  const content = import_fs.default.readFileSync(envProdPath, "utf8");
+  const content = import_fs2.default.readFileSync(envProdPath, "utf8");
   const issues = [];
   const hasLocalhostLeak = /(?:http:\/\/localhost|http:\/\/127\.0\.0\.1|http:\/\/0\.0\.0\.0)/i.test(content);
   if (hasLocalhostLeak) {
@@ -1406,8 +1663,8 @@ function auditEnvironmentProd(envProdPath) {
   return { hasLocalhostLeak, hasHttpApiLeak, issues };
 }
 function auditDockerfile(dockerfilePath) {
-  if (!import_fs.default.existsSync(dockerfilePath)) return null;
-  const content = import_fs.default.readFileSync(dockerfilePath, "utf8");
+  if (!import_fs2.default.existsSync(dockerfilePath)) return null;
+  const content = import_fs2.default.readFileSync(dockerfilePath, "utf8");
   const lines = content.split("\n").map((l) => l.trim()).filter((l) => l && !l.startsWith("#"));
   const hasFrom = lines.some((l) => l.startsWith("FROM "));
   const hasCopyOrAdd = lines.some((l) => l.startsWith("COPY ") || l.startsWith("ADD "));
@@ -1424,9 +1681,9 @@ function auditDockerfile(dockerfilePath) {
 }
 function updateBuildMetadata(cwd = process.cwd(), projectPkg = {}) {
   console.log(source_default.blue("  Automated Angular Build Versioning & Conventional Commit SemVer..."));
-  const srcDir = import_path.default.join(cwd, "src");
-  if (import_fs.default.existsSync(srcDir) && import_fs.default.statSync(srcDir).isDirectory()) {
-    const buildMetaPath = import_path.default.join(srcDir, "build-metadata.json");
+  const srcDir = import_path2.default.join(cwd, "src");
+  if (import_fs2.default.existsSync(srcDir) && import_fs2.default.statSync(srcDir).isDirectory()) {
+    const buildMetaPath = import_path2.default.join(srcDir, "build-metadata.json");
     const semverInfo = calculateSemVerBump(cwd, projectPkg.version || "1.0.0");
     let buildData = {
       buildNumber: 0,
@@ -1438,9 +1695,9 @@ function updateBuildMetadata(cwd = process.cwd(), projectPkg = {}) {
       commitHash: "working-tree",
       builtAt: (/* @__PURE__ */ new Date()).toISOString()
     };
-    if (import_fs.default.existsSync(buildMetaPath)) {
+    if (import_fs2.default.existsSync(buildMetaPath)) {
       try {
-        buildData = { ...buildData, ...JSON.parse(import_fs.default.readFileSync(buildMetaPath, "utf8")) };
+        buildData = { ...buildData, ...JSON.parse(import_fs2.default.readFileSync(buildMetaPath, "utf8")) };
       } catch (e2) {
       }
     }
@@ -1452,7 +1709,7 @@ function updateBuildMetadata(cwd = process.cwd(), projectPkg = {}) {
     buildData.branch = runGit("git rev-parse --abbrev-ref HEAD", true, cwd) || "main";
     buildData.commitHash = runGit("git rev-parse --short HEAD", true, cwd) || "uncommitted";
     buildData.builtAt = (/* @__PURE__ */ new Date()).toISOString();
-    import_fs.default.writeFileSync(buildMetaPath, JSON.stringify(buildData, null, 2), "utf8");
+    import_fs2.default.writeFileSync(buildMetaPath, JSON.stringify(buildData, null, 2), "utf8");
     try {
       runGit("git add src/build-metadata.json", true, cwd);
       logSuccess(`Build metadata updated & staged: Build #${buildData.buildNumber} (${buildData.commitHash}) on "${buildData.branch}" [SemVer: v${buildData.nextSemVer} (${buildData.releaseType})]`);
@@ -1531,14 +1788,14 @@ function verifyAngularBootstrapIntegrity(cwd = process.cwd(), outputDir = null) 
   let hasBootstrapCall = false;
   let selector = "app-root";
   const candidateIndexPaths = [
-    outputDir ? import_path.default.join(outputDir, "index.html") : null,
-    import_path.default.join(cwd, "src", "index.html"),
-    import_path.default.join(cwd, "src", "index.csr.html"),
-    import_path.default.join(cwd, "index.html")
+    outputDir ? import_path2.default.join(outputDir, "index.html") : null,
+    import_path2.default.join(cwd, "src", "index.html"),
+    import_path2.default.join(cwd, "src", "index.csr.html"),
+    import_path2.default.join(cwd, "index.html")
   ].filter(Boolean);
   for (const p of candidateIndexPaths) {
-    if (import_fs.default.existsSync(p)) {
-      const content = import_fs.default.readFileSync(p, "utf8");
+    if (import_fs2.default.existsSync(p)) {
+      const content = import_fs2.default.readFileSync(p, "utf8");
       const rootMatch = content.match(/<([a-zA-Z0-9_-]+)[^>]*>\s*<\/\1>/) || content.match(/<app-root[^>]*>/i);
       if (rootMatch) {
         hasRootElement = true;
@@ -1547,15 +1804,15 @@ function verifyAngularBootstrapIntegrity(cwd = process.cwd(), outputDir = null) 
       }
     }
   }
-  const mainTsPath = import_path.default.join(cwd, "src", "main.ts");
-  if (import_fs.default.existsSync(mainTsPath)) {
-    const mainContent = import_fs.default.readFileSync(mainTsPath, "utf8");
+  const mainTsPath = import_path2.default.join(cwd, "src", "main.ts");
+  if (import_fs2.default.existsSync(mainTsPath)) {
+    const mainContent = import_fs2.default.readFileSync(mainTsPath, "utf8");
     if (mainContent.includes("bootstrapApplication") || mainContent.includes("bootstrapModule") || mainContent.includes("platformBrowserDynamic") || mainContent.includes("platformBrowser")) {
       hasBootstrapCall = true;
     }
-  } else if (outputDir && import_fs.default.existsSync(outputDir)) {
+  } else if (outputDir && import_fs2.default.existsSync(outputDir)) {
     const files = getAllFiles(outputDir);
-    if (files.some((f3) => import_path.default.basename(f3).startsWith("main") && f3.endsWith(".js"))) {
+    if (files.some((f3) => import_path2.default.basename(f3).startsWith("main") && f3.endsWith(".js"))) {
       hasBootstrapCall = true;
     }
   }
@@ -1628,8 +1885,8 @@ async function verifyLiveDeployment(targetUrl) {
   }
 }
 function detectCircularDependencies(cwd = process.cwd()) {
-  const srcDir = import_path.default.join(cwd, "src");
-  if (!import_fs.default.existsSync(srcDir)) return { hasCycles: false, cycles: [] };
+  const srcDir = import_path2.default.join(cwd, "src");
+  if (!import_fs2.default.existsSync(srcDir)) return { hasCycles: false, cycles: [] };
   const allFiles = getAllFiles(srcDir);
   const tsFiles = allFiles.filter(
     (f3) => (f3.endsWith(".ts") || f3.endsWith(".js")) && !f3.endsWith(".spec.ts") && !f3.endsWith(".test.ts") && !f3.endsWith(".spec.js") && !f3.endsWith(".test.js") && !f3.endsWith(".d.ts") && !f3.includes("node_modules")
@@ -1638,10 +1895,10 @@ function detectCircularDependencies(cwd = process.cwd()) {
   const graph = /* @__PURE__ */ new Map();
   const importRegex = /(?:import|from|require\()\s*['"](\.[^'"]+)['"]/g;
   for (const file of tsFiles) {
-    const fileDir = import_path.default.dirname(file);
+    const fileDir = import_path2.default.dirname(file);
     let content = "";
     try {
-      content = import_fs.default.readFileSync(file, "utf8");
+      content = import_fs2.default.readFileSync(file, "utf8");
     } catch (_) {
       continue;
     }
@@ -1649,25 +1906,25 @@ function detectCircularDependencies(cwd = process.cwd()) {
     let match2;
     while ((match2 = importRegex.exec(content)) !== null) {
       const relPath = match2[1];
-      const targetBase = import_path.default.resolve(fileDir, relPath);
+      const targetBase = import_path2.default.resolve(fileDir, relPath);
       const candidates = [
         targetBase,
         targetBase + ".ts",
         targetBase + ".js",
-        import_path.default.join(targetBase, "index.ts"),
-        import_path.default.join(targetBase, "index.js")
+        import_path2.default.join(targetBase, "index.ts"),
+        import_path2.default.join(targetBase, "index.js")
       ];
       for (const cand of candidates) {
-        if (import_fs.default.existsSync(cand) && !import_fs.default.statSync(cand).isDirectory()) {
-          const norm = import_path.default.normalize(cand);
-          if (norm !== import_path.default.normalize(file)) {
+        if (import_fs2.default.existsSync(cand) && !import_fs2.default.statSync(cand).isDirectory()) {
+          const norm = import_path2.default.normalize(cand);
+          if (norm !== import_path2.default.normalize(file)) {
             imports.add(norm);
           }
           break;
         }
       }
     }
-    graph.set(import_path.default.normalize(file), imports);
+    graph.set(import_path2.default.normalize(file), imports);
   }
   const cycles = [];
   const visited = /* @__PURE__ */ new Set();
@@ -1685,7 +1942,7 @@ function detectCircularDependencies(cwd = process.cwd()) {
         const cycleStartIndex = currentPath.indexOf(neighbor);
         if (cycleStartIndex !== -1) {
           const cyclePath = currentPath.slice(cycleStartIndex).concat(neighbor);
-          const relCycle = cyclePath.map((p) => import_path.default.relative(cwd, p).replace(/\\/g, "/"));
+          const relCycle = cyclePath.map((p) => import_path2.default.relative(cwd, p).replace(/\\/g, "/"));
           const cycleKey = relCycle.slice(0, -1).sort().join("->");
           if (!cycles.some((c) => c.key === cycleKey)) {
             cycles.push({ key: cycleKey, path: relCycle });
@@ -1711,17 +1968,17 @@ function detectCircularDependencies(cwd = process.cwd()) {
   return { hasCycles: cycles.length > 0, cycles };
 }
 function auditTemplateSecurity(cwd = process.cwd(), stagedFiles = []) {
-  const targetFiles = stagedFiles.length > 0 ? stagedFiles.map((f3) => import_path.default.join(cwd, f3)).filter((p) => import_fs.default.existsSync(p)) : import_fs.default.existsSync(import_path.default.join(cwd, "src")) ? getAllFiles(import_path.default.join(cwd, "src")).filter((f3) => !f3.includes("node_modules") && !f3.includes("dist")) : [];
+  const targetFiles = stagedFiles.length > 0 ? stagedFiles.map((f3) => import_path2.default.join(cwd, f3)).filter((p) => import_fs2.default.existsSync(p)) : import_fs2.default.existsSync(import_path2.default.join(cwd, "src")) ? getAllFiles(import_path2.default.join(cwd, "src")).filter((f3) => !f3.includes("node_modules") && !f3.includes("dist")) : [];
   const inspectFiles = targetFiles.filter((f3) => f3.endsWith(".html") || f3.endsWith(".ts") && !f3.endsWith(".spec.ts"));
   const violations = [];
   for (const file of inspectFiles) {
     let content = "";
     try {
-      content = import_fs.default.readFileSync(file, "utf8");
+      content = import_fs2.default.readFileSync(file, "utf8");
     } catch (_) {
       continue;
     }
-    const relPath = import_path.default.relative(cwd, file).replace(/\\/g, "/");
+    const relPath = import_path2.default.relative(cwd, file).replace(/\\/g, "/");
     const lines = content.split("\n");
     lines.forEach((line, idx) => {
       const lineNum = idx + 1;
@@ -1768,13 +2025,13 @@ function auditTemplateSecurity(cwd = process.cwd(), stagedFiles = []) {
   };
 }
 function auditDistributionAssetIntegrity(outputDir) {
-  if (!outputDir || !import_fs.default.existsSync(outputDir)) {
+  if (!outputDir || !import_fs2.default.existsSync(outputDir)) {
     return { valid: true, brokenAssets: [] };
   }
   const brokenAssets = [];
-  const indexHtmlPath = import_path.default.join(outputDir, "index.html");
-  if (import_fs.default.existsSync(indexHtmlPath)) {
-    const htmlContent = import_fs.default.readFileSync(indexHtmlPath, "utf8");
+  const indexHtmlPath = import_path2.default.join(outputDir, "index.html");
+  if (import_fs2.default.existsSync(indexHtmlPath)) {
+    const htmlContent = import_fs2.default.readFileSync(indexHtmlPath, "utf8");
     const tagRegex = /<(?:link|script|img)\s+[^>]*(?:href|src)=["']([^"']+)["'][^>]*>/gi;
     let match2;
     while ((match2 = tagRegex.exec(htmlContent)) !== null) {
@@ -1782,8 +2039,8 @@ function auditDistributionAssetIntegrity(outputDir) {
       if (/^(?:https?:|\/\/|data:|#|mailto:)/i.test(assetUrl)) continue;
       const cleanAsset = assetUrl.split("?")[0].split("#")[0].replace(/^\//, "");
       if (cleanAsset) {
-        const targetDiskPath = import_path.default.join(outputDir, cleanAsset);
-        if (!import_fs.default.existsSync(targetDiskPath)) {
+        const targetDiskPath = import_path2.default.join(outputDir, cleanAsset);
+        if (!import_fs2.default.existsSync(targetDiskPath)) {
           brokenAssets.push({
             sourceFile: "index.html",
             assetPath: assetUrl
@@ -1798,20 +2055,20 @@ function auditDistributionAssetIntegrity(outputDir) {
   for (const cssFile of cssFiles) {
     let cssContent = "";
     try {
-      cssContent = import_fs.default.readFileSync(cssFile, "utf8");
+      cssContent = import_fs2.default.readFileSync(cssFile, "utf8");
     } catch (_) {
       continue;
     }
-    const cssDir = import_path.default.dirname(cssFile);
+    const cssDir = import_path2.default.dirname(cssFile);
     let match2;
     while ((match2 = urlRegex.exec(cssContent)) !== null) {
       const ref = match2[1];
       if (/^(?:https?:|\/\/|data:|#)/i.test(ref)) continue;
       const cleanRef = ref.split("?")[0].split("#")[0];
-      const targetDiskPath = cleanRef.startsWith("/") ? import_path.default.join(outputDir, cleanRef.replace(/^\//, "")) : import_path.default.resolve(cssDir, cleanRef);
-      if (!import_fs.default.existsSync(targetDiskPath)) {
+      const targetDiskPath = cleanRef.startsWith("/") ? import_path2.default.join(outputDir, cleanRef.replace(/^\//, "")) : import_path2.default.resolve(cssDir, cleanRef);
+      if (!import_fs2.default.existsSync(targetDiskPath)) {
         brokenAssets.push({
-          sourceFile: import_path.default.relative(outputDir, cssFile).replace(/\\/g, "/"),
+          sourceFile: import_path2.default.relative(outputDir, cssFile).replace(/\\/g, "/"),
           assetPath: ref
         });
       }
@@ -1823,16 +2080,16 @@ function auditDistributionAssetIntegrity(outputDir) {
   };
 }
 function calculateGzipBudgets(outputDir, jsBundles = []) {
-  if (!outputDir || !import_fs.default.existsSync(outputDir) || jsBundles.length === 0) {
+  if (!outputDir || !import_fs2.default.existsSync(outputDir) || jsBundles.length === 0) {
     return { totalGzipBytes: 0, totalGzipSizeKb: "0.00", bundleMetrics: [], budgetExceeded: false };
   }
   let totalGzipBytes = 0;
   const bundleMetrics = [];
   for (const file of jsBundles) {
-    const fullPath = import_path.default.join(outputDir, file);
-    if (import_fs.default.existsSync(fullPath)) {
+    const fullPath = import_path2.default.join(outputDir, file);
+    if (import_fs2.default.existsSync(fullPath)) {
       try {
-        const rawBuf = import_fs.default.readFileSync(fullPath);
+        const rawBuf = import_fs2.default.readFileSync(fullPath);
         const gzipped = import_zlib.default.gzipSync(rawBuf);
         totalGzipBytes += gzipped.length;
         bundleMetrics.push({
@@ -1864,35 +2121,35 @@ function calculateGzipBudgets(outputDir, jsBundles = []) {
 function auditCloudDeploymentConfigs(cwd = process.cwd()) {
   const targets = [];
   const details = {};
-  const azurePath = import_path.default.join(cwd, "staticwebapp.config.json");
-  if (import_fs.default.existsSync(azurePath)) {
+  const azurePath = import_path2.default.join(cwd, "staticwebapp.config.json");
+  if (import_fs2.default.existsSync(azurePath)) {
     targets.push("Azure Static Web Apps");
     details.azure = true;
   }
-  const vercelPath = import_path.default.join(cwd, "vercel.json");
-  if (import_fs.default.existsSync(vercelPath)) {
+  const vercelPath = import_path2.default.join(cwd, "vercel.json");
+  if (import_fs2.default.existsSync(vercelPath)) {
     targets.push("Vercel");
     details.vercel = true;
   }
-  const netlifyPath = import_path.default.join(cwd, "netlify.toml");
-  const redirectsPath = import_path.default.join(cwd, "_redirects");
-  if (import_fs.default.existsSync(netlifyPath) || import_fs.default.existsSync(redirectsPath)) {
+  const netlifyPath = import_path2.default.join(cwd, "netlify.toml");
+  const redirectsPath = import_path2.default.join(cwd, "_redirects");
+  if (import_fs2.default.existsSync(netlifyPath) || import_fs2.default.existsSync(redirectsPath)) {
     targets.push("Netlify");
     details.netlify = true;
   }
-  const fbPath = import_path.default.join(cwd, "firebase.json");
-  if (import_fs.default.existsSync(fbPath)) {
+  const fbPath = import_path2.default.join(cwd, "firebase.json");
+  if (import_fs2.default.existsSync(fbPath)) {
     targets.push("Firebase Hosting");
     details.firebase = true;
   }
-  const dockerPath = import_path.default.join(cwd, "Dockerfile");
-  if (import_fs.default.existsSync(dockerPath)) {
+  const dockerPath = import_path2.default.join(cwd, "Dockerfile");
+  if (import_fs2.default.existsSync(dockerPath)) {
     targets.push("Docker / Container");
     details.docker = true;
   }
-  const iisPath = import_path.default.join(cwd, "web.config");
-  const srcIisPath = import_path.default.join(cwd, "src", "web.config");
-  if (import_fs.default.existsSync(iisPath) || import_fs.default.existsSync(srcIisPath)) {
+  const iisPath = import_path2.default.join(cwd, "web.config");
+  const srcIisPath = import_path2.default.join(cwd, "src", "web.config");
+  if (import_fs2.default.existsSync(iisPath) || import_fs2.default.existsSync(srcIisPath)) {
     targets.push("IIS (Internet Information Services)");
     details.iis = true;
   }
@@ -1904,13 +2161,13 @@ function auditCloudDeploymentConfigs(cwd = process.cwd()) {
 }
 function auditIisDeploymentConfig(cwd = process.cwd(), outputDir = null) {
   const candidates = [
-    outputDir ? import_path.default.join(outputDir, "web.config") : null,
-    import_path.default.join(cwd, "src", "web.config"),
-    import_path.default.join(cwd, "web.config")
+    outputDir ? import_path2.default.join(outputDir, "web.config") : null,
+    import_path2.default.join(cwd, "src", "web.config"),
+    import_path2.default.join(cwd, "web.config")
   ].filter(Boolean);
   let targetWebConfig = null;
   for (const c of candidates) {
-    if (import_fs.default.existsSync(c)) {
+    if (import_fs2.default.existsSync(c)) {
       targetWebConfig = c;
       break;
     }
@@ -1931,7 +2188,7 @@ function auditIisDeploymentConfig(cwd = process.cwd(), outputDir = null) {
   const warnings = [];
   let content = "";
   try {
-    content = import_fs.default.readFileSync(targetWebConfig, "utf8");
+    content = import_fs2.default.readFileSync(targetWebConfig, "utf8");
   } catch (readErr) {
     return {
       isIisConfigured: true,
@@ -1982,10 +2239,10 @@ function auditIisDeploymentConfig(cwd = process.cwd(), outputDir = null) {
     warnings.push("MIME type for .woff2 fonts not declared in web.config <staticContent> (IIS HTTP 404.3 risk).");
   }
   let isSyncedInAngularJson = true;
-  const angularJsonPath = import_path.default.join(cwd, "angular.json");
-  if (import_fs.default.existsSync(angularJsonPath) && targetWebConfig.includes("src")) {
+  const angularJsonPath = import_path2.default.join(cwd, "angular.json");
+  if (import_fs2.default.existsSync(angularJsonPath) && targetWebConfig.includes("src")) {
     try {
-      const aj = import_fs.default.readFileSync(angularJsonPath, "utf8");
+      const aj = import_fs2.default.readFileSync(angularJsonPath, "utf8");
       if (!aj.includes("web.config")) {
         isSyncedInAngularJson = false;
         warnings.push('src/web.config is not registered in angular.json "assets" array. It will NOT be copied to dist/ during build!');
@@ -1995,7 +2252,7 @@ function auditIisDeploymentConfig(cwd = process.cwd(), outputDir = null) {
   }
   return {
     isIisConfigured: true,
-    filePath: import_path.default.relative(cwd, targetWebConfig).replace(/\\/g, "/"),
+    filePath: import_path2.default.relative(cwd, targetWebConfig).replace(/\\/g, "/"),
     isValidXml,
     hasRewriteRule,
     hasMimeTypes,
@@ -2004,16 +2261,17 @@ function auditIisDeploymentConfig(cwd = process.cwd(), outputDir = null) {
     warnings
   };
 }
-var import_fs, import_path, import_crypto, import_zlib;
+var import_fs2, import_path2, import_crypto, import_zlib;
 var init_angular_best_practices = __esm({
   "src/rules/angular-best-practices.js"() {
-    import_fs = __toESM(require("fs"), 1);
-    import_path = __toESM(require("path"), 1);
+    import_fs2 = __toESM(require("fs"), 1);
+    import_path2 = __toESM(require("path"), 1);
     import_crypto = __toESM(require("crypto"), 1);
     import_zlib = __toESM(require("zlib"), 1);
     init_source();
     init_logger();
     init_git();
+    init_security_rules();
   }
 });
 
@@ -29361,31 +29619,26 @@ init_git();
 init_angular_best_practices();
 
 // src/rules/typescript-validator.js
-var import_fs2 = __toESM(require("fs"), 1);
-var import_path2 = __toESM(require("path"), 1);
-var import_child_process2 = require("child_process");
+var import_fs3 = __toESM(require("fs"), 1);
+var import_path3 = __toESM(require("path"), 1);
 init_source();
 init_logger();
 init_angular_best_practices();
-function runTypeScriptAndLintChecks(cwd = process.cwd(), projectPkg = {}) {
+init_exec();
+async function runTypeScriptAndLintChecks(cwd = process.cwd(), projectPkg = {}) {
   let _capturedErrorOutput = "";
   logStep(4, "Strict TypeScript & Linter Verification");
   const scripts = projectPkg.scripts || {};
   if (scripts["lint"]) {
     console.log(source_default.blue("  Running Angular Linter (npm run lint)..."));
     try {
-      const lintOut = (0, import_child_process2.execSync)("npm run lint", { stdio: "pipe", encoding: "utf8", maxBuffer: 10 * 1024 * 1024, cwd });
-      if (lintOut) process.stdout.write(lintOut);
+      await execStreaming("npm run lint", { cwd });
       logSuccess("Angular linter passed with zero errors.");
     } catch (err) {
       logError("Angular linter reported errors!");
-      const stdout = err.stdout ? err.stdout.toString() : "";
-      const stderr = err.stderr ? err.stderr.toString() : "";
-      const combined = (stdout + "\n" + stderr).trim();
-      if (combined) process.stdout.write(combined + "\n");
       console.log(source_default.red("\n  Fix the linting issues before committing code.\n"));
       const failErr = new Error("Angular linting failed");
-      failErr.stepOutput = combined || err.message;
+      failErr.stepOutput = err.combined || err.stepOutput || err.message;
       throw failErr;
     }
   }
@@ -29393,57 +29646,47 @@ function runTypeScriptAndLintChecks(cwd = process.cwd(), projectPkg = {}) {
     const typeScript = scripts["type-check"] ? "type-check" : "typecheck";
     console.log(source_default.blue(`  Running TypeScript Check (npm run ${typeScript})...`));
     try {
-      const tcOut = (0, import_child_process2.execSync)(`npm run ${typeScript}`, { stdio: "pipe", encoding: "utf8", maxBuffer: 10 * 1024 * 1024, cwd });
-      if (tcOut) process.stdout.write(tcOut);
+      await execStreaming(`npm run ${typeScript}`, { cwd });
       logSuccess("TypeScript checks passed.");
     } catch (err) {
       logError("TypeScript type checking failed!");
-      const stdout = err.stdout ? err.stdout.toString() : "";
-      const stderr = err.stderr ? err.stderr.toString() : "";
-      const combined = (stdout + "\n" + stderr).trim();
-      if (combined) process.stdout.write(combined + "\n");
       console.log(source_default.red("\n  Fix the TypeScript errors before committing code.\n"));
       const failErr = new Error("TypeScript type checking failed");
-      failErr.stepOutput = combined || err.message;
+      failErr.stepOutput = err.combined || err.stepOutput || err.message;
       throw failErr;
     }
   } else {
     console.log(source_default.blue("  Running Type Safety Check (npx tsc --noEmit)..."));
     try {
-      const tscOut = (0, import_child_process2.execSync)("npx tsc --noEmit --skipLibCheck", { stdio: "pipe", encoding: "utf8", cwd });
-      process.stdout.write(tscOut);
+      await execStreaming("npx tsc --noEmit --skipLibCheck", { cwd });
       logSuccess("TypeScript compilation verification passed with zero type errors.");
     } catch (err) {
       logError("TypeScript type checking failed!");
-      const stdout = err.stdout ? err.stdout.toString() : "";
-      const stderr = err.stderr ? err.stderr.toString() : "";
-      const combined = (stdout + "\n" + stderr).trim();
-      if (combined) process.stdout.write(combined + "\n");
       const failErr = new Error("TypeScript compilation failed");
-      failErr.stepOutput = combined || err.message;
+      failErr.stepOutput = err.combined || err.stepOutput || err.message;
       throw failErr;
     }
   }
 }
-function runAutomatedUnitTests(cwd = process.cwd(), projectPkg = {}) {
+async function runAutomatedUnitTests(cwd = process.cwd(), projectPkg = {}) {
   let capturedTestOutput = "";
   logStep(5, "Automated Unit Tests & Regression Verification");
-  const pkgPath = import_path2.default.join(cwd, "package.json");
+  const pkgPath = import_path3.default.join(cwd, "package.json");
   const scripts = projectPkg.scripts || {};
   const deps = { ...projectPkg.dependencies || {}, ...projectPkg.devDependencies || {} };
-  const isVitest = !!(deps["vitest"] || deps["@analogjs/vite-plugin-angular"] || import_fs2.default.existsSync(import_path2.default.join(cwd, "vite.config.ts")) || import_fs2.default.existsSync(import_path2.default.join(cwd, "vite.config.js")) || import_fs2.default.existsSync(import_path2.default.join(cwd, "vite.config.mjs")) || import_fs2.default.existsSync(import_path2.default.join(cwd, "vitest.config.ts")) || import_fs2.default.existsSync(import_path2.default.join(cwd, "vitest.config.js")) || import_fs2.default.existsSync(import_path2.default.join(cwd, "vitest.config.mjs")) || (scripts["test:ci"] || "").includes("vitest") || (scripts["test-ci"] || "").includes("vitest") || (scripts["test"] || "").includes("vitest"));
-  const isJest = !!(deps["jest"] || import_fs2.default.existsSync(import_path2.default.join(cwd, "jest.config.js")) || import_fs2.default.existsSync(import_path2.default.join(cwd, "jest.config.ts")) || import_fs2.default.existsSync(import_path2.default.join(cwd, "jest.config.mjs")) || (scripts["test:ci"] || "").includes("jest") || (scripts["test-ci"] || "").includes("jest") || (scripts["test"] || "").includes("jest"));
-  const srcDir = import_path2.default.join(cwd, "src");
-  const checkDir = import_fs2.default.existsSync(srcDir) ? srcDir : cwd;
+  const isVitest = !!(deps["vitest"] || deps["@analogjs/vite-plugin-angular"] || import_fs3.default.existsSync(import_path3.default.join(cwd, "vite.config.ts")) || import_fs3.default.existsSync(import_path3.default.join(cwd, "vite.config.js")) || import_fs3.default.existsSync(import_path3.default.join(cwd, "vite.config.mjs")) || import_fs3.default.existsSync(import_path3.default.join(cwd, "vitest.config.ts")) || import_fs3.default.existsSync(import_path3.default.join(cwd, "vitest.config.js")) || import_fs3.default.existsSync(import_path3.default.join(cwd, "vitest.config.mjs")) || (scripts["test:ci"] || "").includes("vitest") || (scripts["test-ci"] || "").includes("vitest") || (scripts["test"] || "").includes("vitest"));
+  const isJest = !!(deps["jest"] || import_fs3.default.existsSync(import_path3.default.join(cwd, "jest.config.js")) || import_fs3.default.existsSync(import_path3.default.join(cwd, "jest.config.ts")) || import_fs3.default.existsSync(import_path3.default.join(cwd, "jest.config.mjs")) || (scripts["test:ci"] || "").includes("jest") || (scripts["test-ci"] || "").includes("jest") || (scripts["test"] || "").includes("jest"));
+  const srcDir = import_path3.default.join(cwd, "src");
+  const checkDir = import_fs3.default.existsSync(srcDir) ? srcDir : cwd;
   const allProjectFiles = getAllFiles(checkDir);
   let specFiles = allProjectFiles.filter((f3) => {
-    const base = import_path2.default.basename(f3).toLowerCase();
+    const base = import_path3.default.basename(f3).toLowerCase();
     return (base.endsWith(".spec.ts") || base.endsWith(".test.ts") || base.endsWith(".spec.js") || base.endsWith(".test.js")) && !f3.includes("node_modules") && !f3.includes("dist");
   });
   let tempSpecPath = null;
   if (specFiles.length === 0) {
-    const targetSmokeDir = import_fs2.default.existsSync(import_path2.default.join(cwd, "src", "app")) ? import_path2.default.join(cwd, "src", "app") : import_fs2.default.existsSync(srcDir) ? srcDir : cwd;
-    tempSpecPath = import_path2.default.join(targetSmokeDir, "gatekeeper-smoke.spec.ts");
+    const targetSmokeDir = import_fs3.default.existsSync(import_path3.default.join(cwd, "src", "app")) ? import_path3.default.join(cwd, "src", "app") : import_fs3.default.existsSync(srcDir) ? srcDir : cwd;
+    tempSpecPath = import_path3.default.join(targetSmokeDir, "gatekeeper-smoke.spec.ts");
     const smokeSpecContent = isVitest ? `// Auto-generated by Angular Gatekeeper (CI Smoke Test)
 // @ts-nocheck
 import { describe, it, expect } from 'vitest';
@@ -29462,7 +29705,7 @@ describe('Angular CI Pipeline Verification', () => {
 });
 `;
     try {
-      import_fs2.default.writeFileSync(tempSpecPath, smokeSpecContent, "utf8");
+      import_fs3.default.writeFileSync(tempSpecPath, smokeSpecContent, "utf8");
       console.log(source_default.blue("  Auto-generating temporary smoke test spec (gatekeeper-smoke.spec.ts)..."));
     } catch (_) {
       tempSpecPath = null;
@@ -29473,9 +29716,9 @@ describe('Angular CI Pipeline Verification', () => {
   let testCommand = "";
   let tempInjected = false;
   let originalPkgRaw = null;
-  if (import_fs2.default.existsSync(pkgPath)) {
+  if (import_fs3.default.existsSync(pkgPath)) {
     try {
-      originalPkgRaw = import_fs2.default.readFileSync(pkgPath, "utf8");
+      originalPkgRaw = import_fs3.default.readFileSync(pkgPath, "utf8");
     } catch (_) {
     }
   }
@@ -29499,15 +29742,15 @@ describe('Angular CI Pipeline Verification', () => {
       } else {
         testCommand = testScript.includes("--watch=false") || testScript.includes("--no-watch") ? "npm test" : "npm test -- --watch=false";
       }
-    } else if (import_fs2.default.existsSync(pkgPath)) {
+    } else if (import_fs3.default.existsSync(pkgPath)) {
       if (!originalPkgRaw) {
-        originalPkgRaw = import_fs2.default.readFileSync(pkgPath, "utf8");
+        originalPkgRaw = import_fs3.default.readFileSync(pkgPath, "utf8");
       }
       const parsedPkg = JSON.parse(originalPkgRaw);
       parsedPkg.scripts = parsedPkg.scripts || {};
       console.log(source_default.blue("  Auto-configuring headless test runner for validation..."));
       parsedPkg.scripts["test:ci"] = "ng test --watch=false";
-      import_fs2.default.writeFileSync(pkgPath, JSON.stringify(parsedPkg, null, 2), "utf8");
+      import_fs3.default.writeFileSync(pkgPath, JSON.stringify(parsedPkg, null, 2), "utf8");
       tempInjected = true;
       testCommand = "npm run test:ci";
     } else {
@@ -29516,11 +29759,10 @@ describe('Angular CI Pipeline Verification', () => {
     console.log(source_default.blue(`  Executing Automated Unit Tests (${testCommand})...`));
     let output = "";
     try {
-      output = (0, import_child_process2.execSync)(testCommand, { stdio: "pipe", encoding: "utf8", maxBuffer: 20 * 1024 * 1024, cwd });
+      const res = await execStreaming(testCommand, { cwd });
+      output = res.combined;
     } catch (testExecErr) {
-      const stdout = testExecErr.stdout ? testExecErr.stdout.toString() : "";
-      const stderr = testExecErr.stderr ? testExecErr.stderr.toString() : "";
-      const combined = (stdout + "\n" + stderr).trim();
+      const combined = (testExecErr.combined || testExecErr.stdout || testExecErr.stderr || testExecErr.message || "").trim();
       if (tempSpecPath && (combined.includes("ReferenceError: describe is not defined") || combined.includes("ReferenceError: it is not defined") || combined.includes("describe is not defined"))) {
         try {
           const vitestSmokeSpec = `// Auto-generated by Angular Gatekeeper (CI Smoke Test)
@@ -29533,14 +29775,12 @@ describe('Angular CI Pipeline Verification', () => {
   });
 });
 `;
-          import_fs2.default.writeFileSync(tempSpecPath, vitestSmokeSpec, "utf8");
+          import_fs3.default.writeFileSync(tempSpecPath, vitestSmokeSpec, "utf8");
           console.log(source_default.yellow("  \u26A0 Smoke spec missing test runner globals. Retrying with explicit Vitest imports..."));
-          output = (0, import_child_process2.execSync)(testCommand, { stdio: "pipe", encoding: "utf8", maxBuffer: 20 * 1024 * 1024, cwd });
+          const retryRes = await execStreaming(testCommand, { cwd });
+          output = retryRes.combined;
         } catch (vitestRetryErr) {
-          const vStdout = vitestRetryErr.stdout ? vitestRetryErr.stdout.toString() : "";
-          const vStderr = vitestRetryErr.stderr ? vitestRetryErr.stderr.toString() : "";
-          const vCombined = (vStdout + "\n" + vStderr).trim();
-          if (vCombined) process.stdout.write(vCombined + "\n");
+          const vCombined = (vitestRetryErr.combined || vitestRetryErr.stdout || vitestRetryErr.stderr || vitestRetryErr.message || "").trim();
           capturedTestOutput = vCombined;
           vitestRetryErr.testOutput = vCombined;
           throw vitestRetryErr;
@@ -29553,9 +29793,9 @@ describe('Angular CI Pipeline Verification', () => {
         fallbackCommand = fallbackCommand.replace("--passWithNoTests", "").replace(/\s+/g, " ").trim();
         fallbackCommand = fallbackCommand.replace(/--\s*$/, "").trim();
         let scriptCleaned = false;
-        if (originalPkgRaw && import_fs2.default.existsSync(pkgPath)) {
+        if (originalPkgRaw && import_fs3.default.existsSync(pkgPath)) {
           try {
-            const currentPkg = JSON.parse(import_fs2.default.readFileSync(pkgPath, "utf8"));
+            const currentPkg = JSON.parse(import_fs3.default.readFileSync(pkgPath, "utf8"));
             for (const key of ["test:ci", "test-ci", "test"]) {
               if (currentPkg.scripts && currentPkg.scripts[key] && currentPkg.scripts[key].includes(badFlag)) {
                 currentPkg.scripts[key] = currentPkg.scripts[key].replace(new RegExp(`--?${badFlag}(=[^\\s]+)?`, "g"), "").replace(/\s+/g, " ").trim();
@@ -29563,7 +29803,7 @@ describe('Angular CI Pipeline Verification', () => {
               }
             }
             if (scriptCleaned) {
-              import_fs2.default.writeFileSync(pkgPath, JSON.stringify(currentPkg, null, 2), "utf8");
+              import_fs3.default.writeFileSync(pkgPath, JSON.stringify(currentPkg, null, 2), "utf8");
               tempInjected = true;
             }
           } catch (_) {
@@ -29572,31 +29812,26 @@ describe('Angular CI Pipeline Verification', () => {
         if ((fallbackCommand !== testCommand || scriptCleaned) && fallbackCommand.length > 0) {
           console.log(source_default.yellow(`  \u26A0 Test runner rejected argument. Retrying without unsupported flag: (${fallbackCommand})...`));
           try {
-            output = (0, import_child_process2.execSync)(fallbackCommand, { stdio: "pipe", encoding: "utf8", maxBuffer: 20 * 1024 * 1024, cwd });
+            const fbRes = await execStreaming(fallbackCommand, { cwd });
+            output = fbRes.combined;
             testCommand = fallbackCommand;
           } catch (retryErr) {
-            const rStdout = retryErr.stdout ? retryErr.stdout.toString() : "";
-            const rStderr = retryErr.stderr ? retryErr.stderr.toString() : "";
-            const rCombined = (rStdout + "\n" + rStderr).trim();
-            if (rCombined) process.stdout.write(rCombined + "\n");
+            const rCombined = (retryErr.combined || retryErr.stdout || retryErr.stderr || retryErr.message || "").trim();
             capturedTestOutput = rCombined;
             retryErr.testOutput = rCombined;
             throw retryErr;
           }
         } else {
-          if (combined) process.stdout.write(combined + "\n");
           capturedTestOutput = combined;
           testExecErr.testOutput = combined;
           throw testExecErr;
         }
       } else {
-        if (combined) process.stdout.write(combined + "\n");
         capturedTestOutput = combined;
         testExecErr.testOutput = combined;
         throw testExecErr;
       }
     }
-    if (output) process.stdout.write(output);
     logSuccess("Automated unit tests & regression verification passed with 0 failures.");
     return {
       autoInjected: !!tempSpecPath,
@@ -29623,23 +29858,23 @@ ${errOutput}`;
     failErr.stepOutput = failErr.testOutput;
     throw failErr;
   } finally {
-    if (tempSpecPath && import_fs2.default.existsSync(tempSpecPath)) {
+    if (tempSpecPath && import_fs3.default.existsSync(tempSpecPath)) {
       try {
-        import_fs2.default.unlinkSync(tempSpecPath);
+        import_fs3.default.unlinkSync(tempSpecPath);
         console.log(source_default.gray("  Cleaned up temporary smoke test spec file."));
       } catch (_) {
       }
     }
-    if (tempInjected && originalPkgRaw && import_fs2.default.existsSync(pkgPath)) {
+    if (tempInjected && originalPkgRaw && import_fs3.default.existsSync(pkgPath)) {
       try {
-        import_fs2.default.writeFileSync(pkgPath, originalPkgRaw, "utf8");
+        import_fs3.default.writeFileSync(pkgPath, originalPkgRaw, "utf8");
         console.log(source_default.gray("  Cleaned up temporary test runner configuration from package.json."));
       } catch (cleanErr) {
       }
     }
   }
 }
-function runAngularProductionBuild(cwd = process.cwd(), projectPkg = {}) {
+async function runAngularProductionBuild(cwd = process.cwd(), projectPkg = {}) {
   logStep(6, "Production Build & CD Deployment Verification");
   const scripts = projectPkg.scripts || {};
   console.log(source_default.blue("  Running Mandatory Angular Build Compilation..."));
@@ -29649,15 +29884,11 @@ function runAngularProductionBuild(cwd = process.cwd(), projectPkg = {}) {
   }
   console.log(source_default.gray(`  Executing: ${buildCommand}`));
   try {
-    const buildOut = (0, import_child_process2.execSync)(buildCommand, { stdio: "pipe", encoding: "utf8", maxBuffer: 20 * 1024 * 1024, cwd });
-    if (buildOut) process.stdout.write(buildOut);
+    await execStreaming(buildCommand, { cwd });
     logSuccess("Angular compilation & build completed successfully with ZERO errors.");
   } catch (buildErr) {
     logError("Angular Build FAILED! Compilation or TypeScript errors detected.");
-    const stdout = buildErr.stdout ? buildErr.stdout.toString() : "";
-    const stderr = buildErr.stderr ? buildErr.stderr.toString() : "";
-    const combined = (stdout + "\n" + stderr).trim();
-    if (combined) process.stdout.write(combined + "\n");
+    const combined = (buildErr.combined || buildErr.stdout || buildErr.stderr || buildErr.message || "").trim();
     console.log(source_default.red("\n  \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550"));
     console.log(source_default.red.bold("  \u274C COMMIT REJECTED: Application bundle generation failed!"));
     console.log(source_default.yellow("  Please fix the Angular/TypeScript build errors displayed above."));
@@ -29669,144 +29900,8 @@ function runAngularProductionBuild(cwd = process.cwd(), projectPkg = {}) {
   }
 }
 
-// src/rules/security-rules.js
-var import_fs3 = __toESM(require("fs"), 1);
-var import_path3 = __toESM(require("path"), 1);
-var import_child_process3 = require("child_process");
-init_source();
-init_logger();
-init_git();
-function scanSecurityRules(diffOutput) {
-  if (!diffOutput || diffOutput.trim() === "") return true;
-  logStep(7, "Security & Secret Leak Scanning");
-  const forbiddenPatterns = [
-    // 1. Google / Gemini / Vertex AI Keys
-    { pattern: /AIzaSy[0-9A-Za-z-_]{33}/, name: "Google / Gemini Studio API Key" },
-    { pattern: /AQ\.[0-9A-Za-z_-]{40,}/, name: "Google Cloud / Vertex AI Bearer Token (AQ...)" },
-    { pattern: /ya29\.[0-9A-Za-z_-]{70,}/, name: "Google OAuth Access Token (ya29...)" },
-    // 2. OpenAI & AI Providers
-    { pattern: /sk-(?:proj-|admin-|none-)?[a-zA-Z0-9_-]{20,}/, name: "OpenAI Secret API Key" },
-    { pattern: /sk-ant-api[0-9]{2}-[a-zA-Z0-9_-]{80,}/, name: "Anthropic Claude API Key" },
-    { pattern: /hf_[a-zA-Z0-9]{34,}/, name: "HuggingFace Access Token" },
-    { pattern: /co-[a-zA-Z0-9]{40,}/, name: "Cohere API Key" },
-    // 3. Cloud Providers (AWS, Azure, GCP)
-    { pattern: /(?:A3T[A-Z0-9]|AKIA|AGPA|AIDA|AROA|AIPA|ANPA|ANVA|ASIA)[0-9A-Z]{16}/, name: "AWS Access Key ID" },
-    { pattern: /(?:aws_secret_access_key|aws_access_key_id)\s*=\s*['"][A-Za-z0-9\/+=]{20,}['"]/i, name: "AWS Secret Access Key" },
-    { pattern: /(?:AccountKey=[a-zA-Z0-9+\/=]{80,}|DefaultEndpointsProtocol=https;AccountName=)/i, name: "Azure Storage Connection String" },
-    // 4. Source Control & Developer Platforms (GitHub, GitLab, NPM)
-    { pattern: /gh[pousr]_[0-9a-zA-Z]{36,}/, name: "GitHub Token (Personal / OAuth / User / Refresh)" },
-    { pattern: /glpat-[0-9a-zA-Z\-_]{20,}/, name: "GitLab Personal Access Token" },
-    { pattern: /npm_[0-9a-zA-Z]{36}/, name: "NPM Access Token" },
-    // 5. Payment & Communication (Stripe, Twilio, Slack, SendGrid)
-    { pattern: /(?:sk|rk)_(?:test|live)_[0-9a-zA-Z]{24,}/, name: "Stripe Secret API Key" },
-    { pattern: /xox[baprs]-[0-9a-zA-Z]{10,48}/, name: "Slack Bot / User Token" },
-    { pattern: /SG\.[0-9A-Za-z-_]{22}\.[0-9A-Za-z-_]{43}/, name: "SendGrid API Key" },
-    { pattern: /SK[0-9a-fA-F]{32}/, name: "Twilio API Key" },
-    // 6. Database Connection Strings & Generic Secrets
-    { pattern: /(?:mongodb(?:\+srv)?|postgres|postgresql|mysql|redis):\/\/[^:\s]+:[^@\s]+@[^\s/]+/i, name: "Database Connection String with Password" },
-    { pattern: /(?:password|secret|passwd|pwd)\s*[:=]\s*['"][^'"\s]{8,}['"]/i, name: "Hardcoded Password Assignment" },
-    // 7. Cryptographic Keys & Certificates
-    { pattern: /-----BEGIN\s+(?:RSA\s+|EC\s+|DSA\s+|OPENSSH\s+)?PRIVATE\s+KEY-----/, name: "Unencrypted Private Key (PEM/RSA/EC)" },
-    { pattern: /-----BEGIN\s+CERTIFICATE-----/, name: "Raw SSL/TLS Certificate Block" },
-    // 8. Git Merge Conflict Markers (Stops CI Syntax/Compilation Disasters)
-    { pattern: /<{7}\s+HEAD/, name: "Unresolved Git Merge Conflict Marker (<<<<<<< HEAD)" },
-    { pattern: /={7}/, name: "Unresolved Git Merge Conflict Separator (=======)" },
-    { pattern: />{7}\s+/, name: "Unresolved Git Merge Conflict Marker (>>>>>>> branch)" }
-  ];
-  let violations = [];
-  const lines = diffOutput.split("\n");
-  const addedLines = lines.filter((l) => l.startsWith("+") && !l.startsWith("+++"));
-  for (const item of forbiddenPatterns) {
-    for (const line of addedLines) {
-      if (item.pattern.test(line)) {
-        const match2 = line.match(item.pattern);
-        const snippet = match2 ? match2[0].substring(0, 8) + "..." + match2[0].slice(-4) : "***";
-        violations.push({ name: item.name, snippet, rawLine: line.substring(1).trim() });
-        break;
-      }
-    }
-  }
-  if (violations.length > 0) {
-    logError("CRITICAL SECURITY ALERT: Hardcoded credentials / secret tokens detected in staged commit!");
-    console.log(source_default.red("\n  \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550"));
-    console.log(source_default.red.bold("  \u274C COMMIT REJECTED: Sensitive credentials found in your staged files:"));
-    violations.forEach((v) => {
-      console.log(source_default.red(`    \u2022 ${source_default.bold(v.name)} [Pattern: ${source_default.yellow(v.snippet)}]`));
-      if (v.rawLine) {
-        console.log(source_default.gray(`      Code: "${v.rawLine.substring(0, 60)}${v.rawLine.length > 60 ? "..." : ""}"`));
-      }
-    });
-    console.log(source_default.yellow("\n  Security Requirement:"));
-    console.log(source_default.yellow("  Never commit secrets to Git. Move credentials to .env / environment variables."));
-    console.log(source_default.red("  \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\n"));
-    throw new Error(`Hardcoded secrets detected: ${violations.map((v) => v.name).join(", ")}`);
-  }
-  scanStagedFileIntegrity();
-  logSuccess("Security scan passed: Zero leaked API keys, tokens, or private credentials.");
-  return true;
-}
-function scanStagedFileIntegrity(cwd = process.cwd(), stagedFilesOverride = null) {
-  try {
-    const files = stagedFilesOverride || getStagedFiles(cwd);
-    const forbiddenFiles = [];
-    for (const f3 of files) {
-      const base = import_path3.default.basename(f3).toLowerCase();
-      if (base.startsWith(".env") && !base.endsWith(".example") && !base.endsWith(".template") || base.endsWith(".pem") || base.endsWith(".key") || base.endsWith(".pfx") || base.endsWith(".p12") || base === "thumbs.db" || base === ".ds_store") {
-        forbiddenFiles.push({ file: f3, reason: "Sensitive / Local OS environment file" });
-      }
-      const fullPath = import_path3.default.join(cwd, f3);
-      if (import_fs3.default.existsSync(fullPath)) {
-        const stats = import_fs3.default.statSync(fullPath);
-        if (stats.size > 10 * 1024 * 1024) {
-          forbiddenFiles.push({ file: f3, reason: `Oversized binary file (${(stats.size / (1024 * 1024)).toFixed(2)} MB exceeds 10MB limit)` });
-        }
-      }
-    }
-    if (forbiddenFiles.length > 0) {
-      logError("CRITICAL: Forbidden or oversized files detected in active commit stage:");
-      forbiddenFiles.forEach((item) => {
-        console.log(source_default.red(`    \u2022 ${source_default.bold(item.file)} [${item.reason}]`));
-      });
-      console.log(source_default.yellow('\n  Remove these files from git staging using "git reset HEAD <file>".'));
-      const fileListStr = forbiddenFiles.map((item) => `  \u2022 ${item.file} [${item.reason}]`).join("\n");
-      throw new Error(`Forbidden or oversized files detected in staged commit:
-${fileListStr}`);
-    }
-  } catch (err) {
-    if (err.message.includes("Forbidden or oversized")) throw err;
-  }
-}
-function scanDependencyVulnerabilities(cwd = process.cwd()) {
-  logStep(3, "Dependency Vulnerability & Security Audit (npm audit)");
-  const pkgLockExists = import_fs3.default.existsSync(import_path3.default.join(cwd, "package-lock.json")) || import_fs3.default.existsSync(import_path3.default.join(cwd, "yarn.lock")) || import_fs3.default.existsSync(import_path3.default.join(cwd, "pnpm-lock.yaml"));
-  if (!pkgLockExists) {
-    logWarning("No package lockfile found (package-lock.json). Skipping dependency vulnerability audit.");
-    return true;
-  }
-  console.log(source_default.blue("  Running dependency security audit (npm audit --audit-level=high)..."));
-  try {
-    (0, import_child_process3.execSync)("npm audit --audit-level=high", { stdio: "pipe", cwd });
-    logSuccess("Dependency vulnerability audit passed: 0 High/Critical CVEs.");
-    return true;
-  } catch (err) {
-    const stdout = err.stdout ? err.stdout.toString() : "";
-    const stderr = err.stderr ? err.stderr.toString() : "";
-    const output = (stdout + "\n" + stderr).trim();
-    if (output.includes("vulnerabilities") || output.includes("severity")) {
-      logError("CRITICAL: High or Critical security vulnerabilities detected in dependencies!");
-      console.log(source_default.red("\n  \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550"));
-      console.log(source_default.red.bold("  \u274C COMMIT REJECTED: Security vulnerabilities found in npm packages!"));
-      console.log(source_default.yellow('  Run "npm audit" or "npm audit fix" to resolve known CVEs.'));
-      console.log(source_default.red("  \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\n"));
-      const secErr = new Error("Dependency security audit failed (High/Critical CVEs detected)");
-      secErr.auditOutput = output;
-      throw secErr;
-    } else {
-      logWarning("npm audit could not connect to registry; skipping offline.");
-      return true;
-    }
-  }
-}
+// src/engine.js
+init_security_rules();
 
 // src/rules/ai-prompt.js
 var import_fs5 = __toESM(require("fs"), 1);
@@ -52549,12 +52644,12 @@ function evaluateAiResult(resultText, modelIdentifier) {
 // src/branch-watcher.js
 var import_fs6 = __toESM(require("fs"), 1);
 var import_path5 = __toESM(require("path"), 1);
-var import_child_process4 = require("child_process");
+var import_child_process3 = require("child_process");
 init_source();
 var import_prompts = __toESM(require_prompts3(), 1);
 function runGit2(command, cwd = process.cwd(), allowFail = false) {
   try {
-    return (0, import_child_process4.execSync)(command, {
+    return (0, import_child_process3.execSync)(command, {
       cwd,
       encoding: "utf8",
       stdio: ["pipe", "pipe", "pipe"],
@@ -52675,7 +52770,7 @@ async function autoRestartIfEnabled(cwd = process.cwd()) {
   const daemonLogPath = import_path5.default.join(gitDir, "gatekeeper-daemon.log");
   const outLog = import_fs6.default.openSync(daemonLogPath, "a");
   const errLog = import_fs6.default.openSync(daemonLogPath, "a");
-  const child = (0, import_child_process4.spawn)(execBinary, execArgs, {
+  const child = (0, import_child_process3.spawn)(execBinary, execArgs, {
     detached: true,
     stdio: ["ignore", outLog, errLog],
     cwd,
@@ -52773,14 +52868,14 @@ try {
 `;
   const b64 = Buffer.from(psScript, "utf16le").toString("base64");
   try {
-    (0, import_child_process4.execSync)(`powershell.exe -NoProfile -ExecutionPolicy Bypass -EncodedCommand ${b64}`, {
+    (0, import_child_process3.execSync)(`powershell.exe -NoProfile -ExecutionPolicy Bypass -EncodedCommand ${b64}`, {
       stdio: "ignore",
       timeout: 8e3,
       windowsHide: true
     });
   } catch (err) {
     try {
-      (0, import_child_process4.execSync)(`powershell.exe -Command "[console]::beep(800, 300)"`, { stdio: "ignore", windowsHide: true });
+      (0, import_child_process3.execSync)(`powershell.exe -Command "[console]::beep(800, 300)"`, { stdio: "ignore", windowsHide: true });
     } catch (e2) {
     }
   }
@@ -52814,7 +52909,7 @@ function checkBranchConflicts(cwd = process.cwd(), targetBranch = "main") {
   let conflictingFiles = [];
   let mergeTreeOutput = "";
   try {
-    const res = (0, import_child_process4.execSync)(`git merge-tree --write-tree ${uncommittedStateRef} origin/${targetBranch}`, {
+    const res = (0, import_child_process3.execSync)(`git merge-tree --write-tree ${uncommittedStateRef} origin/${targetBranch}`, {
       cwd,
       encoding: "utf8",
       stdio: ["pipe", "pipe", "pipe"],
@@ -52976,7 +53071,7 @@ async function enableBranchWatcher(cwd = process.cwd()) {
   const daemonLogPath = import_path5.default.join(gitDir, "gatekeeper-daemon.log");
   const outLog = import_fs6.default.openSync(daemonLogPath, "a");
   const errLog = import_fs6.default.openSync(daemonLogPath, "a");
-  const child = (0, import_child_process4.spawn)(execBinary, execArgs, {
+  const child = (0, import_child_process3.spawn)(execBinary, execArgs, {
     detached: true,
     stdio: ["ignore", outLog, errLog],
     cwd,
@@ -53025,7 +53120,7 @@ async function enableBranchWatcher(cwd = process.cwd()) {
 function isPidAlive(pid) {
   if (!pid) return false;
   try {
-    const out = (0, import_child_process4.execSync)(`powershell -NoProfile -Command "Get-Process -Id ${pid} -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Id"`, {
+    const out = (0, import_child_process3.execSync)(`powershell -NoProfile -Command "Get-Process -Id ${pid} -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Id"`, {
       encoding: "utf8",
       stdio: ["pipe", "pipe", "pipe"],
       windowsHide: true
@@ -53183,7 +53278,7 @@ Please pull or rebase origin/${targetBranch} to resolve.
 var import_fs7 = __toESM(require("fs"), 1);
 var import_os = __toESM(require("os"), 1);
 var import_path6 = __toESM(require("path"), 1);
-var import_child_process5 = require("child_process");
+var import_child_process4 = require("child_process");
 function stripAnsi(str) {
   if (!str) return "";
   return str.replace(/[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g, "").replace(/\[[0-9;]+m/g, "");
@@ -53223,6 +53318,42 @@ var STEPS = [
   { id: 8, label: getAiStepLabel() }
 ];
 var _windowEnabled = false;
+var _stepLogBuffers = {};
+var _flushTimer = null;
+function queueStepLog(stepId, text) {
+  if (!_windowEnabled || !text) return;
+  _stepLogBuffers[stepId] = (_stepLogBuffers[stepId] || "") + stripAnsi(text);
+  if (!_flushTimer) {
+    _flushTimer = setTimeout(() => {
+      flushStepLogs();
+    }, 40);
+  }
+}
+function flushStepLogs() {
+  if (_flushTimer) {
+    clearTimeout(_flushTimer);
+    _flushTimer = null;
+  }
+  const stepIds = Object.keys(_stepLogBuffers);
+  if (stepIds.length === 0) return;
+  const data = readProgressFile();
+  if (!data || !data.steps) return;
+  let changed = false;
+  for (const id of stepIds) {
+    const chunk = _stepLogBuffers[id];
+    if (chunk && data.steps[id]) {
+      data.steps[id].log = (data.steps[id].log || "") + chunk;
+      if (data.steps[id].log.length > 5e4) {
+        data.steps[id].log = data.steps[id].log.slice(-5e4);
+      }
+      changed = true;
+    }
+  }
+  _stepLogBuffers = {};
+  if (changed) {
+    writeProgressFile(data);
+  }
+}
 function writeProgressFile(data) {
   try {
     const jsonStr = JSON.stringify(data, null, 2);
@@ -53254,34 +53385,45 @@ try {
     $isDark = ($regVal -eq 0)
 } catch {}
 
-$bg       = if ($isDark) { '#181825' } else { '#FFFFFF' }
-$fg       = if ($isDark) { '#CDD6F4' } else { '#1E293B' }
-$hdrBg    = if ($isDark) { '#11111B' } else { '#F8FAFC' }
-$cardBg   = if ($isDark) { '#24273A' } else { '#F1F5F9' }
-$border   = if ($isDark) { '#45475A' } else { '#E2E8F0' }
-$aiBoxBg  = if ($isDark) { '#1E1E2E' } else { '#F8FAFC' }
-$aiBoxBdr = if ($isDark) { '#313244' } else { '#CBD5E1' }
+$bg                 = if ($isDark) { '#181825' } else { '#F8FAFC' }
+$fg                 = if ($isDark) { '#CDD6F4' } else { '#1E293B' }
+$hdrBg              = if ($isDark) { '#11111B' } else { '#FFFFFF' }
+$cardBg             = if ($isDark) { '#1E1E2E' } else { '#FFFFFF' }
+$border             = if ($isDark) { '#313244' } else { '#CBD5E1' }
+$aiBoxBg            = if ($isDark) { '#181825' } else { '#F8FAFC' }
+$aiBoxBdr           = if ($isDark) { '#313244' } else { '#CBD5E1' }
 
-$passBg = if ($isDark) { '#132A1C' } else { '#F0FDF4' }
-$errBg  = if ($isDark) { '#2D1515' } else { '#FEF2F2' }
+$consoleBg          = if ($isDark) { '#11111B' } else { '#0F172A' }
+$consoleBdr         = if ($isDark) { '#26283B' } else { '#334155' }
+$consoleFg          = if ($isDark) { '#A6ADC8' } else { '#E2E8F0' }
+$hoverBg            = if ($isDark) { '#282A3E' } else { '#F1F5F9' }
 
-$brushConverter = [System.Windows.Media.BrushConverter]::new()
-$passBrush      = $brushConverter.ConvertFrom($passBg)
-$errBrush       = $brushConverter.ConvertFrom($errBg)
-$cardBrush      = $brushConverter.ConvertFrom($cardBg)
-$greenBadgeBg   = $brushConverter.ConvertFrom('#15803D')
-$redBadgeBg     = $brushConverter.ConvertFrom('#B91C1C')
-$grayBadgeBg    = $brushConverter.ConvertFrom('#64748B')
-$blueBadgeBg    = $brushConverter.ConvertFrom('#0284C7')
-$greenFg        = $brushConverter.ConvertFrom('#22C55E')
-$redFg          = $brushConverter.ConvertFrom('#EF4444')
-$blueFg         = $brushConverter.ConvertFrom('#38BDF8')
-$grayFg         = $brushConverter.ConvertFrom('#94A3B8')
-$mainFg         = $brushConverter.ConvertFrom($fg)
-$cyanFg         = $brushConverter.ConvertFrom('#38BDF8')
-$amberFg        = $brushConverter.ConvertFrom('#FBBF24')
-$boldFg         = if ($isDark) { $brushConverter.ConvertFrom('#FFFFFF') } else { $brushConverter.ConvertFrom('#0F172A') }
-$bulletColor    = $brushConverter.ConvertFrom('#60A5FA')
+$passBg             = if ($isDark) { '#132A1C' } else { '#F0FDF4' }
+$errBg              = if ($isDark) { '#2D1515' } else { '#FEF2F2' }
+
+$brushConverter     = [System.Windows.Media.BrushConverter]::new()
+$passBrush          = $brushConverter.ConvertFrom($passBg)
+$errBrush           = $brushConverter.ConvertFrom($errBg)
+$cardBrush          = $brushConverter.ConvertFrom($cardBg)
+$borderBrush        = $brushConverter.ConvertFrom($border)
+$hoverBrush         = $brushConverter.ConvertFrom($hoverBg)
+$consoleBgBrush     = $brushConverter.ConvertFrom($consoleBg)
+$consoleBdrBrush    = $brushConverter.ConvertFrom($consoleBdr)
+$consoleFgBrush     = $brushConverter.ConvertFrom($consoleFg)
+$greenBadgeBg       = $brushConverter.ConvertFrom('#15803D')
+$redBadgeBg         = $brushConverter.ConvertFrom('#B91C1C')
+$grayBadgeBg        = $brushConverter.ConvertFrom('#64748B')
+$blueBadgeBg        = $brushConverter.ConvertFrom('#0284C7')
+$runningBdrBrush    = $brushConverter.ConvertFrom('#38BDF8')
+$greenFg            = $brushConverter.ConvertFrom('#22C55E')
+$redFg              = $brushConverter.ConvertFrom('#EF4444')
+$blueFg             = $brushConverter.ConvertFrom('#38BDF8')
+$grayFg             = $brushConverter.ConvertFrom('#94A3B8')
+$mainFg             = $brushConverter.ConvertFrom($fg)
+$cyanFg             = $brushConverter.ConvertFrom('#38BDF8')
+$amberFg            = $brushConverter.ConvertFrom('#FBBF24')
+$boldFg             = if ($isDark) { $brushConverter.ConvertFrom('#FFFFFF') } else { $brushConverter.ConvertFrom('#0F172A') }
+$bulletColor        = $brushConverter.ConvertFrom('#60A5FA')
 
 $PROGRESS_FILE = "$env:TEMP\\gk-progress.json"
 
@@ -53289,10 +53431,11 @@ $PROGRESS_FILE = "$env:TEMP\\gk-progress.json"
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Angular Gatekeeper \u2014 Live CI/CD Commit Validation"
-        Width="580" Height="700"
+        Width="620" Height="740"
+        MinWidth="560" MinHeight="620"
         WindowStartupLocation="CenterScreen"
         Topmost="True"
-        ResizeMode="NoResize"
+        ResizeMode="CanResize"
         ShowInTaskbar="True"
         Background="$bg">
   <Window.Resources>
@@ -53629,103 +53772,266 @@ function Convert-MarkdownToFlowDocument {
 $stepLabels = @(
   '1. Angular Project Detection',
   '2. Critical Architecture & Entry Points',
-  '3. Dependency Vulnerability Audit (npm audit)',
-  '4. TypeScript & Linter Verification',
-  '5. Automated Unit Tests (test:ci) + Coverage Gate',
-  '6. Production Build & CD Deployment Verification',
+  '3. Dependency Security & Vulnerability Audit (npm audit)',
+  '4. Strict TypeScript Compilation & Linter Verification',
+  '5. Automated Unit Tests & CI Regression Suite (test:ci)',
+  '6. Production Build & CD Deployment Readiness Verification',
   '7. Security & Secret Leak Scanning',
-  '8. AI Knowledge Base Audit'
+  '8. Multi-Provider AI Knowledge Base Regression Audit'
 );
 
-$rowBorders = @{}
-$rowIcons   = @{}
-$rowTexts   = @{}
-$rowSubs    = @{}
-$rowBadges  = @{}
+$stepCards     = @{}
+$stepHeaders   = @{}
+$stepChevrons  = @{}
+$stepIcons     = @{}
+$stepTexts     = @{}
+$stepSubs      = @{}
+$stepBadges    = @{}
+$stepBodies    = @{}
+$stepTextBoxes = @{}
+$stepLastLogs  = @{}
 
 for ($i = 0; $i -lt $stepLabels.Count; $i++) {
     $stepNum = $i + 1
 
-    $row = New-Object System.Windows.Controls.Border
-    $row.CornerRadius      = New-Object System.Windows.CornerRadius(6)
-    $row.Padding           = New-Object System.Windows.Thickness(12, 6, 12, 6)
-    $row.Margin            = New-Object System.Windows.Thickness(0, 2, 0, 2)
-    $row.Background        = $cardBrush
+    # Outer Card Container (Accordion Item)
+    $card = New-Object System.Windows.Controls.Border
+    $card.CornerRadius    = New-Object System.Windows.CornerRadius(6)
+    $card.Margin          = New-Object System.Windows.Thickness(0, 2, 0, 3)
+    $card.Background      = $cardBrush
+    $card.BorderBrush     = $borderBrush
+    $card.BorderThickness = New-Object System.Windows.Thickness(1)
+
+    $stack = New-Object System.Windows.Controls.StackPanel
+    $card.Child = $stack
+
+    # Clickable Header Row
+    $header = New-Object System.Windows.Controls.Border
+    $header.Background   = [System.Windows.Media.Brushes]::Transparent
+    $header.Padding      = New-Object System.Windows.Thickness(10, 8, 10, 8)
+    $header.Cursor       = [System.Windows.Input.Cursors]::Hand
+    $header.CornerRadius = New-Object System.Windows.CornerRadius(5)
+    $header.Tag          = $stepNum
 
     $grid = New-Object System.Windows.Controls.Grid
-    $col1 = New-Object System.Windows.Controls.ColumnDefinition; $col1.Width = New-Object System.Windows.GridLength(28)
-    $col2 = New-Object System.Windows.Controls.ColumnDefinition; $col2.Width = New-Object System.Windows.GridLength(1, [System.Windows.GridUnitType]::Star)
-    $col3 = New-Object System.Windows.Controls.ColumnDefinition; $col3.Width = New-Object System.Windows.GridLength(0, [System.Windows.GridUnitType]::Auto)
+    $col0 = New-Object System.Windows.Controls.ColumnDefinition; $col0.Width = New-Object System.Windows.GridLength(18) # Chevron
+    $col1 = New-Object System.Windows.Controls.ColumnDefinition; $col1.Width = New-Object System.Windows.GridLength(28) # Icon
+    $col2 = New-Object System.Windows.Controls.ColumnDefinition; $col2.Width = New-Object System.Windows.GridLength(1, [System.Windows.GridUnitType]::Star) # Text
+    $col3 = New-Object System.Windows.Controls.ColumnDefinition; $col3.Width = New-Object System.Windows.GridLength(0, [System.Windows.GridUnitType]::Auto) # Badge
+    $grid.ColumnDefinitions.Add($col0)
     $grid.ColumnDefinitions.Add($col1)
     $grid.ColumnDefinitions.Add($col2)
     $grid.ColumnDefinitions.Add($col3)
 
-    $icon = New-Object System.Windows.Controls.TextBlock
-    $icon.Text       = '[ ]'
-    $icon.FontSize   = 11
-    $icon.FontWeight = [System.Windows.FontWeights]::Bold
-    $icon.Foreground = $grayFg
-    $icon.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
-    [System.Windows.Controls.Grid]::SetColumn($icon, 0)
+    # Column 0: Chevron arrow (\u25B6 / \u25BC)
+    $chev = New-Object System.Windows.Controls.TextBlock
+    $chev.Text              = [char]0x25B6 # \u25B6 (collapsed)
+    $chev.FontSize          = 9.5
+    $chev.Foreground        = $grayFg
+    $chev.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+    [System.Windows.Controls.Grid]::SetColumn($chev, 0)
 
+    # Column 1: Status Icon
+    $icon = New-Object System.Windows.Controls.TextBlock
+    $icon.Text              = '[ ]'
+    $icon.FontSize          = 11
+    $icon.FontWeight        = [System.Windows.FontWeights]::Bold
+    $icon.Foreground        = $grayFg
+    $icon.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+    [System.Windows.Controls.Grid]::SetColumn($icon, 1)
+
+    # Column 2: Labels
     $lbl = New-Object System.Windows.Controls.TextBlock
-    $lbl.Text       = $stepLabels[$i]
-    $lbl.FontSize   = 12
-    $lbl.Foreground = $grayFg
+    $lbl.Text              = $stepLabels[$i]
+    $lbl.FontSize          = 12
+    $lbl.FontWeight        = [System.Windows.FontWeights]::SemiBold
+    $lbl.Foreground        = $grayFg
     $lbl.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
 
     $subLbl = New-Object System.Windows.Controls.TextBlock
-    $subLbl.FontSize   = 10
-    $subLbl.Foreground = $blueFg
-    $subLbl.Visibility = [System.Windows.Visibility]::Collapsed
-    $subLbl.Margin     = New-Object System.Windows.Thickness(0, 2, 0, 0)
+    $subLbl.FontSize       = 10
+    $subLbl.Foreground     = $blueFg
+    $subLbl.Visibility     = [System.Windows.Visibility]::Collapsed
+    $subLbl.Margin         = New-Object System.Windows.Thickness(0, 2, 0, 0)
+    $subLbl.TextTrimming   = [System.Windows.TextTrimming]::CharacterEllipsis
 
     $textStack = New-Object System.Windows.Controls.StackPanel
     $textStack.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
     $textStack.Children.Add($lbl)    | Out-Null
     $textStack.Children.Add($subLbl) | Out-Null
-    [System.Windows.Controls.Grid]::SetColumn($textStack, 1)
+    [System.Windows.Controls.Grid]::SetColumn($textStack, 2)
 
+    # Column 3: Badge
     $badge = New-Object System.Windows.Controls.Border
-    $badge.CornerRadius      = New-Object System.Windows.CornerRadius(4)
-    $badge.Padding           = New-Object System.Windows.Thickness(10, 3, 10, 3)
-    $badge.MinWidth          = 62
-    $badge.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+    $badge.CornerRadius        = New-Object System.Windows.CornerRadius(4)
+    $badge.Padding             = New-Object System.Windows.Thickness(8, 2, 8, 2)
+    $badge.MinWidth            = 62
+    $badge.VerticalAlignment   = [System.Windows.VerticalAlignment]::Center
     $badge.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Right
-    $badge.Visibility        = [System.Windows.Visibility]::Collapsed
+    $badge.Visibility          = [System.Windows.Visibility]::Collapsed
 
     $badgeTb = New-Object System.Windows.Controls.TextBlock
-    $badgeTb.FontSize            = 10
+    $badgeTb.FontSize            = 9.5
     $badgeTb.FontWeight          = [System.Windows.FontWeights]::Bold
     $badgeTb.Foreground          = [System.Windows.Media.Brushes]::White
     $badgeTb.TextAlignment       = [System.Windows.TextAlignment]::Center
     $badgeTb.VerticalAlignment   = [System.Windows.VerticalAlignment]::Center
     $badgeTb.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Center
     $badge.Child = $badgeTb
-    [System.Windows.Controls.Grid]::SetColumn($badge, 2)
+    [System.Windows.Controls.Grid]::SetColumn($badge, 3)
 
+    $grid.Children.Add($chev)      | Out-Null
     $grid.Children.Add($icon)      | Out-Null
     $grid.Children.Add($textStack) | Out-Null
     $grid.Children.Add($badge)     | Out-Null
-    $row.Child = $grid
-    $panel.Children.Add($row)      | Out-Null
+    $header.Child = $grid
 
-    $rowBorders[$stepNum] = $row
-    $rowIcons[$stepNum]   = $icon
-    $rowTexts[$stepNum]   = $lbl
-    $rowSubs[$stepNum]    = $subLbl
-    $rowBadges[$stepNum]  = @{ border = $badge; text = $badgeTb }
+    # Accordion Body (Collapsible Log Box)
+    $body = New-Object System.Windows.Controls.Border
+    $body.Visibility      = [System.Windows.Visibility]::Collapsed
+    $body.Margin          = New-Object System.Windows.Thickness(8, 0, 8, 8)
+    $body.Padding         = New-Object System.Windows.Thickness(8)
+    $body.CornerRadius    = New-Object System.Windows.CornerRadius(4)
+    $body.Background      = $consoleBgBrush
+    $body.BorderBrush     = $consoleBdrBrush
+    $body.BorderThickness = New-Object System.Windows.Thickness(1)
+
+    $bGrid = New-Object System.Windows.Controls.Grid
+    $bRow0 = New-Object System.Windows.Controls.RowDefinition; $bRow0.Height = New-Object System.Windows.GridLength(0, [System.Windows.GridUnitType]::Auto)
+    $bRow1 = New-Object System.Windows.Controls.RowDefinition; $bRow1.Height = New-Object System.Windows.GridLength(1, [System.Windows.GridUnitType]::Star)
+    $bGrid.RowDefinitions.Add($bRow0)
+    $bGrid.RowDefinitions.Add($bRow1)
+
+    # Accordion Toolbar
+    $tbGrid = New-Object System.Windows.Controls.Grid
+    $tbGrid.Margin = New-Object System.Windows.Thickness(0, 0, 0, 6)
+
+    $tbTitle = New-Object System.Windows.Controls.TextBlock
+    $tbTitle.Text              = "LIVE PROCESS OUTPUT"
+    $tbTitle.FontSize          = 9.5
+    $tbTitle.FontWeight        = [System.Windows.FontWeights]::Bold
+    $tbTitle.Foreground        = $cyanFg
+    $tbTitle.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+
+    $copyStepBtn = New-Object System.Windows.Controls.Button
+    $copyStepBtn.Content             = "Copy"
+    $copyStepBtn.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Right
+    $copyStepBtn.Width               = 46
+    $copyStepBtn.Height              = 20
+    $copyStepBtn.FontSize            = 9.5
+    $copyStepBtn.Cursor              = [System.Windows.Input.Cursors]::Hand
+    $copyStepBtn.Background          = [System.Windows.Media.BrushConverter]::new().ConvertFrom('#334155')
+    $copyStepBtn.Foreground          = [System.Windows.Media.Brushes]::White
+    $copyStepBtn.BorderThickness     = New-Object System.Windows.Thickness(0)
+    $copyStepBtn.Tag                 = $stepNum
+
+    $copyStepBtn.Resources.Add([System.Windows.Controls.Border], $(
+        $bdrStyle = New-Object System.Windows.Style([System.Windows.Controls.Border])
+        $bdrStyle.Setters.Add((New-Object System.Windows.Setter([System.Windows.Controls.Border]::CornerRadiusProperty, (New-Object System.Windows.CornerRadius(3)))))
+        $bdrStyle
+    ))
+
+    $tbGrid.Children.Add($tbTitle)     | Out-Null
+    $tbGrid.Children.Add($copyStepBtn) | Out-Null
+    [System.Windows.Controls.Grid]::SetRow($tbGrid, 0)
+    $bGrid.Children.Add($tbGrid) | Out-Null
+
+    # Log TextBox directly with scrolling & auto-scroll support
+    $logTb = New-Object System.Windows.Controls.TextBox
+    $logTb.IsReadOnly                        = $true
+    $logTb.AcceptsReturn                     = $true
+    $logTb.TextWrapping                      = [System.Windows.TextWrapping]::NoWrap
+    $logTb.Background                        = [System.Windows.Media.Brushes]::Transparent
+    $logTb.BorderThickness                   = New-Object System.Windows.Thickness(0)
+    $logTb.Foreground                        = $consoleFgBrush
+    $logTb.FontFamily                        = New-Object System.Windows.Media.FontFamily('Consolas, Courier New, monospace')
+    $logTb.FontSize                          = 10
+    $logTb.MaxHeight                         = 190
+    $logTb.VerticalScrollBarVisibility       = [System.Windows.Controls.ScrollBarVisibility]::Auto
+    $logTb.HorizontalScrollBarVisibility     = [System.Windows.Controls.ScrollBarVisibility]::Auto
+    $logTb.Text                              = "Waiting for step execution to start..."
+
+    [System.Windows.Controls.Grid]::SetRow($logTb, 1)
+    $bGrid.Children.Add($logTb) | Out-Null
+
+    $body.Child = $bGrid
+
+    $stack.Children.Add($header) | Out-Null
+    $stack.Children.Add($body)   | Out-Null
+    $panel.Children.Add($card)   | Out-Null
+
+    $stepCards[$stepNum]     = $card
+    $stepHeaders[$stepNum]   = $header
+    $stepChevrons[$stepNum]  = $chev
+    $stepIcons[$stepNum]     = $icon
+    $stepTexts[$stepNum]     = $lbl
+    $stepSubs[$stepNum]      = $subLbl
+    $stepBadges[$stepNum]    = @{ border = $badge; text = $badgeTb }
+    $stepBodies[$stepNum]    = $body
+    $stepTextBoxes[$stepNum] = $logTb
+    $stepLastLogs[$stepNum]  = ''
+
+    # Interactive Accordion Click Handler
+    $header.Add_MouseLeftButtonDown({
+        param($sender, $e)
+        $sIdx = [int]$sender.Tag
+        $b = $stepBodies[$sIdx]
+        $c = $stepChevrons[$sIdx]
+        if ($b.Visibility -eq [System.Windows.Visibility]::Visible) {
+            $b.Visibility = [System.Windows.Visibility]::Collapsed
+            $c.Text = [char]0x25B6 # \u25B6
+        } else {
+            $b.Visibility = [System.Windows.Visibility]::Visible
+            $c.Text = [char]0x25BC # \u25BC
+            $stepTextBoxes[$sIdx].ScrollToEnd()
+        }
+    })
+
+    # Header Hover Effect
+    $header.Add_MouseEnter({
+        param($sender, $e)
+        $sender.Background = $hoverBrush
+    })
+    $header.Add_MouseLeave({
+        param($sender, $e)
+        $sender.Background = [System.Windows.Media.Brushes]::Transparent
+    })
+
+    # Copy Step Log Handler
+    $copyStepBtn.Add_Click({
+        param($sender, $e)
+        try {
+            $sIdx = [int]$sender.Tag
+            $t = $stepTextBoxes[$sIdx].Text
+            if ($t -and $t.Trim() -ne '') {
+                [System.Windows.Forms.Clipboard]::SetText($t)
+                $sender.Content = "Copied!"
+                $rst = New-Object System.Windows.Threading.DispatcherTimer
+                $rst.Interval = [TimeSpan]::FromMilliseconds(1500)
+                $rst.Add_Tick({
+                    $sender.Content = "Copy"
+                    $rst.Stop()
+                })
+                $rst.Start()
+            }
+        } catch {}
+    })
 }
 
 $timer = New-Object System.Windows.Threading.DispatcherTimer
-$timer.Interval = [TimeSpan]::FromMilliseconds(250)
-$autoCloseSeconds = 0
+$timer.Interval = [TimeSpan]::FromMilliseconds(100)
+$script:lastRunningStep = 0
 $script:lastRenderedLog = ''
 
 $timer.Add_Tick({
     if (-not (Test-Path $PROGRESS_FILE)) { return }
     try {
-        $raw = Get-Content $PROGRESS_FILE -Raw
+        $fileStream = [System.IO.File]::Open($PROGRESS_FILE, [System.IO.FileMode]::Open, [System.IO.FileAccess]::Read, [System.IO.FileShare]::ReadWrite)
+        $sr = New-Object System.IO.StreamReader($fileStream, [System.Text.Encoding]::UTF8)
+        $raw = $sr.ReadToEnd()
+        $sr.Close()
+        $fileStream.Close()
+        if ([string]::IsNullOrWhiteSpace($raw)) { return }
         $json = $raw | ConvertFrom-Json
     } catch { return }
 
@@ -53733,16 +54039,52 @@ $timer.Add_Tick({
     $done  = $json.done
     $hasError = $false
 
+    # Find the current active/running step
+    $activeRunningStep = 0
+    if ($json.activeStep) {
+        $activeRunningStep = [int]$json.activeStep
+    } else {
+        foreach ($s in $steps.PSObject.Properties) {
+            if ($s.Value.status -eq 'running') {
+                $activeRunningStep = [int]$s.Name
+                break
+            }
+        }
+    }
+
+    # Auto-transition accordions as steps progress
+    if ($activeRunningStep -gt 0 -and $activeRunningStep -ne $script:lastRunningStep) {
+        # Auto-collapse previous step if it did not fail
+        if ($script:lastRunningStep -gt 0 -and $stepBodies.ContainsKey($script:lastRunningStep)) {
+            $prevProp = $steps.PSObject.Properties[$script:lastRunningStep.ToString()]
+            $prevStatus = if ($prevProp) { $prevProp.Value.status } else { '' }
+            if ($prevStatus -ne 'error') {
+                $stepBodies[$script:lastRunningStep].Visibility = [System.Windows.Visibility]::Collapsed
+                $stepChevrons[$script:lastRunningStep].Text = [char]0x25B6 # \u25B6
+            }
+        }
+        # Auto-expand the newly active step
+        if ($stepBodies.ContainsKey($activeRunningStep)) {
+            $stepBodies[$activeRunningStep].Visibility = [System.Windows.Visibility]::Visible
+            $stepChevrons[$activeRunningStep].Text = [char]0x25BC # \u25BC
+            $stepCards[$activeRunningStep].BringIntoView()
+        }
+        $script:lastRunningStep = $activeRunningStep
+    }
+
     foreach ($s in $steps.PSObject.Properties) {
         $num   = [int]$s.Name
         $state = $s.Value
-        if (-not $rowIcons.ContainsKey($num)) { continue }
+        if (-not $stepIcons.ContainsKey($num)) { continue }
 
-        $icon  = $rowIcons[$num]
-        $lbl   = $rowTexts[$num]
-        $sub   = $rowSubs[$num]
-        $row   = $rowBorders[$num]
-        $badge = $rowBadges[$num]
+        $icon  = $stepIcons[$num]
+        $lbl   = $stepTexts[$num]
+        $sub   = $stepSubs[$num]
+        $card  = $stepCards[$num]
+        $badge = $stepBadges[$num]
+        $tb    = $stepTextBoxes[$num]
+        $body  = $stepBodies[$num]
+        $chev  = $stepChevrons[$num]
 
         if ($state.label -and $state.label.Trim() -ne '') {
             $lbl.Text = $state.label
@@ -53755,20 +54097,35 @@ $timer.Add_Tick({
             $sub.Visibility = [System.Windows.Visibility]::Collapsed
         }
 
+        # Update step's live log output
+        $logContent = if ($state.log) { $state.log } else { '' }
+        if ($logContent -and $logContent -ne $stepLastLogs[$num]) {
+            $stepLastLogs[$num] = $logContent
+            $tb.Text = $logContent
+            if ($body.Visibility -eq [System.Windows.Visibility]::Visible) {
+                $tb.CaretIndex = $tb.Text.Length
+                $tb.ScrollToEnd()
+            }
+        }
+
         switch ($state.status) {
             'pending' {
                 $icon.Text       = '[ ]'
                 $icon.Foreground = $grayFg
                 $lbl.Foreground  = $grayFg
                 $badge.border.Visibility = [System.Windows.Visibility]::Collapsed
-                $row.Background  = $cardBrush
+                $card.Background = $cardBrush
+                $card.BorderBrush = $borderBrush
             }
             'running' {
                 $icon.Text       = '>>'
                 $icon.Foreground = $blueFg
                 $lbl.Foreground  = $mainFg
-                $badge.border.Visibility = [System.Windows.Visibility]::Collapsed
-                $row.Background  = $cardBrush
+                $badge.border.Background = $blueBadgeBg
+                $badge.text.Text = 'RUNNING'
+                $badge.border.Visibility = [System.Windows.Visibility]::Visible
+                $card.Background = $cardBrush
+                $card.BorderBrush = $runningBdrBrush
             }
             'pass' {
                 $icon.Text       = 'OK'
@@ -53777,7 +54134,8 @@ $timer.Add_Tick({
                 $badge.border.Background = $greenBadgeBg
                 $badge.text.Text = 'PASS'
                 $badge.border.Visibility = [System.Windows.Visibility]::Visible
-                $row.Background  = $passBrush
+                $card.Background = $passBrush
+                $card.BorderBrush = $borderBrush
             }
             'error' {
                 $icon.Text       = 'ERR'
@@ -53786,8 +54144,16 @@ $timer.Add_Tick({
                 $badge.border.Background = $redBadgeBg
                 $badge.text.Text = 'FAILED'
                 $badge.border.Visibility = [System.Windows.Visibility]::Visible
-                $row.Background  = $errBrush
+                $card.Background = $errBrush
+                $card.BorderBrush = $redFg
                 $hasError = $true
+
+                # Always keep failed step accordion open so developer sees why it failed
+                if ($body.Visibility -ne [System.Windows.Visibility]::Visible) {
+                    $body.Visibility = [System.Windows.Visibility]::Visible
+                    $chev.Text = [char]0x25BC # \u25BC
+                    $card.BringIntoView()
+                }
             }
             'skip' {
                 $icon.Text       = '--'
@@ -53796,7 +54162,8 @@ $timer.Add_Tick({
                 $badge.border.Background = $grayBadgeBg
                 $badge.text.Text = 'SKIP'
                 $badge.border.Visibility = [System.Windows.Visibility]::Visible
-                $row.Background  = $cardBrush
+                $card.Background = $cardBrush
+                $card.BorderBrush = $borderBrush
             }
         }
     }
@@ -53878,7 +54245,7 @@ Set WshShell = CreateObject("WScript.Shell")
 WshShell.Run "powershell.exe -NoProfile -ExecutionPolicy Bypass -File """ & "${PS_SCRIPT.replace(/\\/g, "\\\\")}" & """", 0, False
 `;
     import_fs7.default.writeFileSync(VBS_SCRIPT, vbsContent, "utf8");
-    (0, import_child_process5.spawn)("wscript.exe", [VBS_SCRIPT], { detached: true, stdio: "ignore" }).unref();
+    (0, import_child_process4.spawn)("wscript.exe", [VBS_SCRIPT], { detached: true, stdio: "ignore" }).unref();
   } catch (_) {
   }
 }
@@ -53890,32 +54257,50 @@ function initProgressWindow() {
     hasError: false,
     aiReport: "",
     errorLog: "",
+    activeStep: null,
     steps: {}
   };
   for (const s2 of STEPS) {
-    data.steps[s2.id] = { status: "pending", label: s2.label };
+    data.steps[s2.id] = { status: "pending", label: s2.label, detail: "", log: "" };
   }
   writeProgressFile(data);
   launchWindowProcess();
 }
 function startStep(stepId, detail = "") {
   if (!_windowEnabled) return;
+  flushStepLogs();
   const data = readProgressFile();
-  if (!data) return;
+  if (!data || !data.steps) return;
   if (data.steps[stepId]) {
     data.steps[stepId].status = "running";
     data.steps[stepId].detail = detail;
+    data.activeStep = stepId;
+    if (detail && !data.steps[stepId].log) {
+      data.steps[stepId].log = `\u25B6 ${detail}
+`;
+    }
   }
   writeProgressFile(data);
 }
+function appendStepLog(stepId, text) {
+  if (!_windowEnabled || !text) return;
+  queueStepLog(stepId, text);
+}
 function updateStep(stepId, status, reportOrDetail = "") {
   if (!_windowEnabled) return;
+  flushStepLogs();
   const data = readProgressFile();
-  if (!data) return;
+  if (!data || !data.steps) return;
   if (data.steps[stepId]) {
     data.steps[stepId].status = status;
+    const cleanReportOrDetail = stripAnsi(reportOrDetail);
     if (stepId !== 8) {
-      data.steps[stepId].detail = stripAnsi(reportOrDetail);
+      data.steps[stepId].detail = cleanReportOrDetail;
+    }
+    if (cleanReportOrDetail && (!data.steps[stepId].log || !data.steps[stepId].log.includes(cleanReportOrDetail))) {
+      const prefix = status === "pass" ? "\u2714 " : status === "error" ? "\u2716 " : "\u2139 ";
+      data.steps[stepId].log = (data.steps[stepId].log || "") + `${prefix}${cleanReportOrDetail}
+`;
     }
   }
   if (status === "error") {
@@ -53923,17 +54308,29 @@ function updateStep(stepId, status, reportOrDetail = "") {
   }
   if (stepId === 8 && reportOrDetail) {
     data.aiReport = stripAnsi(reportOrDetail);
+    if (data.steps[8] && !data.steps[8].log.includes(data.aiReport)) {
+      data.steps[8].log = (data.steps[8].log || "") + `
+${data.aiReport}
+`;
+    }
   }
   writeProgressFile(data);
 }
 function finalizeProgress(passed, finalReport = "", errorLog = "") {
   if (!_windowEnabled) return;
+  flushStepLogs();
   const data = readProgressFile();
   if (!data) return;
   data.done = true;
   data.hasError = !passed;
+  data.activeStep = null;
   if (finalReport) {
     data.aiReport = stripAnsi(finalReport);
+    if (data.steps && data.steps[8] && !data.steps[8].log.includes(data.aiReport)) {
+      data.steps[8].log = (data.steps[8].log || "") + `
+${data.aiReport}
+`;
+    }
   }
   if (errorLog) {
     data.errorLog = stripAnsi(errorLog);
@@ -53945,6 +54342,34 @@ function finalizeProgress(passed, finalReport = "", errorLog = "") {
 function stripAnsi2(str) {
   if (!str) return "";
   return str.replace(/[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g, "").replace(/\[[0-9;]+m/g, "");
+}
+var _activeStepNum = null;
+var _stdioHooked = false;
+function setupStdioHook() {
+  if (_stdioHooked) return;
+  _stdioHooked = true;
+  const origStdoutWrite = process.stdout.write.bind(process.stdout);
+  const origStderrWrite = process.stderr.write.bind(process.stderr);
+  process.stdout.write = (chunk, encoding, cb) => {
+    origStdoutWrite(chunk, encoding, cb);
+    if (_activeStepNum && process.env.SHOW_PROGRESS === "true") {
+      try {
+        const text = typeof chunk === "string" ? chunk : chunk.toString(encoding || "utf8");
+        appendStepLog(_activeStepNum, text);
+      } catch (_) {
+      }
+    }
+  };
+  process.stderr.write = (chunk, encoding, cb) => {
+    origStderrWrite(chunk, encoding, cb);
+    if (_activeStepNum && process.env.SHOW_PROGRESS === "true") {
+      try {
+        const text = typeof chunk === "string" ? chunk : chunk.toString(encoding || "utf8");
+        appendStepLog(_activeStepNum, text);
+      } catch (_) {
+      }
+    }
+  };
 }
 var appDataDir = process.env.APPDATA ? import_path7.default.join(process.env.APPDATA, "FrontendGatekeeper") : import_path7.default.join(process.env.HOME || process.env.USERPROFILE || ".", ".frontend-gatekeeper");
 var envPath = import_path7.default.join(appDataDir, ".env");
@@ -53961,47 +54386,82 @@ async function runGatekeeper() {
   if (isCiMode) {
     process.env.SHOW_PROGRESS = "false";
   }
+  setupStdioHook();
+  _activeStepNum = 1;
   const { isAngular: _isAngular, projectPkg } = checkAngularProject(cwd);
   initProgressWindow();
   startStep(1, "Scanning workspace structure...");
+  appendStepLog(1, `[Gatekeeper] Detecting Angular project root: ${cwd}
+`);
   const deps = { ...projectPkg.dependencies || {}, ...projectPkg.devDependencies || {} };
   const rawVer = deps["@angular/core"] || deps["@angular/cli"] || "";
   const cleanVer = rawVer.replace(/[\^~>=<]/g, "").trim();
   const versionDisplay = cleanVer ? `v${cleanVer}` : "Standard Workspace";
+  appendStepLog(1, `[Gatekeeper] Project: ${projectPkg.name || "Angular Project"} (Core: ${versionDisplay})
+`);
+  appendStepLog(1, `\u2714 Workspace verified: valid Angular structure detected
+`);
   updateStep(1, "pass", `Angular workspace verified (${versionDisplay})`);
+  _activeStepNum = 2;
   startStep(2, "Validating tsconfig, angular.json & entry points...");
+  appendStepLog(2, `[Gatekeeper] Checking critical architecture files & entry points in ${cwd}...
+`);
   try {
     checkCriticalArchitecture(cwd);
+    appendStepLog(2, `\u2714 Entry points, tsconfig, angular.json & lockfile sync verified
+`);
     updateStep(2, "pass", "Entry points, lockfile sync & Linux case-sensitivity verified");
   } catch (err) {
     const errorMsg = err.message || "Missing critical architecture files";
+    appendStepLog(2, `
+\u2716 [Error] ${errorMsg}
+`);
     updateStep(2, "error", errorMsg);
     finalizeProgress(false, "", "[Step 2: Architecture Integrity Error]\n" + stripAnsi2(errorMsg));
     throw err;
   }
+  _activeStepNum = 3;
   startStep(3, "Auditing package dependencies (npm audit)...");
+  appendStepLog(3, `[Gatekeeper] Running dependency vulnerability scan (npm audit)...
+`);
   try {
-    scanDependencyVulnerabilities(cwd);
+    await scanDependencyVulnerabilities(cwd);
+    appendStepLog(3, `\u2714 0 High/Critical CVE vulnerabilities found in dependencies
+`);
     updateStep(3, "pass", "0 High/Critical CVE vulnerabilities found in dependencies");
   } catch (err) {
     const errorMsg = err.auditOutput || err.message || "High/Critical CVEs detected in package dependencies";
+    appendStepLog(3, `
+\u2716 [Error] ${errorMsg}
+`);
     updateStep(3, "error", "High/Critical CVEs detected in package dependencies");
     finalizeProgress(false, "", "[Step 3: Dependency Security Audit]\n" + stripAnsi2(errorMsg));
     throw err;
   }
+  _activeStepNum = 4;
   startStep(4, "Executing TypeScript compilation & lint check...");
+  appendStepLog(4, `[Gatekeeper] Executing TypeScript compilation & Angular lint check...
+`);
   try {
-    runTypeScriptAndLintChecks(cwd, projectPkg);
+    await runTypeScriptAndLintChecks(cwd, projectPkg);
+    appendStepLog(4, `\u2714 TypeScript compilation & lint passed with 0 errors
+`);
     updateStep(4, "pass", "TypeScript compilation passed with 0 type errors");
   } catch (err) {
     const errorMsg = err.stepOutput || err.stdout?.toString() || err.stderr?.toString() || err.message || "TypeScript type-check or linter failed";
+    appendStepLog(4, `
+\u2716 [Error] ${errorMsg}
+`);
     updateStep(4, "error", "TypeScript type-check or linter failed");
     finalizeProgress(false, "", "[Step 4: TypeScript / Lint Error]\n" + stripAnsi2(errorMsg));
     throw err;
   }
+  _activeStepNum = 5;
   startStep(5, "Running headless test runner...");
+  appendStepLog(5, `[Gatekeeper] Running automated unit test suite...
+`);
   try {
-    const testRes = runAutomatedUnitTests(cwd, projectPkg);
+    const testRes = await runAutomatedUnitTests(cwd, projectPkg);
     let detailText = "Unit tests passed (0 failures)";
     if (testRes && testRes.autoInjected) {
       detailText = "Auto-injected smoke spec verified & safely cleaned up (0 failures)";
@@ -54010,16 +54470,27 @@ async function runGatekeeper() {
     } else if (testRes && testRes.skipped) {
       detailText = "Skipped: missing testing browser provider";
     }
+    appendStepLog(5, `\u2714 ${detailText}
+`);
     updateStep(5, "pass", detailText);
   } catch (err) {
     const errorMsg = err.testOutput || err.stepOutput || err.stdout?.toString() || err.stderr?.toString() || err.message || "Unit test specs reported failure";
+    appendStepLog(5, `
+\u2716 [Error] ${errorMsg}
+`);
     updateStep(5, "error", "Unit test specs reported failure");
     finalizeProgress(false, "", "[Step 5: Automated Unit Tests Failure]\n" + stripAnsi2(errorMsg));
     throw err;
   }
+  _activeStepNum = 6;
   startStep(6, "Compiling production bundle & verifying CD readiness...");
+  appendStepLog(6, `[Gatekeeper] Compiling Angular production build & verifying CD readiness in ${cwd}...
+`);
   try {
-    runAngularProductionBuild(cwd, projectPkg);
+    await runAngularProductionBuild(cwd, projectPkg);
+    appendStepLog(6, `
+[Gatekeeper] Validating compiled distribution artifacts in dist/...
+`);
     const cdRes = validateCompiledArtifacts(cwd);
     updateBuildMetadata(cwd, projectPkg);
     let cdDetail = `CD Verified: ${cdRes?.totalBundleSizeMb || "0"} MB`;
@@ -54028,37 +54499,63 @@ async function runGatekeeper() {
     }
     if (cdRes && cdRes.hasSpaRewrite) {
       cdDetail += " | SPA: \u2714";
+      appendStepLog(6, `\u2714 SPA Deep Rewrite rule confirmed
+`);
     } else {
       cdDetail += " | SPA: \u26A0 Missing";
+      appendStepLog(6, `\u26A0 SPA Deep Rewrite rule missing
+`);
     }
     if (cdRes && cdRes.hasBaseHref) {
       cdDetail += " | BaseHref: \u2714";
+      appendStepLog(6, `\u2714 Base href verified in index.html
+`);
     }
     if (cdRes && cdRes.assetAudit && cdRes.assetAudit.valid) {
       cdDetail += " | Assets: \u2714";
+      appendStepLog(6, `\u2714 Asset integrity audit passed
+`);
     }
     if (cdRes && cdRes.releaseManifestCreated) {
       cdDetail += " | Manifest: \u2714";
+      appendStepLog(6, `\u2714 CD Release Candidate Manifest created
+`);
     }
+    appendStepLog(6, `\u2714 Production bundle verified: ${cdRes?.totalBundleSizeMb || "0"} MB
+`);
     updateStep(6, "pass", cdDetail);
   } catch (err) {
     const errorMsg = err.buildOutput || err.stepOutput || err.stdout?.toString() || err.stderr?.toString() || err.message || "Production build compilation failed";
+    appendStepLog(6, `
+\u2716 [Error] ${errorMsg}
+`);
     updateStep(6, "error", "Production build compilation or CD artifact verification failed");
     finalizeProgress(false, "", "[Step 6: Production Build Failure]\n" + stripAnsi2(errorMsg));
     throw err;
   }
+  _activeStepNum = 7;
   startStep(7, "Scanning staged diff & files for credentials or repo bloat...");
+  appendStepLog(7, `[Gatekeeper] Scanning staged changes for credentials, API tokens, merge conflicts, and oversized files...
+`);
   try {
     const diffOutput = getDiff(cwd);
     scanSecurityRules(diffOutput);
+    appendStepLog(7, `\u2714 0 leaked secrets, 0 conflict markers, clean file stage (<10MB)
+`);
     updateStep(7, "pass", "0 leaked secrets, 0 conflict markers, clean file stage (<10MB)");
   } catch (err) {
     const errorMsg = err.message || "Secret credentials, forbidden files, or conflict markers detected";
+    appendStepLog(7, `
+\u2716 [Error] ${errorMsg}
+`);
     updateStep(7, "error", "Secret credentials, forbidden files, or conflict markers detected");
     finalizeProgress(false, "", "[Step 7: Security & Secret Leak Warning]\n" + stripAnsi2(errorMsg));
     throw err;
   }
+  _activeStepNum = 8;
   startStep(8, "Auditing regression against knowledge base...");
+  appendStepLog(8, `[Gatekeeper] Performing AI Knowledge Base regression audit...
+`);
   const aiConfig = {
     AI_PROVIDER: process.env.AI_PROVIDER,
     GEMINI_API_KEY: process.env.GEMINI_API_KEY,
@@ -54081,6 +54578,10 @@ async function runGatekeeper() {
     if (auditRes) {
       aiReport = auditRes.report || "";
       if (!auditRes.passed) {
+        appendStepLog(8, `
+\u2716 [AI Audit Failed]
+${aiReport}
+`);
         updateStep(8, "error", aiReport);
         finalizeProgress(false, aiReport);
         process.exit(1);
@@ -54092,6 +54593,9 @@ async function runGatekeeper() {
       updateStep(8, "skip");
     }
   } catch (_err) {
+    appendStepLog(8, `
+\u2716 [AI Audit Error] ${_err.message}
+`);
     updateStep(8, "error", _err.message);
     finalizeProgress(false, _err.message);
     throw _err;

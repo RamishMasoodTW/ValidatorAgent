@@ -3,7 +3,6 @@ import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
 import { fileURLToPath } from 'url';
-import { exec as pkgExec } from '@yao-pkg/pkg';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -516,7 +515,7 @@ async function build() {
   ['dist', 'Angular Gatekeeper'].forEach(folder => {
     const legacyPath = path.join(__dirname, folder, 'FrontendGatekeeperSetup.exe');
     if (fs.existsSync(legacyPath)) {
-      try { fs.unlinkSync(legacyPath); } catch (e) {}
+      try { fs.unlinkSync(legacyPath); } catch (e) { }
     }
   });
 
@@ -558,7 +557,7 @@ async function build() {
 
   // 3. Compile standalone Windows binaries with @yao-pkg/pkg
   console.log('\n>>> [2/3] Compiling standalone Windows binaries (.exe) with pkg...');
-  
+
   // Gracefully terminate any running instances of AngularGatekeeperSetup.exe on Windows
   if (process.platform === 'win32') {
     try {
@@ -569,11 +568,12 @@ async function build() {
       // Ignore if not running
     }
   }
-  
+
+  const { exec: pkgExec } = await import('@yao-pkg/pkg');
   const targetPlatform = 'node22.23.2-win-x64';
   const engineCjsPath = path.join(buildDir, 'engine.cjs');
   const engineExePath = path.join(outputFolder, 'engine.exe');
-  
+
   const installerCjsPath = path.join(buildDir, 'installer.cjs');
   const installerExePath = path.join(outputFolder, 'AngularGatekeeperSetup.exe');
 
@@ -587,6 +587,24 @@ async function build() {
       '--public'
     ]);
     console.log('  ✔ engine.exe compiled successfully.');
+
+    // Auto-update installed engine in %APPDATA%/FrontendGatekeeper/engine.exe if present
+    const appDataEngine = process.env.APPDATA
+      ? path.join(process.env.APPDATA, 'FrontendGatekeeper', 'engine.exe')
+      : null;
+    if (appDataEngine && fs.existsSync(path.dirname(appDataEngine))) {
+      try {
+        fs.copyFileSync(engineExePath, appDataEngine);
+        console.log(`  ✔ Live update deployed to active hook: ${appDataEngine}`);
+      } catch (copyErr) {
+        console.warn(`  ⚠ Could not auto-copy to ${appDataEngine}: ${copyErr.message}`);
+      }
+    }
+
+    if (process.argv.includes('--engine-only')) {
+      console.log('\n✔ Engine compiled and deployed successfully (--engine-only).');
+      process.exit(0);
+    }
 
     console.log(`\n  • Compiling installer: ${installerExePath} [Target: ${targetPlatform}]...`);
     await pkgExec([
@@ -637,7 +655,7 @@ async function build() {
     fs.copyFileSync(path.join(outputFolder, 'Install.bat'), path.join(distDir, 'Install.bat'));
     fs.copyFileSync(path.join(outputFolder, 'Uninstall.bat'), path.join(distDir, 'Uninstall.bat'));
     fs.copyFileSync(path.join(outputFolder, 'README.txt'), path.join(distDir, 'README.txt'));
-  } catch (e) {}
+  } catch (e) { }
 
   // Generate cryptographic SHA256 checksums for release verification
   const releaseFiles = [
@@ -655,6 +673,7 @@ async function build() {
       checksumLines.push(`${hash}  ${file}`);
     }
   }
+
   if (checksumLines.length > 0) {
     const checksumContent = checksumLines.join('\n') + '\n';
     fs.writeFileSync(path.join(distDir, 'SHA256SUMS.txt'), checksumContent, 'utf8');
@@ -682,7 +701,7 @@ async function build() {
   if (fs.existsSync(engineExePath) && fs.existsSync(installerExePath)) {
     const engineSizeMb = (fs.statSync(engineExePath).size / (1024 * 1024)).toFixed(2);
     const installerSizeMb = (fs.statSync(installerExePath).size / (1024 * 1024)).toFixed(2);
-    
+
     console.log(`\n✔ Release Package ready in "Angular Gatekeeper/":`);
     console.log(`  ├── Angular Gatekeeper/AngularGatekeeperSetup.exe (${installerSizeMb} MB)`);
     console.log(`  ├── Angular Gatekeeper/engine.exe (${engineSizeMb} MB)`);

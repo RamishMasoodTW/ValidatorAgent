@@ -55,6 +55,47 @@ const STEPS = [
 ];
 
 let _windowEnabled = false;
+let _stepLogBuffers = {};
+let _flushTimer = null;
+
+function queueStepLog(stepId, text) {
+  if (!_windowEnabled || !text) return;
+  _stepLogBuffers[stepId] = (_stepLogBuffers[stepId] || '') + stripAnsi(text);
+  if (!_flushTimer) {
+    _flushTimer = setTimeout(() => {
+      flushStepLogs();
+    }, 40);
+  }
+}
+
+export function flushStepLogs() {
+  if (_flushTimer) {
+    clearTimeout(_flushTimer);
+    _flushTimer = null;
+  }
+  const stepIds = Object.keys(_stepLogBuffers);
+  if (stepIds.length === 0) return;
+
+  const data = readProgressFile();
+  if (!data || !data.steps) return;
+
+  let changed = false;
+  for (const id of stepIds) {
+    const chunk = _stepLogBuffers[id];
+    if (chunk && data.steps[id]) {
+      data.steps[id].log = (data.steps[id].log || '') + chunk;
+      if (data.steps[id].log.length > 50000) {
+        data.steps[id].log = data.steps[id].log.slice(-50000);
+      }
+      changed = true;
+    }
+  }
+  _stepLogBuffers = {};
+
+  if (changed) {
+    writeProgressFile(data);
+  }
+}
 
 function writeProgressFile(data) {
   try {
@@ -87,34 +128,45 @@ try {
     $isDark = ($regVal -eq 0)
 } catch {}
 
-$bg       = if ($isDark) { '#181825' } else { '#FFFFFF' }
-$fg       = if ($isDark) { '#CDD6F4' } else { '#1E293B' }
-$hdrBg    = if ($isDark) { '#11111B' } else { '#F8FAFC' }
-$cardBg   = if ($isDark) { '#24273A' } else { '#F1F5F9' }
-$border   = if ($isDark) { '#45475A' } else { '#E2E8F0' }
-$aiBoxBg  = if ($isDark) { '#1E1E2E' } else { '#F8FAFC' }
-$aiBoxBdr = if ($isDark) { '#313244' } else { '#CBD5E1' }
+$bg                 = if ($isDark) { '#181825' } else { '#F8FAFC' }
+$fg                 = if ($isDark) { '#CDD6F4' } else { '#1E293B' }
+$hdrBg              = if ($isDark) { '#11111B' } else { '#FFFFFF' }
+$cardBg             = if ($isDark) { '#1E1E2E' } else { '#FFFFFF' }
+$border             = if ($isDark) { '#313244' } else { '#CBD5E1' }
+$aiBoxBg            = if ($isDark) { '#181825' } else { '#F8FAFC' }
+$aiBoxBdr           = if ($isDark) { '#313244' } else { '#CBD5E1' }
 
-$passBg = if ($isDark) { '#132A1C' } else { '#F0FDF4' }
-$errBg  = if ($isDark) { '#2D1515' } else { '#FEF2F2' }
+$consoleBg          = if ($isDark) { '#11111B' } else { '#0F172A' }
+$consoleBdr         = if ($isDark) { '#26283B' } else { '#334155' }
+$consoleFg          = if ($isDark) { '#A6ADC8' } else { '#E2E8F0' }
+$hoverBg            = if ($isDark) { '#282A3E' } else { '#F1F5F9' }
 
-$brushConverter = [System.Windows.Media.BrushConverter]::new()
-$passBrush      = $brushConverter.ConvertFrom($passBg)
-$errBrush       = $brushConverter.ConvertFrom($errBg)
-$cardBrush      = $brushConverter.ConvertFrom($cardBg)
-$greenBadgeBg   = $brushConverter.ConvertFrom('#15803D')
-$redBadgeBg     = $brushConverter.ConvertFrom('#B91C1C')
-$grayBadgeBg    = $brushConverter.ConvertFrom('#64748B')
-$blueBadgeBg    = $brushConverter.ConvertFrom('#0284C7')
-$greenFg        = $brushConverter.ConvertFrom('#22C55E')
-$redFg          = $brushConverter.ConvertFrom('#EF4444')
-$blueFg         = $brushConverter.ConvertFrom('#38BDF8')
-$grayFg         = $brushConverter.ConvertFrom('#94A3B8')
-$mainFg         = $brushConverter.ConvertFrom($fg)
-$cyanFg         = $brushConverter.ConvertFrom('#38BDF8')
-$amberFg        = $brushConverter.ConvertFrom('#FBBF24')
-$boldFg         = if ($isDark) { $brushConverter.ConvertFrom('#FFFFFF') } else { $brushConverter.ConvertFrom('#0F172A') }
-$bulletColor    = $brushConverter.ConvertFrom('#60A5FA')
+$passBg             = if ($isDark) { '#132A1C' } else { '#F0FDF4' }
+$errBg              = if ($isDark) { '#2D1515' } else { '#FEF2F2' }
+
+$brushConverter     = [System.Windows.Media.BrushConverter]::new()
+$passBrush          = $brushConverter.ConvertFrom($passBg)
+$errBrush           = $brushConverter.ConvertFrom($errBg)
+$cardBrush          = $brushConverter.ConvertFrom($cardBg)
+$borderBrush        = $brushConverter.ConvertFrom($border)
+$hoverBrush         = $brushConverter.ConvertFrom($hoverBg)
+$consoleBgBrush     = $brushConverter.ConvertFrom($consoleBg)
+$consoleBdrBrush    = $brushConverter.ConvertFrom($consoleBdr)
+$consoleFgBrush     = $brushConverter.ConvertFrom($consoleFg)
+$greenBadgeBg       = $brushConverter.ConvertFrom('#15803D')
+$redBadgeBg         = $brushConverter.ConvertFrom('#B91C1C')
+$grayBadgeBg        = $brushConverter.ConvertFrom('#64748B')
+$blueBadgeBg        = $brushConverter.ConvertFrom('#0284C7')
+$runningBdrBrush    = $brushConverter.ConvertFrom('#38BDF8')
+$greenFg            = $brushConverter.ConvertFrom('#22C55E')
+$redFg              = $brushConverter.ConvertFrom('#EF4444')
+$blueFg             = $brushConverter.ConvertFrom('#38BDF8')
+$grayFg             = $brushConverter.ConvertFrom('#94A3B8')
+$mainFg             = $brushConverter.ConvertFrom($fg)
+$cyanFg             = $brushConverter.ConvertFrom('#38BDF8')
+$amberFg            = $brushConverter.ConvertFrom('#FBBF24')
+$boldFg             = if ($isDark) { $brushConverter.ConvertFrom('#FFFFFF') } else { $brushConverter.ConvertFrom('#0F172A') }
+$bulletColor        = $brushConverter.ConvertFrom('#60A5FA')
 
 $PROGRESS_FILE = "$env:TEMP\\gk-progress.json"
 
@@ -122,10 +174,11 @@ $PROGRESS_FILE = "$env:TEMP\\gk-progress.json"
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Angular Gatekeeper — Live CI/CD Commit Validation"
-        Width="580" Height="700"
+        Width="620" Height="740"
+        MinWidth="560" MinHeight="620"
         WindowStartupLocation="CenterScreen"
         Topmost="True"
-        ResizeMode="NoResize"
+        ResizeMode="CanResize"
         ShowInTaskbar="True"
         Background="$bg">
   <Window.Resources>
@@ -462,103 +515,266 @@ function Convert-MarkdownToFlowDocument {
 $stepLabels = @(
   '1. Angular Project Detection',
   '2. Critical Architecture & Entry Points',
-  '3. Dependency Vulnerability Audit (npm audit)',
-  '4. TypeScript & Linter Verification',
-  '5. Automated Unit Tests (test:ci) + Coverage Gate',
-  '6. Production Build & CD Deployment Verification',
+  '3. Dependency Security & Vulnerability Audit (npm audit)',
+  '4. Strict TypeScript Compilation & Linter Verification',
+  '5. Automated Unit Tests & CI Regression Suite (test:ci)',
+  '6. Production Build & CD Deployment Readiness Verification',
   '7. Security & Secret Leak Scanning',
-  '8. AI Knowledge Base Audit'
+  '8. Multi-Provider AI Knowledge Base Regression Audit'
 );
 
-$rowBorders = @{}
-$rowIcons   = @{}
-$rowTexts   = @{}
-$rowSubs    = @{}
-$rowBadges  = @{}
+$stepCards     = @{}
+$stepHeaders   = @{}
+$stepChevrons  = @{}
+$stepIcons     = @{}
+$stepTexts     = @{}
+$stepSubs      = @{}
+$stepBadges    = @{}
+$stepBodies    = @{}
+$stepTextBoxes = @{}
+$stepLastLogs  = @{}
 
 for ($i = 0; $i -lt $stepLabels.Count; $i++) {
     $stepNum = $i + 1
 
-    $row = New-Object System.Windows.Controls.Border
-    $row.CornerRadius      = New-Object System.Windows.CornerRadius(6)
-    $row.Padding           = New-Object System.Windows.Thickness(12, 6, 12, 6)
-    $row.Margin            = New-Object System.Windows.Thickness(0, 2, 0, 2)
-    $row.Background        = $cardBrush
+    # Outer Card Container (Accordion Item)
+    $card = New-Object System.Windows.Controls.Border
+    $card.CornerRadius    = New-Object System.Windows.CornerRadius(6)
+    $card.Margin          = New-Object System.Windows.Thickness(0, 2, 0, 3)
+    $card.Background      = $cardBrush
+    $card.BorderBrush     = $borderBrush
+    $card.BorderThickness = New-Object System.Windows.Thickness(1)
+
+    $stack = New-Object System.Windows.Controls.StackPanel
+    $card.Child = $stack
+
+    # Clickable Header Row
+    $header = New-Object System.Windows.Controls.Border
+    $header.Background   = [System.Windows.Media.Brushes]::Transparent
+    $header.Padding      = New-Object System.Windows.Thickness(10, 8, 10, 8)
+    $header.Cursor       = [System.Windows.Input.Cursors]::Hand
+    $header.CornerRadius = New-Object System.Windows.CornerRadius(5)
+    $header.Tag          = $stepNum
 
     $grid = New-Object System.Windows.Controls.Grid
-    $col1 = New-Object System.Windows.Controls.ColumnDefinition; $col1.Width = New-Object System.Windows.GridLength(28)
-    $col2 = New-Object System.Windows.Controls.ColumnDefinition; $col2.Width = New-Object System.Windows.GridLength(1, [System.Windows.GridUnitType]::Star)
-    $col3 = New-Object System.Windows.Controls.ColumnDefinition; $col3.Width = New-Object System.Windows.GridLength(0, [System.Windows.GridUnitType]::Auto)
+    $col0 = New-Object System.Windows.Controls.ColumnDefinition; $col0.Width = New-Object System.Windows.GridLength(18) # Chevron
+    $col1 = New-Object System.Windows.Controls.ColumnDefinition; $col1.Width = New-Object System.Windows.GridLength(28) # Icon
+    $col2 = New-Object System.Windows.Controls.ColumnDefinition; $col2.Width = New-Object System.Windows.GridLength(1, [System.Windows.GridUnitType]::Star) # Text
+    $col3 = New-Object System.Windows.Controls.ColumnDefinition; $col3.Width = New-Object System.Windows.GridLength(0, [System.Windows.GridUnitType]::Auto) # Badge
+    $grid.ColumnDefinitions.Add($col0)
     $grid.ColumnDefinitions.Add($col1)
     $grid.ColumnDefinitions.Add($col2)
     $grid.ColumnDefinitions.Add($col3)
 
-    $icon = New-Object System.Windows.Controls.TextBlock
-    $icon.Text       = '[ ]'
-    $icon.FontSize   = 11
-    $icon.FontWeight = [System.Windows.FontWeights]::Bold
-    $icon.Foreground = $grayFg
-    $icon.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
-    [System.Windows.Controls.Grid]::SetColumn($icon, 0)
+    # Column 0: Chevron arrow (▶ / ▼)
+    $chev = New-Object System.Windows.Controls.TextBlock
+    $chev.Text              = [char]0x25B6 # ▶ (collapsed)
+    $chev.FontSize          = 9.5
+    $chev.Foreground        = $grayFg
+    $chev.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+    [System.Windows.Controls.Grid]::SetColumn($chev, 0)
 
+    # Column 1: Status Icon
+    $icon = New-Object System.Windows.Controls.TextBlock
+    $icon.Text              = '[ ]'
+    $icon.FontSize          = 11
+    $icon.FontWeight        = [System.Windows.FontWeights]::Bold
+    $icon.Foreground        = $grayFg
+    $icon.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+    [System.Windows.Controls.Grid]::SetColumn($icon, 1)
+
+    # Column 2: Labels
     $lbl = New-Object System.Windows.Controls.TextBlock
-    $lbl.Text       = $stepLabels[$i]
-    $lbl.FontSize   = 12
-    $lbl.Foreground = $grayFg
+    $lbl.Text              = $stepLabels[$i]
+    $lbl.FontSize          = 12
+    $lbl.FontWeight        = [System.Windows.FontWeights]::SemiBold
+    $lbl.Foreground        = $grayFg
     $lbl.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
 
     $subLbl = New-Object System.Windows.Controls.TextBlock
-    $subLbl.FontSize   = 10
-    $subLbl.Foreground = $blueFg
-    $subLbl.Visibility = [System.Windows.Visibility]::Collapsed
-    $subLbl.Margin     = New-Object System.Windows.Thickness(0, 2, 0, 0)
+    $subLbl.FontSize       = 10
+    $subLbl.Foreground     = $blueFg
+    $subLbl.Visibility     = [System.Windows.Visibility]::Collapsed
+    $subLbl.Margin         = New-Object System.Windows.Thickness(0, 2, 0, 0)
+    $subLbl.TextTrimming   = [System.Windows.TextTrimming]::CharacterEllipsis
 
     $textStack = New-Object System.Windows.Controls.StackPanel
     $textStack.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
     $textStack.Children.Add($lbl)    | Out-Null
     $textStack.Children.Add($subLbl) | Out-Null
-    [System.Windows.Controls.Grid]::SetColumn($textStack, 1)
+    [System.Windows.Controls.Grid]::SetColumn($textStack, 2)
 
+    # Column 3: Badge
     $badge = New-Object System.Windows.Controls.Border
-    $badge.CornerRadius      = New-Object System.Windows.CornerRadius(4)
-    $badge.Padding           = New-Object System.Windows.Thickness(10, 3, 10, 3)
-    $badge.MinWidth          = 62
-    $badge.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+    $badge.CornerRadius        = New-Object System.Windows.CornerRadius(4)
+    $badge.Padding             = New-Object System.Windows.Thickness(8, 2, 8, 2)
+    $badge.MinWidth            = 62
+    $badge.VerticalAlignment   = [System.Windows.VerticalAlignment]::Center
     $badge.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Right
-    $badge.Visibility        = [System.Windows.Visibility]::Collapsed
+    $badge.Visibility          = [System.Windows.Visibility]::Collapsed
 
     $badgeTb = New-Object System.Windows.Controls.TextBlock
-    $badgeTb.FontSize            = 10
+    $badgeTb.FontSize            = 9.5
     $badgeTb.FontWeight          = [System.Windows.FontWeights]::Bold
     $badgeTb.Foreground          = [System.Windows.Media.Brushes]::White
     $badgeTb.TextAlignment       = [System.Windows.TextAlignment]::Center
     $badgeTb.VerticalAlignment   = [System.Windows.VerticalAlignment]::Center
     $badgeTb.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Center
     $badge.Child = $badgeTb
-    [System.Windows.Controls.Grid]::SetColumn($badge, 2)
+    [System.Windows.Controls.Grid]::SetColumn($badge, 3)
 
+    $grid.Children.Add($chev)      | Out-Null
     $grid.Children.Add($icon)      | Out-Null
     $grid.Children.Add($textStack) | Out-Null
     $grid.Children.Add($badge)     | Out-Null
-    $row.Child = $grid
-    $panel.Children.Add($row)      | Out-Null
+    $header.Child = $grid
 
-    $rowBorders[$stepNum] = $row
-    $rowIcons[$stepNum]   = $icon
-    $rowTexts[$stepNum]   = $lbl
-    $rowSubs[$stepNum]    = $subLbl
-    $rowBadges[$stepNum]  = @{ border = $badge; text = $badgeTb }
+    # Accordion Body (Collapsible Log Box)
+    $body = New-Object System.Windows.Controls.Border
+    $body.Visibility      = [System.Windows.Visibility]::Collapsed
+    $body.Margin          = New-Object System.Windows.Thickness(8, 0, 8, 8)
+    $body.Padding         = New-Object System.Windows.Thickness(8)
+    $body.CornerRadius    = New-Object System.Windows.CornerRadius(4)
+    $body.Background      = $consoleBgBrush
+    $body.BorderBrush     = $consoleBdrBrush
+    $body.BorderThickness = New-Object System.Windows.Thickness(1)
+
+    $bGrid = New-Object System.Windows.Controls.Grid
+    $bRow0 = New-Object System.Windows.Controls.RowDefinition; $bRow0.Height = New-Object System.Windows.GridLength(0, [System.Windows.GridUnitType]::Auto)
+    $bRow1 = New-Object System.Windows.Controls.RowDefinition; $bRow1.Height = New-Object System.Windows.GridLength(1, [System.Windows.GridUnitType]::Star)
+    $bGrid.RowDefinitions.Add($bRow0)
+    $bGrid.RowDefinitions.Add($bRow1)
+
+    # Accordion Toolbar
+    $tbGrid = New-Object System.Windows.Controls.Grid
+    $tbGrid.Margin = New-Object System.Windows.Thickness(0, 0, 0, 6)
+
+    $tbTitle = New-Object System.Windows.Controls.TextBlock
+    $tbTitle.Text              = "LIVE PROCESS OUTPUT"
+    $tbTitle.FontSize          = 9.5
+    $tbTitle.FontWeight        = [System.Windows.FontWeights]::Bold
+    $tbTitle.Foreground        = $cyanFg
+    $tbTitle.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+
+    $copyStepBtn = New-Object System.Windows.Controls.Button
+    $copyStepBtn.Content             = "Copy"
+    $copyStepBtn.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Right
+    $copyStepBtn.Width               = 46
+    $copyStepBtn.Height              = 20
+    $copyStepBtn.FontSize            = 9.5
+    $copyStepBtn.Cursor              = [System.Windows.Input.Cursors]::Hand
+    $copyStepBtn.Background          = [System.Windows.Media.BrushConverter]::new().ConvertFrom('#334155')
+    $copyStepBtn.Foreground          = [System.Windows.Media.Brushes]::White
+    $copyStepBtn.BorderThickness     = New-Object System.Windows.Thickness(0)
+    $copyStepBtn.Tag                 = $stepNum
+
+    $copyStepBtn.Resources.Add([System.Windows.Controls.Border], $(
+        $bdrStyle = New-Object System.Windows.Style([System.Windows.Controls.Border])
+        $bdrStyle.Setters.Add((New-Object System.Windows.Setter([System.Windows.Controls.Border]::CornerRadiusProperty, (New-Object System.Windows.CornerRadius(3)))))
+        $bdrStyle
+    ))
+
+    $tbGrid.Children.Add($tbTitle)     | Out-Null
+    $tbGrid.Children.Add($copyStepBtn) | Out-Null
+    [System.Windows.Controls.Grid]::SetRow($tbGrid, 0)
+    $bGrid.Children.Add($tbGrid) | Out-Null
+
+    # Log TextBox directly with scrolling & auto-scroll support
+    $logTb = New-Object System.Windows.Controls.TextBox
+    $logTb.IsReadOnly                        = $true
+    $logTb.AcceptsReturn                     = $true
+    $logTb.TextWrapping                      = [System.Windows.TextWrapping]::NoWrap
+    $logTb.Background                        = [System.Windows.Media.Brushes]::Transparent
+    $logTb.BorderThickness                   = New-Object System.Windows.Thickness(0)
+    $logTb.Foreground                        = $consoleFgBrush
+    $logTb.FontFamily                        = New-Object System.Windows.Media.FontFamily('Consolas, Courier New, monospace')
+    $logTb.FontSize                          = 10
+    $logTb.MaxHeight                         = 190
+    $logTb.VerticalScrollBarVisibility       = [System.Windows.Controls.ScrollBarVisibility]::Auto
+    $logTb.HorizontalScrollBarVisibility     = [System.Windows.Controls.ScrollBarVisibility]::Auto
+    $logTb.Text                              = "Waiting for step execution to start..."
+
+    [System.Windows.Controls.Grid]::SetRow($logTb, 1)
+    $bGrid.Children.Add($logTb) | Out-Null
+
+    $body.Child = $bGrid
+
+    $stack.Children.Add($header) | Out-Null
+    $stack.Children.Add($body)   | Out-Null
+    $panel.Children.Add($card)   | Out-Null
+
+    $stepCards[$stepNum]     = $card
+    $stepHeaders[$stepNum]   = $header
+    $stepChevrons[$stepNum]  = $chev
+    $stepIcons[$stepNum]     = $icon
+    $stepTexts[$stepNum]     = $lbl
+    $stepSubs[$stepNum]      = $subLbl
+    $stepBadges[$stepNum]    = @{ border = $badge; text = $badgeTb }
+    $stepBodies[$stepNum]    = $body
+    $stepTextBoxes[$stepNum] = $logTb
+    $stepLastLogs[$stepNum]  = ''
+
+    # Interactive Accordion Click Handler
+    $header.Add_MouseLeftButtonDown({
+        param($sender, $e)
+        $sIdx = [int]$sender.Tag
+        $b = $stepBodies[$sIdx]
+        $c = $stepChevrons[$sIdx]
+        if ($b.Visibility -eq [System.Windows.Visibility]::Visible) {
+            $b.Visibility = [System.Windows.Visibility]::Collapsed
+            $c.Text = [char]0x25B6 # ▶
+        } else {
+            $b.Visibility = [System.Windows.Visibility]::Visible
+            $c.Text = [char]0x25BC # ▼
+            $stepTextBoxes[$sIdx].ScrollToEnd()
+        }
+    })
+
+    # Header Hover Effect
+    $header.Add_MouseEnter({
+        param($sender, $e)
+        $sender.Background = $hoverBrush
+    })
+    $header.Add_MouseLeave({
+        param($sender, $e)
+        $sender.Background = [System.Windows.Media.Brushes]::Transparent
+    })
+
+    # Copy Step Log Handler
+    $copyStepBtn.Add_Click({
+        param($sender, $e)
+        try {
+            $sIdx = [int]$sender.Tag
+            $t = $stepTextBoxes[$sIdx].Text
+            if ($t -and $t.Trim() -ne '') {
+                [System.Windows.Forms.Clipboard]::SetText($t)
+                $sender.Content = "Copied!"
+                $rst = New-Object System.Windows.Threading.DispatcherTimer
+                $rst.Interval = [TimeSpan]::FromMilliseconds(1500)
+                $rst.Add_Tick({
+                    $sender.Content = "Copy"
+                    $rst.Stop()
+                })
+                $rst.Start()
+            }
+        } catch {}
+    })
 }
 
 $timer = New-Object System.Windows.Threading.DispatcherTimer
-$timer.Interval = [TimeSpan]::FromMilliseconds(250)
-$autoCloseSeconds = 0
+$timer.Interval = [TimeSpan]::FromMilliseconds(100)
+$script:lastRunningStep = 0
 $script:lastRenderedLog = ''
 
 $timer.Add_Tick({
     if (-not (Test-Path $PROGRESS_FILE)) { return }
     try {
-        $raw = Get-Content $PROGRESS_FILE -Raw
+        $fileStream = [System.IO.File]::Open($PROGRESS_FILE, [System.IO.FileMode]::Open, [System.IO.FileAccess]::Read, [System.IO.FileShare]::ReadWrite)
+        $sr = New-Object System.IO.StreamReader($fileStream, [System.Text.Encoding]::UTF8)
+        $raw = $sr.ReadToEnd()
+        $sr.Close()
+        $fileStream.Close()
+        if ([string]::IsNullOrWhiteSpace($raw)) { return }
         $json = $raw | ConvertFrom-Json
     } catch { return }
 
@@ -566,16 +782,52 @@ $timer.Add_Tick({
     $done  = $json.done
     $hasError = $false
 
+    # Find the current active/running step
+    $activeRunningStep = 0
+    if ($json.activeStep) {
+        $activeRunningStep = [int]$json.activeStep
+    } else {
+        foreach ($s in $steps.PSObject.Properties) {
+            if ($s.Value.status -eq 'running') {
+                $activeRunningStep = [int]$s.Name
+                break
+            }
+        }
+    }
+
+    # Auto-transition accordions as steps progress
+    if ($activeRunningStep -gt 0 -and $activeRunningStep -ne $script:lastRunningStep) {
+        # Auto-collapse previous step if it did not fail
+        if ($script:lastRunningStep -gt 0 -and $stepBodies.ContainsKey($script:lastRunningStep)) {
+            $prevProp = $steps.PSObject.Properties[$script:lastRunningStep.ToString()]
+            $prevStatus = if ($prevProp) { $prevProp.Value.status } else { '' }
+            if ($prevStatus -ne 'error') {
+                $stepBodies[$script:lastRunningStep].Visibility = [System.Windows.Visibility]::Collapsed
+                $stepChevrons[$script:lastRunningStep].Text = [char]0x25B6 # ▶
+            }
+        }
+        # Auto-expand the newly active step
+        if ($stepBodies.ContainsKey($activeRunningStep)) {
+            $stepBodies[$activeRunningStep].Visibility = [System.Windows.Visibility]::Visible
+            $stepChevrons[$activeRunningStep].Text = [char]0x25BC # ▼
+            $stepCards[$activeRunningStep].BringIntoView()
+        }
+        $script:lastRunningStep = $activeRunningStep
+    }
+
     foreach ($s in $steps.PSObject.Properties) {
         $num   = [int]$s.Name
         $state = $s.Value
-        if (-not $rowIcons.ContainsKey($num)) { continue }
+        if (-not $stepIcons.ContainsKey($num)) { continue }
 
-        $icon  = $rowIcons[$num]
-        $lbl   = $rowTexts[$num]
-        $sub   = $rowSubs[$num]
-        $row   = $rowBorders[$num]
-        $badge = $rowBadges[$num]
+        $icon  = $stepIcons[$num]
+        $lbl   = $stepTexts[$num]
+        $sub   = $stepSubs[$num]
+        $card  = $stepCards[$num]
+        $badge = $stepBadges[$num]
+        $tb    = $stepTextBoxes[$num]
+        $body  = $stepBodies[$num]
+        $chev  = $stepChevrons[$num]
 
         if ($state.label -and $state.label.Trim() -ne '') {
             $lbl.Text = $state.label
@@ -588,20 +840,35 @@ $timer.Add_Tick({
             $sub.Visibility = [System.Windows.Visibility]::Collapsed
         }
 
+        # Update step's live log output
+        $logContent = if ($state.log) { $state.log } else { '' }
+        if ($logContent -and $logContent -ne $stepLastLogs[$num]) {
+            $stepLastLogs[$num] = $logContent
+            $tb.Text = $logContent
+            if ($body.Visibility -eq [System.Windows.Visibility]::Visible) {
+                $tb.CaretIndex = $tb.Text.Length
+                $tb.ScrollToEnd()
+            }
+        }
+
         switch ($state.status) {
             'pending' {
                 $icon.Text       = '[ ]'
                 $icon.Foreground = $grayFg
                 $lbl.Foreground  = $grayFg
                 $badge.border.Visibility = [System.Windows.Visibility]::Collapsed
-                $row.Background  = $cardBrush
+                $card.Background = $cardBrush
+                $card.BorderBrush = $borderBrush
             }
             'running' {
                 $icon.Text       = '>>'
                 $icon.Foreground = $blueFg
                 $lbl.Foreground  = $mainFg
-                $badge.border.Visibility = [System.Windows.Visibility]::Collapsed
-                $row.Background  = $cardBrush
+                $badge.border.Background = $blueBadgeBg
+                $badge.text.Text = 'RUNNING'
+                $badge.border.Visibility = [System.Windows.Visibility]::Visible
+                $card.Background = $cardBrush
+                $card.BorderBrush = $runningBdrBrush
             }
             'pass' {
                 $icon.Text       = 'OK'
@@ -610,7 +877,8 @@ $timer.Add_Tick({
                 $badge.border.Background = $greenBadgeBg
                 $badge.text.Text = 'PASS'
                 $badge.border.Visibility = [System.Windows.Visibility]::Visible
-                $row.Background  = $passBrush
+                $card.Background = $passBrush
+                $card.BorderBrush = $borderBrush
             }
             'error' {
                 $icon.Text       = 'ERR'
@@ -619,8 +887,16 @@ $timer.Add_Tick({
                 $badge.border.Background = $redBadgeBg
                 $badge.text.Text = 'FAILED'
                 $badge.border.Visibility = [System.Windows.Visibility]::Visible
-                $row.Background  = $errBrush
+                $card.Background = $errBrush
+                $card.BorderBrush = $redFg
                 $hasError = $true
+
+                # Always keep failed step accordion open so developer sees why it failed
+                if ($body.Visibility -ne [System.Windows.Visibility]::Visible) {
+                    $body.Visibility = [System.Windows.Visibility]::Visible
+                    $chev.Text = [char]0x25BC # ▼
+                    $card.BringIntoView()
+                }
             }
             'skip' {
                 $icon.Text       = '--'
@@ -629,7 +905,8 @@ $timer.Add_Tick({
                 $badge.border.Background = $grayBadgeBg
                 $badge.text.Text = 'SKIP'
                 $badge.border.Visibility = [System.Windows.Visibility]::Visible
-                $row.Background  = $cardBrush
+                $card.Background = $cardBrush
+                $card.BorderBrush = $borderBrush
             }
         }
     }
@@ -730,11 +1007,12 @@ export function initProgressWindow() {
     hasError: false,
     aiReport: '',
     errorLog: '',
+    activeStep: null,
     steps: {}
   };
 
   for (const s of STEPS) {
-    data.steps[s.id] = { status: 'pending', label: s.label };
+    data.steps[s.id] = { status: 'pending', label: s.label, detail: '', log: '' };
   }
 
   writeProgressFile(data);
@@ -746,13 +1024,26 @@ export function initProgressWindow() {
  */
 export function startStep(stepId, detail = '') {
   if (!_windowEnabled) return;
+  flushStepLogs();
   const data = readProgressFile();
-  if (!data) return;
+  if (!data || !data.steps) return;
   if (data.steps[stepId]) {
     data.steps[stepId].status = 'running';
     data.steps[stepId].detail = detail;
+    data.activeStep = stepId;
+    if (detail && !data.steps[stepId].log) {
+      data.steps[stepId].log = `▶ ${detail}\n`;
+    }
   }
   writeProgressFile(data);
+}
+
+/**
+ * Appends live output or process logs to a specific step.
+ */
+export function appendStepLog(stepId, text) {
+  if (!_windowEnabled || !text) return;
+  queueStepLog(stepId, text);
 }
 
 /**
@@ -760,12 +1051,18 @@ export function startStep(stepId, detail = '') {
  */
 export function updateStep(stepId, status, reportOrDetail = '') {
   if (!_windowEnabled) return;
+  flushStepLogs();
   const data = readProgressFile();
-  if (!data) return;
+  if (!data || !data.steps) return;
   if (data.steps[stepId]) {
     data.steps[stepId].status = status;
+    const cleanReportOrDetail = stripAnsi(reportOrDetail);
     if (stepId !== 8) {
-      data.steps[stepId].detail = stripAnsi(reportOrDetail);
+      data.steps[stepId].detail = cleanReportOrDetail;
+    }
+    if (cleanReportOrDetail && (!data.steps[stepId].log || !data.steps[stepId].log.includes(cleanReportOrDetail))) {
+      const prefix = status === 'pass' ? '✔ ' : (status === 'error' ? '✖ ' : 'ℹ ');
+      data.steps[stepId].log = (data.steps[stepId].log || '') + `${prefix}${cleanReportOrDetail}\n`;
     }
   }
   if (status === 'error') {
@@ -773,6 +1070,9 @@ export function updateStep(stepId, status, reportOrDetail = '') {
   }
   if (stepId === 8 && reportOrDetail) {
     data.aiReport = stripAnsi(reportOrDetail);
+    if (data.steps[8] && !data.steps[8].log.includes(data.aiReport)) {
+      data.steps[8].log = (data.steps[8].log || '') + `\n${data.aiReport}\n`;
+    }
   }
   writeProgressFile(data);
 }
@@ -782,15 +1082,21 @@ export function updateStep(stepId, status, reportOrDetail = '') {
  */
 export function finalizeProgress(passed, finalReport = '', errorLog = '') {
   if (!_windowEnabled) return;
+  flushStepLogs();
   const data = readProgressFile();
   if (!data) return;
   data.done = true;
   data.hasError = !passed;
+  data.activeStep = null;
   if (finalReport) {
     data.aiReport = stripAnsi(finalReport);
+    if (data.steps && data.steps[8] && !data.steps[8].log.includes(data.aiReport)) {
+      data.steps[8].log = (data.steps[8].log || '') + `\n${data.aiReport}\n`;
+    }
   }
   if (errorLog) {
     data.errorLog = stripAnsi(errorLog);
   }
   writeProgressFile(data);
 }
+

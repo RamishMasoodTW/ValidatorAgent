@@ -4,11 +4,12 @@ import { execSync } from 'child_process';
 import chalk from 'chalk';
 import { logStep, logSuccess, logError, logWarning } from '../utils/logger.js';
 import { getAllFiles } from './angular-best-practices.js';
+import { execStreaming } from '../utils/exec.js';
 
 /**
  * Step 4: Strict TypeScript Compilation & Linting (tsc --noEmit, eslint)
  */
-export function runTypeScriptAndLintChecks(cwd = process.cwd(), projectPkg = {}) {
+export async function runTypeScriptAndLintChecks(cwd = process.cwd(), projectPkg = {}) {
   let _capturedErrorOutput = '';
   logStep(4, 'Strict TypeScript & Linter Verification');
   const scripts = projectPkg.scripts || {};
@@ -17,18 +18,13 @@ export function runTypeScriptAndLintChecks(cwd = process.cwd(), projectPkg = {})
   if (scripts['lint']) {
     console.log(chalk.blue('  Running Angular Linter (npm run lint)...'));
     try {
-      const lintOut = execSync('npm run lint', { stdio: 'pipe', encoding: 'utf8', maxBuffer: 10 * 1024 * 1024, cwd });
-      if (lintOut) process.stdout.write(lintOut);
+      await execStreaming('npm run lint', { cwd });
       logSuccess('Angular linter passed with zero errors.');
     } catch (err) {
       logError('Angular linter reported errors!');
-      const stdout = err.stdout ? err.stdout.toString() : '';
-      const stderr = err.stderr ? err.stderr.toString() : '';
-      const combined = (stdout + '\n' + stderr).trim();
-      if (combined) process.stdout.write(combined + '\n');
       console.log(chalk.red('\n  Fix the linting issues before committing code.\n'));
       const failErr = new Error('Angular linting failed');
-      failErr.stepOutput = combined || err.message;
+      failErr.stepOutput = err.combined || err.stepOutput || err.message;
       throw failErr;
     }
   }
@@ -38,35 +34,25 @@ export function runTypeScriptAndLintChecks(cwd = process.cwd(), projectPkg = {})
     const typeScript = scripts['type-check'] ? 'type-check' : 'typecheck';
     console.log(chalk.blue(`  Running TypeScript Check (npm run ${typeScript})...`));
     try {
-      const tcOut = execSync(`npm run ${typeScript}`, { stdio: 'pipe', encoding: 'utf8', maxBuffer: 10 * 1024 * 1024, cwd });
-      if (tcOut) process.stdout.write(tcOut);
+      await execStreaming(`npm run ${typeScript}`, { cwd });
       logSuccess('TypeScript checks passed.');
     } catch (err) {
       logError('TypeScript type checking failed!');
-      const stdout = err.stdout ? err.stdout.toString() : '';
-      const stderr = err.stderr ? err.stderr.toString() : '';
-      const combined = (stdout + '\n' + stderr).trim();
-      if (combined) process.stdout.write(combined + '\n');
       console.log(chalk.red('\n  Fix the TypeScript errors before committing code.\n'));
       const failErr = new Error('TypeScript type checking failed');
-      failErr.stepOutput = combined || err.message;
+      failErr.stepOutput = err.combined || err.stepOutput || err.message;
       throw failErr;
     }
   } else {
     // Run direct tsc --noEmit check if tsconfig exists
     console.log(chalk.blue('  Running Type Safety Check (npx tsc --noEmit)...'));
     try {
-      const tscOut = execSync('npx tsc --noEmit --skipLibCheck', { stdio: 'pipe', encoding: 'utf8', cwd });
-      process.stdout.write(tscOut);
+      await execStreaming('npx tsc --noEmit --skipLibCheck', { cwd });
       logSuccess('TypeScript compilation verification passed with zero type errors.');
     } catch (err) {
       logError('TypeScript type checking failed!');
-      const stdout = err.stdout ? err.stdout.toString() : '';
-      const stderr = err.stderr ? err.stderr.toString() : '';
-      const combined = (stdout + '\n' + stderr).trim();
-      if (combined) process.stdout.write(combined + '\n');
       const failErr = new Error('TypeScript compilation failed');
-      failErr.stepOutput = combined || err.message;
+      failErr.stepOutput = err.combined || err.stepOutput || err.message;
       throw failErr;
     }
   }
@@ -76,7 +62,7 @@ export function runTypeScriptAndLintChecks(cwd = process.cwd(), projectPkg = {})
  * Step 5: Automated Unit Tests & Regression Verification
  * Dynamically executes headless unit tests (auto-injects and restores test:ci if missing)
  */
-export function runAutomatedUnitTests(cwd = process.cwd(), projectPkg = {}) {
+export async function runAutomatedUnitTests(cwd = process.cwd(), projectPkg = {}) {
   let capturedTestOutput = '';
   logStep(5, 'Automated Unit Tests & Regression Verification');
   const pkgPath = path.join(cwd, 'package.json');
@@ -207,11 +193,10 @@ describe('Angular CI Pipeline Verification', () => {
     console.log(chalk.blue(`  Executing Automated Unit Tests (${testCommand})...`));
     let output = '';
     try {
-      output = execSync(testCommand, { stdio: 'pipe', encoding: 'utf8', maxBuffer: 20 * 1024 * 1024, cwd });
+      const res = await execStreaming(testCommand, { cwd });
+      output = res.combined;
     } catch (testExecErr) {
-      const stdout = testExecErr.stdout ? testExecErr.stdout.toString() : '';
-      const stderr = testExecErr.stderr ? testExecErr.stderr.toString() : '';
-      const combined = (stdout + '\n' + stderr).trim();
+      const combined = (testExecErr.combined || testExecErr.stdout || testExecErr.stderr || testExecErr.message || '').trim();
 
       // Recovery 1: If auto-injected smoke spec failed because describe is not defined (e.g. Vitest without globals)
       if (tempSpecPath && (combined.includes('ReferenceError: describe is not defined') || combined.includes('ReferenceError: it is not defined') || combined.includes('describe is not defined'))) {
@@ -228,12 +213,10 @@ describe('Angular CI Pipeline Verification', () => {
 `;
           fs.writeFileSync(tempSpecPath, vitestSmokeSpec, 'utf8');
           console.log(chalk.yellow('  ⚠ Smoke spec missing test runner globals. Retrying with explicit Vitest imports...'));
-          output = execSync(testCommand, { stdio: 'pipe', encoding: 'utf8', maxBuffer: 20 * 1024 * 1024, cwd });
+          const retryRes = await execStreaming(testCommand, { cwd });
+          output = retryRes.combined;
         } catch (vitestRetryErr) {
-          const vStdout = vitestRetryErr.stdout ? vitestRetryErr.stdout.toString() : '';
-          const vStderr = vitestRetryErr.stderr ? vitestRetryErr.stderr.toString() : '';
-          const vCombined = (vStdout + '\n' + vStderr).trim();
-          if (vCombined) process.stdout.write(vCombined + '\n');
+          const vCombined = (vitestRetryErr.combined || vitestRetryErr.stdout || vitestRetryErr.stderr || vitestRetryErr.message || '').trim();
           capturedTestOutput = vCombined;
           vitestRetryErr.testOutput = vCombined;
           throw vitestRetryErr;
@@ -270,32 +253,27 @@ describe('Angular CI Pipeline Verification', () => {
         if ((fallbackCommand !== testCommand || scriptCleaned) && fallbackCommand.length > 0) {
           console.log(chalk.yellow(`  ⚠ Test runner rejected argument. Retrying without unsupported flag: (${fallbackCommand})...`));
           try {
-            output = execSync(fallbackCommand, { stdio: 'pipe', encoding: 'utf8', maxBuffer: 20 * 1024 * 1024, cwd });
+            const fbRes = await execStreaming(fallbackCommand, { cwd });
+            output = fbRes.combined;
             testCommand = fallbackCommand;
           } catch (retryErr) {
-            const rStdout = retryErr.stdout ? retryErr.stdout.toString() : '';
-            const rStderr = retryErr.stderr ? retryErr.stderr.toString() : '';
-            const rCombined = (rStdout + '\n' + rStderr).trim();
-            if (rCombined) process.stdout.write(rCombined + '\n');
+            const rCombined = (retryErr.combined || retryErr.stdout || retryErr.stderr || retryErr.message || '').trim();
             capturedTestOutput = rCombined;
             retryErr.testOutput = rCombined;
             throw retryErr;
           }
         } else {
-          if (combined) process.stdout.write(combined + '\n');
           capturedTestOutput = combined;
           testExecErr.testOutput = combined;
           throw testExecErr;
         }
       } else {
-        if (combined) process.stdout.write(combined + '\n');
         capturedTestOutput = combined;
         testExecErr.testOutput = combined;
         throw testExecErr;
       }
     }
 
-    if (output) process.stdout.write(output);
     logSuccess('Automated unit tests & regression verification passed with 0 failures.');
     return {
       autoInjected: !!tempSpecPath,
@@ -354,7 +332,7 @@ describe('Angular CI Pipeline Verification', () => {
 /**
  * Step 6: Production Build Compilation & Artifact Verification
  */
-export function runAngularProductionBuild(cwd = process.cwd(), projectPkg = {}) {
+export async function runAngularProductionBuild(cwd = process.cwd(), projectPkg = {}) {
   logStep(6, 'Production Build & CD Deployment Verification');
   const scripts = projectPkg.scripts || {};
 
@@ -366,15 +344,11 @@ export function runAngularProductionBuild(cwd = process.cwd(), projectPkg = {}) 
 
   console.log(chalk.gray(`  Executing: ${buildCommand}`));
   try {
-    const buildOut = execSync(buildCommand, { stdio: 'pipe', encoding: 'utf8', maxBuffer: 20 * 1024 * 1024, cwd });
-    if (buildOut) process.stdout.write(buildOut);
+    await execStreaming(buildCommand, { cwd });
     logSuccess('Angular compilation & build completed successfully with ZERO errors.');
   } catch (buildErr) {
     logError('Angular Build FAILED! Compilation or TypeScript errors detected.');
-    const stdout = buildErr.stdout ? buildErr.stdout.toString() : '';
-    const stderr = buildErr.stderr ? buildErr.stderr.toString() : '';
-    const combined = (stdout + '\n' + stderr).trim();
-    if (combined) process.stdout.write(combined + '\n');
+    const combined = (buildErr.combined || buildErr.stdout || buildErr.stderr || buildErr.message || '').trim();
     console.log(chalk.red('\n  ═════════════════════════════════════════════════════════════════'));
     console.log(chalk.red.bold('  ❌ COMMIT REJECTED: Application bundle generation failed!'));
     console.log(chalk.yellow('  Please fix the Angular/TypeScript build errors displayed above.'));
