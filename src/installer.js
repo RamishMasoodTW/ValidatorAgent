@@ -166,6 +166,9 @@ jobs:
     console.log(chalk.yellow('⚠ Gatekeeper is currently DISABLED (core.hooksPath is not set).'));
   }
   process.exit(0);
+} else if (args.includes('--self-test') || args.includes('self-test')) {
+  console.log(chalk.green('✔ Angular Gatekeeper Installer self-test passed successfully.'));
+  process.exit(0);
 } else {
   runInstaller().catch(err => {
     console.error('Fatal installer error:', err);

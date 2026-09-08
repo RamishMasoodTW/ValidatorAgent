@@ -12,6 +12,7 @@ import dotenv from 'dotenv';
 import chalk from 'chalk';
 import { MINI_BANNER } from './ascii-art.js';
 import { getDiff } from './utils/git.js';
+import { calculatePreFlightScore, renderScorecard } from './rules/scoring-rubric.js';
 import {
   checkAngularProject,
   checkCriticalArchitecture,
@@ -93,6 +94,7 @@ async function runGatekeeper() {
 
   const cwd = process.cwd();
   const isCiMode = argv.includes('--ci') || !!process.env.CI;
+  const isStrictMode = argv.includes('--strict') || process.env.GATEKEEPER_STRICT === '1';
   if (isCiMode) {
     process.env.SHOW_PROGRESS = 'false';
   }
@@ -117,8 +119,9 @@ async function runGatekeeper() {
   _activeStepNum = 2;
   startStep(2, 'Validating tsconfig, angular.json & entry points...');
   appendStepLog(2, `[Gatekeeper] Checking critical architecture files & entry points in ${cwd}...\n`);
+  let archRes = {};
   try {
-    checkCriticalArchitecture(cwd);
+    archRes = checkCriticalArchitecture(cwd);
     appendStepLog(2, `✔ Entry points, tsconfig, angular.json & lockfile sync verified\n`);
     updateStep(2, 'pass', 'Entry points, lockfile sync & Linux case-sensitivity verified');
   } catch (err) {
@@ -165,8 +168,9 @@ async function runGatekeeper() {
   _activeStepNum = 5;
   startStep(5, 'Running headless test runner...');
   appendStepLog(5, `[Gatekeeper] Running automated unit test suite...\n`);
+  let testRes = {};
   try {
-    const testRes = await runAutomatedUnitTests(cwd, projectPkg);
+    testRes = await runAutomatedUnitTests(cwd, projectPkg);
     let detailText = 'Unit tests passed (0 failures)';
     if (testRes && testRes.autoInjected) {
       detailText = 'Auto-injected smoke spec verified & safely cleaned up (0 failures)';
@@ -189,10 +193,11 @@ async function runGatekeeper() {
   _activeStepNum = 6;
   startStep(6, 'Compiling production bundle & verifying CD readiness...');
   appendStepLog(6, `[Gatekeeper] Compiling Angular production build & verifying CD readiness in ${cwd}...\n`);
+  let cdRes = {};
   try {
     await runAngularProductionBuild(cwd, projectPkg);
     appendStepLog(6, `\n[Gatekeeper] Validating compiled distribution artifacts in dist/...\n`);
-    const cdRes = validateCompiledArtifacts(cwd);
+    cdRes = validateCompiledArtifacts(cwd, { strict: isStrictMode });
     updateBuildMetadata(cwd, projectPkg);
     let cdDetail = `CD Verified: ${cdRes?.totalBundleSizeMb || '0'} MB`;
     if (cdRes?.totalGzipSizeKb && cdRes.totalGzipSizeKb !== '0.0') {
@@ -288,10 +293,42 @@ async function runGatekeeper() {
     throw _err;
   }
 
-  // FINAL VERDICT
+  // FINAL VERDICT: 100-Point Pre-Flight Quality Rubric Evaluation
+  const rubricInput = {
+    securityScanPassed: true,
+    secretsDetected: false,
+    conflictMarkersDetected: false,
+    forbiddenFilesDetected: false,
+    lockfileOutOfSync: false,
+    isCleanroom: archRes?.cleanroomRes?.isCleanroom !== false,
+    unstagedDriftFiles: archRes?.cleanroomRes?.unstagedDriftFiles || [],
+    typeScriptPassed: true,
+    typeScriptError: false,
+    lintPassed: true,
+    lintError: false,
+    casingMismatch: false,
+    hasCircularDependencies: archRes?.circularRes?.hasCycles || false,
+    circularCycles: archRes?.circularRes?.cycles || [],
+    templateSecurityPassed: archRes?.templateRes?.passed !== false,
+    templateViolations: archRes?.templateRes?.violations || [],
+    unitTestsPassed: !testRes?.skipped || (testRes?.specCount > 0),
+    unitTestsError: false,
+    unitTestsSkipped: !!testRes?.skipped,
+    specCount: testRes?.specCount || 0,
+    hasLocalhostLeak: !!cdRes?.hasLocalhostLeak,
+    hasHttpApiLeak: !!cdRes?.hasHttpApiLeak,
+    hasSpaRewrite: !!cdRes?.hasSpaRewrite,
+    bundleBudgetExceeded: !!cdRes?.bundleBudgetExceeded,
+    gzipBudgetExceeded: !!cdRes?.gzipMetrics?.budgetExceeded
+  };
+
+  const scoreResult = calculatePreFlightScore(rubricInput);
+  console.log(renderScorecard(scoreResult));
+
   finalizeProgress(true, aiReport);
   console.log('\n' + chalk.green.bold('═══════════════════════════════════════════════════════════════'));
-  console.log(chalk.green.bold(' ✔ ALL ANGULAR GATEKEEPER PRE-COMMIT VALIDATIONS PASSED!       '));
+  console.log(chalk.green.bold(` ✔ ALL ANGULAR GATEKEEPER PRE-COMMIT VALIDATIONS PASSED!       `));
+  console.log(chalk.green.bold(`   Pre-Flight Score: ${scoreResult.totalScore}/100 [Grade: ${scoreResult.grade} - ${scoreResult.gradeLabel}]`));
   console.log(chalk.green.bold('═══════════════════════════════════════════════════════════════\n'));
   process.exit(0);
 }

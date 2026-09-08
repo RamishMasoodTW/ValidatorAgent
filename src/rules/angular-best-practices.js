@@ -151,36 +151,46 @@ export function checkCriticalArchitecture(cwd = process.cwd()) {
   // 3. Node.js Engine & CI Runner Compatibility Check
   checkNodeEngineCompatibility(cwd);
 
-  // 4. CI Cleanroom Staged Integrity Check (95% CI Compliance)
-  verifyStagedCleanroom(cwd);
+  // 4. CI Cleanroom Staged Integrity Check
+  const cleanroomRes = verifyStagedCleanroom(cwd);
 
-  // 5. Angular Application Bootstrap & Root Component Integrity (95% CI Compliance)
-  verifyAngularBootstrapIntegrity(cwd);
+  // 5. Angular Application Bootstrap & Root Component Integrity
+  const bootstrapRes = verifyAngularBootstrapIntegrity(cwd);
 
   // 6. Angular Circular Dependency Loop Detection (Stops runtime DI deadlocks)
-  detectCircularDependencies(cwd);
+  const circularRes = detectCircularDependencies(cwd);
 
   // 7. Template Security & Safe DOM Scanner (Stops XSS and direct DOM mutations)
-  auditTemplateSecurity(cwd, stagedFiles);
+  const templateRes = auditTemplateSecurity(cwd, stagedFiles);
 
   // 8. Conventional Commit Message Verification (if commit message is present in .git/COMMIT_EDITMSG)
+  let commitCheck = null;
   const commitMsgFile = path.join(cwd, '.git', 'COMMIT_EDITMSG');
   if (fs.existsSync(commitMsgFile)) {
     try {
       const msg = fs.readFileSync(commitMsgFile, 'utf8').trim();
       const firstLine = msg.split('\n')[0].trim();
       if (firstLine && !firstLine.startsWith('#')) {
-        const check = validateCommitMessage(firstLine);
-        if (!check.valid) {
-          logWarning(`Conventional Commit Notice: ${check.error}`);
+        commitCheck = validateCommitMessage(firstLine);
+        if (!commitCheck.valid) {
+          logWarning(`Conventional Commit Notice: ${commitCheck.error}`);
         } else {
-          console.log(chalk.gray(`  ✔ Conventional Commit syntax verified (${check.type}${check.scope ? `(${check.scope})` : ''})`));
+          console.log(chalk.gray(`  ✔ Conventional Commit syntax verified (${commitCheck.type}${commitCheck.scope ? `(${commitCheck.scope})` : ''})`));
         }
       }
     } catch (_) {}
   }
 
   logSuccess('All critical Angular architecture files, lockfile sync, and entry points verified.');
+  return {
+    valid: true,
+    stagedFiles,
+    cleanroomRes,
+    bootstrapRes,
+    circularRes,
+    templateRes,
+    commitCheck
+  };
 }
 
 /**
@@ -351,7 +361,7 @@ export function detectSpaRewrite(cwd = process.cwd(), outputDir = null, distPath
 /**
  * Step 6: Compiled Production Artifacts Validation (IIS / Web Entry Points)
  */
-export function validateCompiledArtifacts(cwd = process.cwd()) {
+export function validateCompiledArtifacts(cwd = process.cwd(), options = {}) {
   console.log(chalk.blue('\n  Validating Compiled Production Distribution Artifacts (CD Readiness)...'));
   const distPath = path.join(cwd, 'dist');
   const outputDir = findBuildOutputDir(distPath);
@@ -456,9 +466,17 @@ export function validateCompiledArtifacts(cwd = process.cwd()) {
     console.log(`    ${chalk.green('✔')} Dockerfile Container Specification Validated${dockerAudit?.hasMultiStage ? ' (Multi-stage)' : ''}`);
   }
   if (hasLocalhostLeak) {
+    if (options.strict || process.env.GATEKEEPER_STRICT === '1') {
+      logError('STRICT REJECTION: Development localhost/dev endpoint detected in environment.prod.ts!');
+      throw new Error('Localhost/dev endpoint detected in environment.prod.ts (Strict CD Violation)');
+    }
     logWarning('CD Warning: Localhost/dev endpoint detected in environment.prod.ts!');
   }
   if (hasHttpApiLeak) {
+    if (options.strict || process.env.GATEKEEPER_STRICT === '1') {
+      logError('STRICT REJECTION: Unencrypted http:// endpoint detected in production environment!');
+      throw new Error('Unencrypted http:// endpoint detected in environment.prod.ts (Strict CD Violation)');
+    }
     logWarning('CD Security Warning: Unencrypted http:// endpoint detected in production environment!');
   }
   if (bundleBudgetExceeded) {

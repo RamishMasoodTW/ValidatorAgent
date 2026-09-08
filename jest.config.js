@@ -68,6 +68,8 @@ const config = {
   },
   // Treat test environment as Node
   testEnvironment: 'node',
+  // Generous timeout for sub-process spawning on Windows
+  testTimeout: 30000,
   // Clear mocks between tests
   clearMocks: true,
   // Verbose output for CI readability

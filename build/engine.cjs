@@ -1322,27 +1322,37 @@ function checkCriticalArchitecture(cwd = process.cwd()) {
   }
   validateCaseSensitiveImports(cwd, stagedFiles);
   checkNodeEngineCompatibility(cwd);
-  verifyStagedCleanroom(cwd);
-  verifyAngularBootstrapIntegrity(cwd);
-  detectCircularDependencies(cwd);
-  auditTemplateSecurity(cwd, stagedFiles);
+  const cleanroomRes = verifyStagedCleanroom(cwd);
+  const bootstrapRes = verifyAngularBootstrapIntegrity(cwd);
+  const circularRes = detectCircularDependencies(cwd);
+  const templateRes = auditTemplateSecurity(cwd, stagedFiles);
+  let commitCheck = null;
   const commitMsgFile = import_path2.default.join(cwd, ".git", "COMMIT_EDITMSG");
   if (import_fs2.default.existsSync(commitMsgFile)) {
     try {
       const msg = import_fs2.default.readFileSync(commitMsgFile, "utf8").trim();
       const firstLine = msg.split("\n")[0].trim();
       if (firstLine && !firstLine.startsWith("#")) {
-        const check = validateCommitMessage(firstLine);
-        if (!check.valid) {
-          logWarning(`Conventional Commit Notice: ${check.error}`);
+        commitCheck = validateCommitMessage(firstLine);
+        if (!commitCheck.valid) {
+          logWarning(`Conventional Commit Notice: ${commitCheck.error}`);
         } else {
-          console.log(source_default.gray(`  \u2714 Conventional Commit syntax verified (${check.type}${check.scope ? `(${check.scope})` : ""})`));
+          console.log(source_default.gray(`  \u2714 Conventional Commit syntax verified (${commitCheck.type}${commitCheck.scope ? `(${commitCheck.scope})` : ""})`));
         }
       }
     } catch (_) {
     }
   }
   logSuccess("All critical Angular architecture files, lockfile sync, and entry points verified.");
+  return {
+    valid: true,
+    stagedFiles,
+    cleanroomRes,
+    bootstrapRes,
+    circularRes,
+    templateRes,
+    commitCheck
+  };
 }
 function checkNodeEngineCompatibility(cwd = process.cwd()) {
   try {
@@ -1482,7 +1492,7 @@ function detectSpaRewrite(cwd = process.cwd(), outputDir = null, distPath = null
   }
   return { hasSpaRewrite: false, file: null, source: null };
 }
-function validateCompiledArtifacts(cwd = process.cwd()) {
+function validateCompiledArtifacts(cwd = process.cwd(), options = {}) {
   console.log(source_default.blue("\n  Validating Compiled Production Distribution Artifacts (CD Readiness)..."));
   const distPath = import_path2.default.join(cwd, "dist");
   const outputDir = findBuildOutputDir(distPath);
@@ -1561,9 +1571,17 @@ function validateCompiledArtifacts(cwd = process.cwd()) {
     console.log(`    ${source_default.green("\u2714")} Dockerfile Container Specification Validated${dockerAudit?.hasMultiStage ? " (Multi-stage)" : ""}`);
   }
   if (hasLocalhostLeak) {
+    if (options.strict || process.env.GATEKEEPER_STRICT === "1") {
+      logError("STRICT REJECTION: Development localhost/dev endpoint detected in environment.prod.ts!");
+      throw new Error("Localhost/dev endpoint detected in environment.prod.ts (Strict CD Violation)");
+    }
     logWarning("CD Warning: Localhost/dev endpoint detected in environment.prod.ts!");
   }
   if (hasHttpApiLeak) {
+    if (options.strict || process.env.GATEKEEPER_STRICT === "1") {
+      logError("STRICT REJECTION: Unencrypted http:// endpoint detected in production environment!");
+      throw new Error("Unencrypted http:// endpoint detected in environment.prod.ts (Strict CD Violation)");
+    }
     logWarning("CD Security Warning: Unencrypted http:// endpoint detected in production environment!");
   }
   if (bundleBudgetExceeded) {
@@ -29616,6 +29634,204 @@ ${source_default.red.bold(">>> [ANGULAR GATEKEEPER] Pre-Commit AI Validation Eng
 
 // src/engine.js
 init_git();
+
+// src/rules/scoring-rubric.js
+init_source();
+var RUBRIC_WEIGHTS = {
+  // Pillar 1: Security & Hygiene (25 pts)
+  SECRETS_AND_CREDENTIALS: 10,
+  CONFLICT_MARKERS_AND_BLATANT_FILES: 5,
+  LOCKFILE_SYNC: 5,
+  STAGED_CLEANROOM: 5,
+  // Pillar 2: Static Analysis & Type Safety (25 pts)
+  TYPESCRIPT_COMPILATION: 15,
+  LINTER_CLEANLINESS: 10,
+  // Pillar 3: Angular Architecture & Linux Parity (20 pts)
+  LINUX_CASE_SENSITIVITY: 10,
+  CIRCULAR_DEPENDENCIES: 5,
+  TEMPLATE_SECURITY_DOM: 5,
+  // Pillar 4: Regression & Test Health (15 pts)
+  UNIT_TEST_EXECUTION: 10,
+  TEST_SPEC_AVAILABILITY: 5,
+  // Pillar 5: Production & Cloud Readiness (15 pts)
+  ENVIRONMENT_PROD_LEAKS: 5,
+  SPA_SERVER_REWRITE: 5,
+  BUNDLE_AND_GZIP_BUDGETS: 5
+};
+var MAX_TOTAL_SCORE = Object.values(RUBRIC_WEIGHTS).reduce((sum, w) => sum + w, 0);
+function calculateGrade(score) {
+  if (score >= 95) return { grade: "A+", label: "Gold Standard (CI/CD Ready)", color: "green" };
+  if (score >= 90) return { grade: "A", label: "Ready to Commit & Push", color: "green" };
+  if (score >= 80) return { grade: "B", label: "Acceptable (Minor Quality Warnings)", color: "cyan" };
+  if (score >= 70) return { grade: "C", label: "Quality Risks Detected", color: "yellow" };
+  return { grade: "F", label: "Commit Blocked (Critical Violations)", color: "red" };
+}
+function calculatePreFlightScore(results = {}) {
+  const pillars = {
+    security: { name: "Security & Hygiene Gate", max: 25, earned: 0, checks: [] },
+    staticAnalysis: { name: "Static Analysis & Type Safety", max: 25, earned: 0, checks: [] },
+    architecture: { name: "Angular Architecture & Linux Parity", max: 20, earned: 0, checks: [] },
+    testHealth: { name: "Regression & Test Health", max: 15, earned: 0, checks: [] },
+    cdReadiness: { name: "Production & Cloud Readiness", max: 15, earned: 0, checks: [] }
+  };
+  const secretsPassed = results.securityScanPassed !== false && !results.secretsDetected;
+  if (secretsPassed) {
+    pillars.security.earned += RUBRIC_WEIGHTS.SECRETS_AND_CREDENTIALS;
+    pillars.security.checks.push({ name: "Secret & Credential Scan", earned: 10, max: 10, status: "pass" });
+  } else {
+    pillars.security.checks.push({ name: "Secret & Credential Scan", earned: 0, max: 10, status: "fail", detail: "Leaked credentials or API keys found in diff" });
+  }
+  const filesPassed = !results.conflictMarkersDetected && !results.forbiddenFilesDetected;
+  if (filesPassed) {
+    pillars.security.earned += RUBRIC_WEIGHTS.CONFLICT_MARKERS_AND_BLATANT_FILES;
+    pillars.security.checks.push({ name: "Git Conflict Markers & File Stage", earned: 5, max: 5, status: "pass" });
+  } else {
+    pillars.security.checks.push({ name: "Git Conflict Markers & File Stage", earned: 0, max: 5, status: "fail", detail: "Conflict markers or oversized/forbidden files staged" });
+  }
+  const lockfilePassed = results.lockfileOutOfSync !== true;
+  if (lockfilePassed) {
+    pillars.security.earned += RUBRIC_WEIGHTS.LOCKFILE_SYNC;
+    pillars.security.checks.push({ name: "Package Lockfile Sync (npm ci safe)", earned: 5, max: 5, status: "pass" });
+  } else {
+    pillars.security.checks.push({ name: "Package Lockfile Sync (npm ci safe)", earned: 0, max: 5, status: "fail", detail: "package.json staged without lockfile" });
+  }
+  const cleanroomPassed = results.isCleanroom !== false && (!results.unstagedDriftFiles || results.unstagedDriftFiles.length === 0);
+  if (cleanroomPassed) {
+    pillars.security.earned += RUBRIC_WEIGHTS.STAGED_CLEANROOM;
+    pillars.security.checks.push({ name: "Cleanroom Staged Integrity", earned: 5, max: 5, status: "pass" });
+  } else {
+    pillars.security.earned += 2;
+    pillars.security.checks.push({ name: "Cleanroom Staged Integrity", earned: 2, max: 5, status: "warn", detail: "Unstaged modifications on staged files" });
+  }
+  const tsPassed = results.typeScriptPassed !== false && !results.typeScriptError;
+  if (tsPassed) {
+    pillars.staticAnalysis.earned += RUBRIC_WEIGHTS.TYPESCRIPT_COMPILATION;
+    pillars.staticAnalysis.checks.push({ name: "Strict TypeScript Compilation", earned: 15, max: 15, status: "pass" });
+  } else {
+    pillars.staticAnalysis.checks.push({ name: "Strict TypeScript Compilation", earned: 0, max: 15, status: "fail", detail: "TypeScript compilation errors detected" });
+  }
+  const lintPassed = results.lintPassed !== false && !results.lintError;
+  if (lintPassed) {
+    pillars.staticAnalysis.earned += RUBRIC_WEIGHTS.LINTER_CLEANLINESS;
+    pillars.staticAnalysis.checks.push({ name: "Angular Linter Verification", earned: 10, max: 10, status: "pass" });
+  } else if (results.lintWarningsOnly) {
+    pillars.staticAnalysis.earned += 6;
+    pillars.staticAnalysis.checks.push({ name: "Angular Linter Verification", earned: 6, max: 10, status: "warn", detail: "Lint warnings detected" });
+  } else {
+    pillars.staticAnalysis.checks.push({ name: "Angular Linter Verification", earned: 0, max: 10, status: "fail", detail: "Linter reported syntax or rule errors" });
+  }
+  const casingPassed = results.casingMismatch !== true;
+  if (casingPassed) {
+    pillars.architecture.earned += RUBRIC_WEIGHTS.LINUX_CASE_SENSITIVITY;
+    pillars.architecture.checks.push({ name: "Linux CI Case-Sensitive Imports", earned: 10, max: 10, status: "pass" });
+  } else {
+    pillars.architecture.checks.push({ name: "Linux CI Case-Sensitive Imports", earned: 0, max: 10, status: "fail", detail: "Import casing does not match physical disk files" });
+  }
+  const circularPassed = !results.hasCircularDependencies && (!results.circularCycles || results.circularCycles.length === 0);
+  if (circularPassed) {
+    pillars.architecture.earned += RUBRIC_WEIGHTS.CIRCULAR_DEPENDENCIES;
+    pillars.architecture.checks.push({ name: "Circular Dependency Graph DFS", earned: 5, max: 5, status: "pass" });
+  } else {
+    pillars.architecture.checks.push({ name: "Circular Dependency Graph DFS", earned: 0, max: 5, status: "warn", detail: `${results.circularCycles?.length || 1} circular dependency cycle(s) detected` });
+  }
+  const templatePassed = results.templateSecurityPassed !== false && (!results.templateViolations || results.templateViolations.length === 0);
+  if (templatePassed) {
+    pillars.architecture.earned += RUBRIC_WEIGHTS.TEMPLATE_SECURITY_DOM;
+    pillars.architecture.checks.push({ name: "Template Security & Safe DOM Audit", earned: 5, max: 5, status: "pass" });
+  } else {
+    pillars.architecture.checks.push({ name: "Template Security & Safe DOM Audit", earned: 0, max: 5, status: "warn", detail: `${results.templateViolations?.length || 1} template/DOM security pattern(s) flagged` });
+  }
+  const testsPassed = results.unitTestsPassed !== false && !results.unitTestsError;
+  if (testsPassed) {
+    pillars.testHealth.earned += RUBRIC_WEIGHTS.UNIT_TEST_EXECUTION;
+    pillars.testHealth.checks.push({ name: "Unit Test Suite Execution", earned: 10, max: 10, status: "pass" });
+  } else {
+    pillars.testHealth.checks.push({ name: "Unit Test Suite Execution", earned: 0, max: 10, status: "fail", detail: "Unit test runner reported spec failures" });
+  }
+  const specCount = Number(results.specCount) || 0;
+  if (specCount > 0) {
+    pillars.testHealth.earned += RUBRIC_WEIGHTS.TEST_SPEC_AVAILABILITY;
+    pillars.testHealth.checks.push({ name: "Test Spec Availability", earned: 5, max: 5, status: "pass", detail: `${specCount} active test spec(s)` });
+  } else if (results.unitTestsSkipped) {
+    pillars.testHealth.checks.push({ name: "Test Spec Availability", earned: 0, max: 5, status: "warn", detail: "Zero test specs detected (*.spec.ts) \u2014 0% test coverage" });
+  } else {
+    pillars.testHealth.checks.push({ name: "Test Spec Availability", earned: 0, max: 5, status: "warn", detail: "No test specs found in project" });
+  }
+  const noLeaks = !results.hasLocalhostLeak && !results.hasHttpApiLeak;
+  if (noLeaks) {
+    pillars.cdReadiness.earned += RUBRIC_WEIGHTS.ENVIRONMENT_PROD_LEAKS;
+    pillars.cdReadiness.checks.push({ name: "Production Endpoint Security (No Localhost)", earned: 5, max: 5, status: "pass" });
+  } else {
+    const leakReasons = [];
+    if (results.hasLocalhostLeak) leakReasons.push("localhost in environment.prod.ts");
+    if (results.hasHttpApiLeak) leakReasons.push("unencrypted http:// endpoint");
+    pillars.cdReadiness.checks.push({ name: "Production Endpoint Security (No Localhost)", earned: 0, max: 5, status: "warn", detail: leakReasons.join(", ") });
+  }
+  const spaPassed = !!results.hasSpaRewrite;
+  if (spaPassed) {
+    pillars.cdReadiness.earned += RUBRIC_WEIGHTS.SPA_SERVER_REWRITE;
+    pillars.cdReadiness.checks.push({ name: "SPA Deep Route Server Rewrite", earned: 5, max: 5, status: "pass" });
+  } else {
+    pillars.cdReadiness.checks.push({ name: "SPA Deep Route Server Rewrite", earned: 0, max: 5, status: "warn", detail: "Missing web.config / nginx.conf / _redirects (route reloads may 404)" });
+  }
+  const budgetPassed = !results.bundleBudgetExceeded && !results.gzipBudgetExceeded;
+  if (budgetPassed) {
+    pillars.cdReadiness.earned += RUBRIC_WEIGHTS.BUNDLE_AND_GZIP_BUDGETS;
+    pillars.cdReadiness.checks.push({ name: "Bundle Sizing & Gzip Budgets", earned: 5, max: 5, status: "pass" });
+  } else {
+    pillars.cdReadiness.earned += 2;
+    pillars.cdReadiness.checks.push({ name: "Bundle Sizing & Gzip Budgets", earned: 2, max: 5, status: "warn", detail: "Bundle or gzip exceeds enterprise performance budget" });
+  }
+  const totalEarned = Object.values(pillars).reduce((sum, p) => sum + p.earned, 0);
+  const totalScore = Math.max(0, Math.min(100, Math.round(totalEarned / MAX_TOTAL_SCORE * 100)));
+  const { grade, label, color } = calculateGrade(totalScore);
+  const ciPillarsScore = pillars.security.earned + pillars.staticAnalysis.earned + pillars.architecture.earned + pillars.testHealth.earned;
+  const ciPillarsMax = pillars.security.max + pillars.staticAnalysis.max + pillars.architecture.max + pillars.testHealth.max;
+  const dynamicCiScore = Math.round(ciPillarsScore / ciPillarsMax * 100);
+  const cdPillarsScore = pillars.cdReadiness.earned;
+  const cdPillarsMax = pillars.cdReadiness.max;
+  const dynamicCdScore = Math.round(cdPillarsScore / cdPillarsMax * 100);
+  return {
+    totalScore,
+    grade,
+    gradeLabel: label,
+    gradeColor: color,
+    pillars,
+    ciReadinessScore: `${dynamicCiScore}%`,
+    cdReadinessScore: `${dynamicCdScore}%`,
+    ciComplianceScore: `${dynamicCiScore}%`,
+    cdComplianceScore: `${dynamicCdScore}%`,
+    allPassed: totalScore >= 70 && !results.typeScriptError && !results.secretsDetected && !results.conflictMarkersDetected
+  };
+}
+function renderScorecard(scoreResult) {
+  const { totalScore, grade, gradeLabel, pillars } = scoreResult;
+  const lines = [];
+  lines.push("");
+  lines.push(source_default.cyan("\u250C\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510"));
+  lines.push(source_default.cyan("\u2502") + source_default.bold.white("             \u{1F6E1}\uFE0F  ANGULAR GATEKEEPER PRE-FLIGHT SCORECARD                     ") + source_default.cyan("\u2502"));
+  lines.push(source_default.cyan("\u251C\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u252C\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2524"));
+  for (const pillar of Object.values(pillars)) {
+    const earnedStr = `${pillar.earned}/${pillar.max} pts`.padStart(11);
+    lines.push(source_default.cyan("\u2502 ") + source_default.bold.white(pillar.name.padEnd(49)) + source_default.cyan(" \u2502 ") + source_default.yellow(earnedStr) + source_default.cyan(" \u2502"));
+    for (const chk of pillar.checks) {
+      let icon = source_default.green("\u2714");
+      if (chk.status === "warn") icon = source_default.yellow("\u26A0");
+      if (chk.status === "fail") icon = source_default.red("\u2716");
+      const namePart = `  ${icon} ${chk.name}`.padEnd(49);
+      const ptPart = `${chk.earned}/${chk.max}`.padStart(11);
+      lines.push(source_default.cyan("\u2502 ") + source_default.gray(namePart) + source_default.cyan(" \u2502 ") + source_default.gray(ptPart) + source_default.cyan(" \u2502"));
+    }
+    lines.push(source_default.cyan("\u251C\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u253C\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2524"));
+  }
+  const scoreSummary = `TOTAL SCORE: ${totalScore}/100  [GRADE: ${grade} - ${gradeLabel}]`;
+  lines.push(source_default.cyan("\u2502 ") + source_default.bold.green(scoreSummary.padEnd(75)) + source_default.cyan(" \u2502"));
+  lines.push(source_default.cyan("\u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518"));
+  lines.push("");
+  return lines.join("\n");
+}
+
+// src/engine.js
 init_angular_best_practices();
 
 // src/rules/typescript-validator.js
@@ -29757,10 +29973,10 @@ describe('Angular CI Pipeline Verification', () => {
       testCommand = "npx ng test --watch=false";
     }
     console.log(source_default.blue(`  Executing Automated Unit Tests (${testCommand})...`));
-    let output = "";
+    let _output = "";
     try {
       const res = await execStreaming(testCommand, { cwd });
-      output = res.combined;
+      _output = res.combined;
     } catch (testExecErr) {
       const combined = (testExecErr.combined || testExecErr.stdout || testExecErr.stderr || testExecErr.message || "").trim();
       if (tempSpecPath && (combined.includes("ReferenceError: describe is not defined") || combined.includes("ReferenceError: it is not defined") || combined.includes("describe is not defined"))) {
@@ -29778,7 +29994,7 @@ describe('Angular CI Pipeline Verification', () => {
           import_fs3.default.writeFileSync(tempSpecPath, vitestSmokeSpec, "utf8");
           console.log(source_default.yellow("  \u26A0 Smoke spec missing test runner globals. Retrying with explicit Vitest imports..."));
           const retryRes = await execStreaming(testCommand, { cwd });
-          output = retryRes.combined;
+          _output = retryRes.combined;
         } catch (vitestRetryErr) {
           const vCombined = (vitestRetryErr.combined || vitestRetryErr.stdout || vitestRetryErr.stderr || vitestRetryErr.message || "").trim();
           capturedTestOutput = vCombined;
@@ -29813,7 +30029,7 @@ describe('Angular CI Pipeline Verification', () => {
           console.log(source_default.yellow(`  \u26A0 Test runner rejected argument. Retrying without unsupported flag: (${fallbackCommand})...`));
           try {
             const fbRes = await execStreaming(fallbackCommand, { cwd });
-            output = fbRes.combined;
+            _output = fbRes.combined;
             testCommand = fallbackCommand;
           } catch (retryErr) {
             const rCombined = (retryErr.combined || retryErr.stdout || retryErr.stderr || retryErr.message || "").trim();
@@ -54383,6 +54599,7 @@ async function runGatekeeper() {
 `));
   const cwd = process.cwd();
   const isCiMode = argv.includes("--ci") || !!process.env.CI;
+  const isStrictMode = argv.includes("--strict") || process.env.GATEKEEPER_STRICT === "1";
   if (isCiMode) {
     process.env.SHOW_PROGRESS = "false";
   }
@@ -54406,8 +54623,9 @@ async function runGatekeeper() {
   startStep(2, "Validating tsconfig, angular.json & entry points...");
   appendStepLog(2, `[Gatekeeper] Checking critical architecture files & entry points in ${cwd}...
 `);
+  let archRes = {};
   try {
-    checkCriticalArchitecture(cwd);
+    archRes = checkCriticalArchitecture(cwd);
     appendStepLog(2, `\u2714 Entry points, tsconfig, angular.json & lockfile sync verified
 `);
     updateStep(2, "pass", "Entry points, lockfile sync & Linux case-sensitivity verified");
@@ -54460,8 +54678,9 @@ async function runGatekeeper() {
   startStep(5, "Running headless test runner...");
   appendStepLog(5, `[Gatekeeper] Running automated unit test suite...
 `);
+  let testRes = {};
   try {
-    const testRes = await runAutomatedUnitTests(cwd, projectPkg);
+    testRes = await runAutomatedUnitTests(cwd, projectPkg);
     let detailText = "Unit tests passed (0 failures)";
     if (testRes && testRes.autoInjected) {
       detailText = "Auto-injected smoke spec verified & safely cleaned up (0 failures)";
@@ -54486,12 +54705,13 @@ async function runGatekeeper() {
   startStep(6, "Compiling production bundle & verifying CD readiness...");
   appendStepLog(6, `[Gatekeeper] Compiling Angular production build & verifying CD readiness in ${cwd}...
 `);
+  let cdRes = {};
   try {
     await runAngularProductionBuild(cwd, projectPkg);
     appendStepLog(6, `
 [Gatekeeper] Validating compiled distribution artifacts in dist/...
 `);
-    const cdRes = validateCompiledArtifacts(cwd);
+    cdRes = validateCompiledArtifacts(cwd, { strict: isStrictMode });
     updateBuildMetadata(cwd, projectPkg);
     let cdDetail = `CD Verified: ${cdRes?.totalBundleSizeMb || "0"} MB`;
     if (cdRes?.totalGzipSizeKb && cdRes.totalGzipSizeKb !== "0.0") {
@@ -54600,9 +54820,39 @@ ${aiReport}
     finalizeProgress(false, _err.message);
     throw _err;
   }
+  const rubricInput = {
+    securityScanPassed: true,
+    secretsDetected: false,
+    conflictMarkersDetected: false,
+    forbiddenFilesDetected: false,
+    lockfileOutOfSync: false,
+    isCleanroom: archRes?.cleanroomRes?.isCleanroom !== false,
+    unstagedDriftFiles: archRes?.cleanroomRes?.unstagedDriftFiles || [],
+    typeScriptPassed: true,
+    typeScriptError: false,
+    lintPassed: true,
+    lintError: false,
+    casingMismatch: false,
+    hasCircularDependencies: archRes?.circularRes?.hasCycles || false,
+    circularCycles: archRes?.circularRes?.cycles || [],
+    templateSecurityPassed: archRes?.templateRes?.passed !== false,
+    templateViolations: archRes?.templateRes?.violations || [],
+    unitTestsPassed: !testRes?.skipped || testRes?.specCount > 0,
+    unitTestsError: false,
+    unitTestsSkipped: !!testRes?.skipped,
+    specCount: testRes?.specCount || 0,
+    hasLocalhostLeak: !!cdRes?.hasLocalhostLeak,
+    hasHttpApiLeak: !!cdRes?.hasHttpApiLeak,
+    hasSpaRewrite: !!cdRes?.hasSpaRewrite,
+    bundleBudgetExceeded: !!cdRes?.bundleBudgetExceeded,
+    gzipBudgetExceeded: !!cdRes?.gzipMetrics?.budgetExceeded
+  };
+  const scoreResult = calculatePreFlightScore(rubricInput);
+  console.log(renderScorecard(scoreResult));
   finalizeProgress(true, aiReport);
   console.log("\n" + source_default.green.bold("\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550"));
-  console.log(source_default.green.bold(" \u2714 ALL ANGULAR GATEKEEPER PRE-COMMIT VALIDATIONS PASSED!       "));
+  console.log(source_default.green.bold(` \u2714 ALL ANGULAR GATEKEEPER PRE-COMMIT VALIDATIONS PASSED!       `));
+  console.log(source_default.green.bold(`   Pre-Flight Score: ${scoreResult.totalScore}/100 [Grade: ${scoreResult.grade} - ${scoreResult.gradeLabel}]`));
   console.log(source_default.green.bold("\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\n"));
   process.exit(0);
 }

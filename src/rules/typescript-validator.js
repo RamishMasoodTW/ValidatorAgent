@@ -1,6 +1,5 @@
 import fs from 'fs';
 import path from 'path';
-import { execSync } from 'child_process';
 import chalk from 'chalk';
 import { logStep, logSuccess, logError, logWarning } from '../utils/logger.js';
 import { getAllFiles } from './angular-best-practices.js';
@@ -191,10 +190,10 @@ describe('Angular CI Pipeline Verification', () => {
     }
 
     console.log(chalk.blue(`  Executing Automated Unit Tests (${testCommand})...`));
-    let output = '';
+    let _output = '';
     try {
       const res = await execStreaming(testCommand, { cwd });
-      output = res.combined;
+      _output = res.combined;
     } catch (testExecErr) {
       const combined = (testExecErr.combined || testExecErr.stdout || testExecErr.stderr || testExecErr.message || '').trim();
 
@@ -214,7 +213,7 @@ describe('Angular CI Pipeline Verification', () => {
           fs.writeFileSync(tempSpecPath, vitestSmokeSpec, 'utf8');
           console.log(chalk.yellow('  ⚠ Smoke spec missing test runner globals. Retrying with explicit Vitest imports...'));
           const retryRes = await execStreaming(testCommand, { cwd });
-          output = retryRes.combined;
+          _output = retryRes.combined;
         } catch (vitestRetryErr) {
           const vCombined = (vitestRetryErr.combined || vitestRetryErr.stdout || vitestRetryErr.stderr || vitestRetryErr.message || '').trim();
           capturedTestOutput = vCombined;
@@ -254,7 +253,7 @@ describe('Angular CI Pipeline Verification', () => {
           console.log(chalk.yellow(`  ⚠ Test runner rejected argument. Retrying without unsupported flag: (${fallbackCommand})...`));
           try {
             const fbRes = await execStreaming(fallbackCommand, { cwd });
-            output = fbRes.combined;
+            _output = fbRes.combined;
             testCommand = fallbackCommand;
           } catch (retryErr) {
             const rCombined = (retryErr.combined || retryErr.stdout || retryErr.stderr || retryErr.message || '').trim();

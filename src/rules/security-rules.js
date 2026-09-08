@@ -1,6 +1,5 @@
 import fs from 'fs';
 import path from 'path';
-import { execSync } from 'child_process';
 import chalk from 'chalk';
 import { logStep, logWarning, logError, logSuccess } from '../utils/logger.js';
 import { getStagedFiles } from '../utils/git.js';
