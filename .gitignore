@@ -2,9 +2,11 @@ node_modules/
 dist/
 build/
 coverage/
+Angular Gatekeeper/
 .vscode/
 *.log
 .env
 .env.local
 Thumbs.db
 .DS_Store
+
