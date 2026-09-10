@@ -5,7 +5,7 @@ import { execSync } from 'child_process';
 import chalk from 'chalk';
 import prompts from 'prompts';
 import readline from 'readline';
-import { BANNER } from './ascii-art.js';
+import { BANNER } from './ui/ascii-art.js';
 
 const appDataRoot = process.env.APPDATA
   ? process.env.APPDATA

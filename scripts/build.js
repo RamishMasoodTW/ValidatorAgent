@@ -6,10 +6,11 @@ import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const rootDir = path.resolve(__dirname, '..');
 
-const buildDir = path.join(__dirname, 'build');
-const outputFolder = path.join(__dirname, 'Angular Gatekeeper');
-const distDir = path.join(__dirname, 'dist');
+const buildDir = path.join(rootDir, 'build');
+const outputFolder = path.join(rootDir, 'Angular Gatekeeper');
+const distDir = path.join(rootDir, 'dist');
 
 function generateReadme() {
   return `================================================================================
@@ -513,7 +514,7 @@ async function build() {
 
   // Clean up any legacy FrontendGatekeeperSetup.exe
   ['dist', 'Angular Gatekeeper'].forEach(folder => {
-    const legacyPath = path.join(__dirname, folder, 'FrontendGatekeeperSetup.exe');
+    const legacyPath = path.join(rootDir, folder, 'FrontendGatekeeperSetup.exe');
     if (fs.existsSync(legacyPath)) {
       try { fs.unlinkSync(legacyPath); } catch (e) { }
     }
@@ -524,7 +525,7 @@ async function build() {
 
   try {
     await esbuild.build({
-      entryPoints: [path.join(__dirname, 'src', 'engine.js')],
+      entryPoints: [path.join(rootDir, 'src', 'engine.js')],
       outfile: path.join(buildDir, 'engine.cjs'),
       bundle: true,
       platform: 'node',
@@ -535,7 +536,7 @@ async function build() {
     console.log('  ✔ Bundled: build/engine.cjs');
 
     await esbuild.build({
-      entryPoints: [path.join(__dirname, 'src', 'installer.js')],
+      entryPoints: [path.join(rootDir, 'src', 'installer.js')],
       outfile: path.join(buildDir, 'installer.cjs'),
       bundle: true,
       platform: 'node',

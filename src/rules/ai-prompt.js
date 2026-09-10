@@ -40,7 +40,8 @@ ${diffOutput.slice(0, 25000)}
    - Output: "VERDICT: PASSED"
    - Provide a concise summary and constructive architectural insights.
 
-6. FORMATTING: Use clean, standard Markdown for headings and bullets. Never use LaTeX notation (e.g., do NOT output $\\rightarrow$ or \\rightarrow; use "→" or "->" instead). Never wrap heading lines in double asterisks.
+6. FORMATTING: Use clean, standard Markdown for headings and bullets. Never use LaTeX notation (e.g., do NOT output $\rightarrow$ or \rightarrow; use "→" or "->" instead). Never wrap heading lines in double asterisks.
+7. COMPLETION: Ensure your response is fully complete. Finish all sentences, recommendations, and bullet points cleanly without cutting off mid-thought.
 
 Ensure your response clearly includes either "VERDICT: PASSED" or "VERDICT: FAILED" in capital letters.
 `;
@@ -130,7 +131,8 @@ export async function runAiKnowledgeBaseAudit(config = {}, cwd = process.cwd()) 
           body: JSON.stringify({
             model,
             messages: [{ role: 'user', content: prompt }],
-            temperature: 0.2
+            temperature: 0.2,
+            max_tokens: 4096
           })
         });
         if (!res.ok) {
@@ -202,7 +204,8 @@ export async function runAiKnowledgeBaseAudit(config = {}, cwd = process.cwd()) 
           body: JSON.stringify({
             model,
             messages: [{ role: 'user', content: prompt }],
-            temperature: 0.2
+            temperature: 0.2,
+            max_tokens: 4096
           })
         });
         if (!res.ok) {
@@ -237,7 +240,8 @@ export async function runAiKnowledgeBaseAudit(config = {}, cwd = process.cwd()) 
           body: JSON.stringify({
             model,
             messages: [{ role: 'user', content: prompt }],
-            temperature: 0.2
+            temperature: 0.2,
+            max_tokens: 4096
           })
         });
         if (!res.ok) {
@@ -274,7 +278,8 @@ export async function runAiKnowledgeBaseAudit(config = {}, cwd = process.cwd()) 
           body: JSON.stringify({
             model,
             messages: [{ role: 'user', content: prompt }],
-            temperature: 0.2
+            temperature: 0.2,
+            max_tokens: 4096
           })
         });
         if (!res.ok) {
@@ -314,7 +319,11 @@ export async function runAiKnowledgeBaseAudit(config = {}, cwd = process.cwd()) 
       const ai = new GoogleGenAI({ apiKey: geminiKey });
       const response = await ai.models.generateContent({
         model: modelName,
-        contents: prompt
+        contents: prompt,
+        config: {
+          maxOutputTokens: 4096,
+          temperature: 0.2
+        }
       });
 
       const resultText = response.text || '';
@@ -346,7 +355,11 @@ function callOllamaViaHttp(url, model, prompt) {
         model,
         prompt,
         stream: false,
-        options: { temperature: 0.2 }
+        options: {
+          temperature: 0.2,
+          num_predict: 4096,
+          num_ctx: 8192
+        }
       });
 
       const options = {

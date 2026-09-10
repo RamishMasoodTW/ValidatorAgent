@@ -6,53 +6,61 @@ export function stripAnsi(str) {
     .replace(/\[[0-9;]+m/g, '');
 }
 
-function getAiStepLabel() {
-  const provider = (process.env.AI_PROVIDER || 'gemini').toLowerCase();
+import fs from 'fs';
+import os from 'os';
+import path from 'path';
+import { spawn } from 'child_process';
+import dotenv from 'dotenv';
+
+export function getAiStepLabel() {
+  if (!process.env.AI_PROVIDER && !process.env.GEMINI_API_KEY) {
+    try {
+      const appDataDir = process.env.APPDATA
+        ? path.join(process.env.APPDATA, 'FrontendGatekeeper')
+        : path.join(process.env.HOME || process.env.USERPROFILE || '.', '.frontend-gatekeeper');
+      const envPath = path.join(appDataDir, '.env');
+      if (fs.existsSync(envPath)) {
+        dotenv.config({ path: envPath, quiet: true });
+      }
+      dotenv.config({ quiet: true });
+    } catch (_) {}
+  }
+
+  const provider = (process.env.AI_PROVIDER || (process.env.GEMINI_API_KEY ? 'gemini' : 'none')).toLowerCase();
   switch (provider) {
+    case 'ollama': return '8. AI Knowledge Base Audit (Ollama)';
     case 'openai': return '8. AI Knowledge Base Audit (OpenAI)';
     case 'anthropic': return '8. AI Knowledge Base Audit (Anthropic Claude)';
     case 'deepseek': return '8. AI Knowledge Base Audit (DeepSeek)';
     case 'groq': return '8. AI Knowledge Base Audit (Groq)';
     case 'openrouter': return '8. AI Knowledge Base Audit (OpenRouter)';
-    case 'ollama': return '8. AI Knowledge Base Audit (Local Ollama)';
+    case 'gemini': return '8. AI Knowledge Base Audit (Google Gemini)';
     case 'none': return '8. AI Knowledge Base Audit (Disabled)';
-    default: return '8. AI Knowledge Base Audit (Google Gemini)';
+    default: {
+      const capitalized = provider.charAt(0).toUpperCase() + provider.slice(1);
+      return `8. AI Knowledge Base Audit (${capitalized})`;
+    }
   }
 }
 
-/**
- * progress-window.js
- * Manages the live commit validation progress window for Angular Gatekeeper.
- *
- * Features:
- *  1. Native WPF GUI with UTF-8 BOM (zero unreadable / garbled text).
- *  2. Real-time live status updates (Pending -> Running -> PASS / FAILED / SKIP).
- *  3. Adaptive System Dark/Light theme matching.
- *  4. Topmost window ensures visibility above IDEs / GitHub Desktop.
- *  5. Rich Markdown Rendering (Styled Headings, Bold text, indented Bullet points, Inlines).
- *  6. Interactive "Copy Error Log" button with clipboard integration.
- *  7. Interactive Close button.
- */
+export function getSteps() {
+  return [
+    { id: 1, label: '1. Angular Project Detection' },
+    { id: 2, label: '2. Critical Architecture & Entry Points' },
+    { id: 3, label: '3. Dependency Vulnerability Audit (npm audit)' },
+    { id: 4, label: '4. TypeScript & Linter Verification' },
+    { id: 5, label: '5. Automated Unit Tests (test:ci) + Coverage Gate' },
+    { id: 6, label: '6. Production Build & CD Deployment Verification' },
+    { id: 7, label: '7. Security & Secret Leak Scanning' },
+    { id: 8, label: getAiStepLabel() }
+  ];
+}
 
-import fs from 'fs';
-import os from 'os';
-import path from 'path';
-import { spawn } from 'child_process';
+export const STEPS = getSteps();
 
 const PROGRESS_FILE = path.join(os.tmpdir(), 'gk-progress.json');
 const PS_SCRIPT = path.join(os.tmpdir(), 'gk-progress-window.ps1');
 const VBS_SCRIPT = path.join(os.tmpdir(), 'gk-progress-launcher.vbs');
-
-const STEPS = [
-  { id: 1, label: '1. Angular Project Detection' },
-  { id: 2, label: '2. Critical Architecture & Entry Points' },
-  { id: 3, label: '3. Dependency Vulnerability Audit (npm audit)' },
-  { id: 4, label: '4. TypeScript & Linter Verification' },
-  { id: 5, label: '5. Automated Unit Tests (test:ci) + Coverage Gate' },
-  { id: 6, label: '6. Production Build & CD Deployment Verification' },
-  { id: 7, label: '7. Security & Secret Leak Scanning' },
-  { id: 8, label: getAiStepLabel() }
-];
 
 let _windowEnabled = false;
 let _stepLogBuffers = {};
@@ -520,7 +528,7 @@ $stepLabels = @(
   '5. Automated Unit Tests & CI Regression Suite (test:ci)',
   '6. Production Build & CD Deployment Readiness Verification',
   '7. Security & Secret Leak Scanning',
-  '8. Multi-Provider AI Knowledge Base Regression Audit'
+  '${getAiStepLabel().replace(/'/g, "''")}'
 );
 
 $stepCards     = @{}
@@ -1011,7 +1019,7 @@ export function initProgressWindow() {
     steps: {}
   };
 
-  for (const s of STEPS) {
+  for (const s of getSteps()) {
     data.steps[s.id] = { status: 'pending', label: s.label, detail: '', log: '' };
   }
 

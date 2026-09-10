@@ -125,11 +125,17 @@ Angular Gatekeeper/                  ← Standalone Distribution Package
 ├── README.md                        ← Full guide (Markdown)
 └── README.txt                       ← Full guide (Plaintext)
 
+scripts/                             ← Build & Release Automation
+└── build.js                         ← Bundler (esbuild) & standalone packaging (pkg)
+
 src/                                 ← Core Engine Architecture
 ├── engine.js                        ← Pre-commit pipeline runner & CLI router
-├── branch-watcher.js                ← Conflict daemon, auto-restart, Toast alerts
-├── progress-window.js               ← WPF live progress GUI launcher
 ├── installer.js                     ← Installer & uninstaller wizards
+├── daemon/                          ← Background Services & Monitoring
+│   └── branch-watcher.js            ← Conflict daemon, auto-restart, Toast alerts
+├── ui/                              ← Presentation & Live GUI Layer
+│   ├── progress-window.js           ← WPF live progress GUI launcher & IPC
+│   └── ascii-art.js                 ← Terminal banners & branding art
 ├── rules/
 │   ├── scoring-rubric.js            ← 100-Point Pre-Flight Quality Rubric engine
 │   ├── ai-prompt.js                 ← Gemini 3.8 / 3.7 Flash AI audit + fallbacks

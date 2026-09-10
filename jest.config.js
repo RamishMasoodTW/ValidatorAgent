@@ -23,9 +23,10 @@ const config = {
     'src/utils/git.js',
     // ── Newly tracked (starter thresholds — increase incrementally) ───────
     'src/engine.js',
-    'src/branch-watcher.js',
+    'src/daemon/branch-watcher.js',
     'src/installer.js',
-    'src/progress-window.js'
+    'src/ui/progress-window.js',
+    'src/ui/ascii-art.js'
   ],
   coverageReporters: ['text', 'lcov', 'clover', 'cobertura'],
   coverageThreshold: {

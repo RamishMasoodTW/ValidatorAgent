@@ -10,7 +10,7 @@ import fs from 'fs';
 import path from 'path';
 import dotenv from 'dotenv';
 import chalk from 'chalk';
-import { MINI_BANNER } from './ascii-art.js';
+import { MINI_BANNER } from './ui/ascii-art.js';
 import { getDiff } from './utils/git.js';
 import { calculatePreFlightScore, renderScorecard } from './rules/scoring-rubric.js';
 import {
@@ -35,14 +35,14 @@ import {
   statusBranchWatcher,
   runDaemonLoop,
   autoRestartIfEnabled
-} from './branch-watcher.js';
+} from './daemon/branch-watcher.js';
 import {
   initProgressWindow,
   startStep,
   updateStep,
   appendStepLog,
   finalizeProgress
-} from './progress-window.js';
+} from './ui/progress-window.js';
 
 let _activeStepNum = null;
 let _stdioHooked = false;

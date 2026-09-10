@@ -13,10 +13,10 @@
     "README.md"
   ],
   "scripts": {
-    "build:bundle": "node build.js --bundle-only",
-    "build:exe": "node build.js --zip",
+    "build:bundle": "node scripts/build.js --bundle-only",
+    "build:exe": "node scripts/build.js --zip",
     "build:pack": "npm pack --dry-run",
-    "build": "node build.js --zip",
+    "build": "node scripts/build.js --zip",
     "lint": "eslint src/**/*.js --max-warnings=0",
     "lint:fix": "eslint src/**/*.js --fix",
     "test": "npx jest --forceExit",

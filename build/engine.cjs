@@ -29608,10 +29608,10 @@ var require_prompts3 = __commonJS({
 // src/engine.js
 var import_fs8 = __toESM(require("fs"), 1);
 var import_path7 = __toESM(require("path"), 1);
-var import_dotenv = __toESM(require_main(), 1);
+var import_dotenv2 = __toESM(require_main(), 1);
 init_source();
 
-// src/ascii-art.js
+// src/ui/ascii-art.js
 init_source();
 var BANNER = `
 ${source_default.red.bold("  \u2588\u2588\u2588\u2588\u2588\u2557 \u2588\u2588\u2588\u2557   \u2588\u2588\u2557 \u2588\u2588\u2588\u2588\u2588\u2588\u2557 \u2588\u2588\u2557   \u2588\u2588\u2557\u2588\u2588\u2557      \u2588\u2588\u2588\u2588\u2588\u2557 \u2588\u2588\u2588\u2588\u2588\u2588\u2557 ")}
@@ -52506,7 +52506,8 @@ ${diffOutput.slice(0, 25e3)}
    - Output: "VERDICT: PASSED"
    - Provide a concise summary and constructive architectural insights.
 
-6. FORMATTING: Use clean, standard Markdown for headings and bullets. Never use LaTeX notation (e.g., do NOT output $\\rightarrow$ or \\rightarrow; use "\u2192" or "->" instead). Never wrap heading lines in double asterisks.
+6. FORMATTING: Use clean, standard Markdown for headings and bullets. Never use LaTeX notation (e.g., do NOT output $\rightarrow$ or \rightarrow; use "\u2192" or "->" instead). Never wrap heading lines in double asterisks.
+7. COMPLETION: Ensure your response is fully complete. Finish all sentences, recommendations, and bullet points cleanly without cutting off mid-thought.
 
 Ensure your response clearly includes either "VERDICT: PASSED" or "VERDICT: FAILED" in capital letters.
 `;
@@ -52578,7 +52579,8 @@ async function runAiKnowledgeBaseAudit(config = {}, cwd = process.cwd()) {
         body: JSON.stringify({
           model,
           messages: [{ role: "user", content: prompt }],
-          temperature: 0.2
+          temperature: 0.2,
+          max_tokens: 4096
         })
       });
       if (!res.ok) {
@@ -52646,7 +52648,8 @@ async function runAiKnowledgeBaseAudit(config = {}, cwd = process.cwd()) {
         body: JSON.stringify({
           model,
           messages: [{ role: "user", content: prompt }],
-          temperature: 0.2
+          temperature: 0.2,
+          max_tokens: 4096
         })
       });
       if (!res.ok) {
@@ -52679,7 +52682,8 @@ async function runAiKnowledgeBaseAudit(config = {}, cwd = process.cwd()) {
         body: JSON.stringify({
           model,
           messages: [{ role: "user", content: prompt }],
-          temperature: 0.2
+          temperature: 0.2,
+          max_tokens: 4096
         })
       });
       if (!res.ok) {
@@ -52714,7 +52718,8 @@ async function runAiKnowledgeBaseAudit(config = {}, cwd = process.cwd()) {
         body: JSON.stringify({
           model,
           messages: [{ role: "user", content: prompt }],
-          temperature: 0.2
+          temperature: 0.2,
+          max_tokens: 4096
         })
       });
       if (!res.ok) {
@@ -52750,7 +52755,11 @@ async function runAiKnowledgeBaseAudit(config = {}, cwd = process.cwd()) {
       const ai = new GoogleGenAI2({ apiKey: geminiKey });
       const response = await ai.models.generateContent({
         model: modelName,
-        contents: prompt
+        contents: prompt,
+        config: {
+          maxOutputTokens: 4096,
+          temperature: 0.2
+        }
       });
       const resultText = response.text || "";
       return evaluateAiResult(resultText, modelName);
@@ -52775,7 +52784,11 @@ function callOllamaViaHttp(url, model, prompt) {
         model,
         prompt,
         stream: false,
-        options: { temperature: 0.2 }
+        options: {
+          temperature: 0.2,
+          num_predict: 4096,
+          num_ctx: 8192
+        }
       });
       const options = {
         hostname,
@@ -52857,7 +52870,7 @@ function evaluateAiResult(resultText, modelIdentifier) {
   }
 }
 
-// src/branch-watcher.js
+// src/daemon/branch-watcher.js
 var import_fs6 = __toESM(require("fs"), 1);
 var import_path5 = __toESM(require("path"), 1);
 var import_child_process3 = require("child_process");
@@ -53490,18 +53503,32 @@ Please pull or rebase origin/${targetBranch} to resolve.
   setInterval(checkCycle, INTERVAL_MS);
 }
 
-// src/progress-window.js
+// src/ui/progress-window.js
 var import_fs7 = __toESM(require("fs"), 1);
 var import_os = __toESM(require("os"), 1);
 var import_path6 = __toESM(require("path"), 1);
 var import_child_process4 = require("child_process");
+var import_dotenv = __toESM(require_main(), 1);
 function stripAnsi(str) {
   if (!str) return "";
   return str.replace(/[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g, "").replace(/\[[0-9;]+m/g, "");
 }
 function getAiStepLabel() {
-  const provider = (process.env.AI_PROVIDER || "gemini").toLowerCase();
+  if (!process.env.AI_PROVIDER && !process.env.GEMINI_API_KEY) {
+    try {
+      const appDataDir2 = process.env.APPDATA ? import_path6.default.join(process.env.APPDATA, "FrontendGatekeeper") : import_path6.default.join(process.env.HOME || process.env.USERPROFILE || ".", ".frontend-gatekeeper");
+      const envPath2 = import_path6.default.join(appDataDir2, ".env");
+      if (import_fs7.default.existsSync(envPath2)) {
+        import_dotenv.default.config({ path: envPath2, quiet: true });
+      }
+      import_dotenv.default.config({ quiet: true });
+    } catch (_) {
+    }
+  }
+  const provider = (process.env.AI_PROVIDER || (process.env.GEMINI_API_KEY ? "gemini" : "none")).toLowerCase();
   switch (provider) {
+    case "ollama":
+      return "8. AI Knowledge Base Audit (Ollama)";
     case "openai":
       return "8. AI Knowledge Base Audit (OpenAI)";
     case "anthropic":
@@ -53512,27 +53539,32 @@ function getAiStepLabel() {
       return "8. AI Knowledge Base Audit (Groq)";
     case "openrouter":
       return "8. AI Knowledge Base Audit (OpenRouter)";
-    case "ollama":
-      return "8. AI Knowledge Base Audit (Local Ollama)";
+    case "gemini":
+      return "8. AI Knowledge Base Audit (Google Gemini)";
     case "none":
       return "8. AI Knowledge Base Audit (Disabled)";
-    default:
-      return "8. AI Knowledge Base Audit (Google Gemini)";
+    default: {
+      const capitalized = provider.charAt(0).toUpperCase() + provider.slice(1);
+      return `8. AI Knowledge Base Audit (${capitalized})`;
+    }
   }
 }
+function getSteps() {
+  return [
+    { id: 1, label: "1. Angular Project Detection" },
+    { id: 2, label: "2. Critical Architecture & Entry Points" },
+    { id: 3, label: "3. Dependency Vulnerability Audit (npm audit)" },
+    { id: 4, label: "4. TypeScript & Linter Verification" },
+    { id: 5, label: "5. Automated Unit Tests (test:ci) + Coverage Gate" },
+    { id: 6, label: "6. Production Build & CD Deployment Verification" },
+    { id: 7, label: "7. Security & Secret Leak Scanning" },
+    { id: 8, label: getAiStepLabel() }
+  ];
+}
+var STEPS = getSteps();
 var PROGRESS_FILE = import_path6.default.join(import_os.default.tmpdir(), "gk-progress.json");
 var PS_SCRIPT = import_path6.default.join(import_os.default.tmpdir(), "gk-progress-window.ps1");
 var VBS_SCRIPT = import_path6.default.join(import_os.default.tmpdir(), "gk-progress-launcher.vbs");
-var STEPS = [
-  { id: 1, label: "1. Angular Project Detection" },
-  { id: 2, label: "2. Critical Architecture & Entry Points" },
-  { id: 3, label: "3. Dependency Vulnerability Audit (npm audit)" },
-  { id: 4, label: "4. TypeScript & Linter Verification" },
-  { id: 5, label: "5. Automated Unit Tests (test:ci) + Coverage Gate" },
-  { id: 6, label: "6. Production Build & CD Deployment Verification" },
-  { id: 7, label: "7. Security & Secret Leak Scanning" },
-  { id: 8, label: getAiStepLabel() }
-];
 var _windowEnabled = false;
 var _stepLogBuffers = {};
 var _flushTimer = null;
@@ -53993,7 +54025,7 @@ $stepLabels = @(
   '5. Automated Unit Tests & CI Regression Suite (test:ci)',
   '6. Production Build & CD Deployment Readiness Verification',
   '7. Security & Secret Leak Scanning',
-  '8. Multi-Provider AI Knowledge Base Regression Audit'
+  '${getAiStepLabel().replace(/'/g, "''")}'
 );
 
 $stepCards     = @{}
@@ -54476,7 +54508,7 @@ function initProgressWindow() {
     activeStep: null,
     steps: {}
   };
-  for (const s2 of STEPS) {
+  for (const s2 of getSteps()) {
     data.steps[s2.id] = { status: "pending", label: s2.label, detail: "", log: "" };
   }
   writeProgressFile(data);
@@ -54590,9 +54622,9 @@ function setupStdioHook() {
 var appDataDir = process.env.APPDATA ? import_path7.default.join(process.env.APPDATA, "FrontendGatekeeper") : import_path7.default.join(process.env.HOME || process.env.USERPROFILE || ".", ".frontend-gatekeeper");
 var envPath = import_path7.default.join(appDataDir, ".env");
 if (import_fs8.default.existsSync(envPath)) {
-  import_dotenv.default.config({ path: envPath, quiet: true });
+  import_dotenv2.default.config({ path: envPath, quiet: true });
 }
-import_dotenv.default.config({ quiet: true });
+import_dotenv2.default.config({ quiet: true });
 async function runGatekeeper() {
   console.log(MINI_BANNER);
   console.log(source_default.gray(`Working Directory: ${process.cwd()}
