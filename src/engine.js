@@ -41,7 +41,10 @@ import {
   startStep,
   updateStep,
   appendStepLog,
-  finalizeProgress
+  finalizeProgress,
+  isForceCommitRequested,
+  isCloseRequested,
+  waitForUserDecisionOnFailure
 } from './ui/progress-window.js';
 
 let _activeStepNum = null;
@@ -85,6 +88,45 @@ if (fs.existsSync(envPath)) {
 }
 dotenv.config({ quiet: true }); // Also check local repo .env
 
+function handleForceCommit(stepNum = null) {
+  const stepInfo = stepNum ? ` (at Step ${stepNum})` : '';
+  console.log('\n' + chalk.yellow.bold('═══════════════════════════════════════════════════════════════'));
+  console.log(chalk.yellow.bold(` ⚡ FORCE COMMIT TRIGGERED BY DEVELOPER${stepInfo.toUpperCase()}`));
+  console.log(chalk.yellow('   All remaining pre-commit validations and checks bypassed.'));
+  console.log(chalk.yellow('   Proceeding with git commit without quality gate restrictions.'));
+  console.log(chalk.yellow.bold('═══════════════════════════════════════════════════════════════\n'));
+
+  try {
+    const fromStep = stepNum ? Number(stepNum) : 1;
+    for (let i = fromStep; i <= 8; i++) {
+      updateStep(i, 'skip', 'Bypassed by Force Commit');
+    }
+    finalizeProgress(true, '⚡ Pre-commit checks bypassed via Force Commit.');
+  } catch (_) {}
+
+  process.exit(0);
+}
+
+async function handleStepFailure(stepNum, err, defaultTitle, defaultDetail) {
+  const errorMsg = err?.stepOutput || err?.auditOutput || err?.testOutput || err?.buildOutput || err?.stdout?.toString() || err?.stderr?.toString() || err?.message || defaultDetail;
+  appendStepLog(stepNum, `\n✖ [Error] ${errorMsg}\n`);
+  updateStep(stepNum, 'error', defaultDetail || errorMsg);
+  finalizeProgress(false, '', `[${defaultTitle}]\n` + stripAnsi(errorMsg));
+
+  if (isForceCommitRequested()) {
+    handleForceCommit(stepNum);
+    return;
+  }
+
+  const decision = await waitForUserDecisionOnFailure();
+  if (decision === 'force_commit') {
+    handleForceCommit(stepNum);
+    return;
+  }
+
+  throw err;
+}
+
 /**
  * Main Git Pre-Commit Validation Pipeline
  */
@@ -116,6 +158,14 @@ async function runGatekeeper() {
   updateStep(1, 'pass', `Angular workspace verified (${versionDisplay})`);
 
   // STEP 2: Critical Architecture & Entry Point Validation
+  if (isForceCommitRequested()) {
+    handleForceCommit(1);
+    return;
+  }
+  if (isCloseRequested()) {
+    console.log(chalk.red('\n✖ Pre-commit validation cancelled by user closing window.\n'));
+    process.exit(1);
+  }
   _activeStepNum = 2;
   startStep(2, 'Validating tsconfig, angular.json & entry points...');
   appendStepLog(2, `[Gatekeeper] Checking critical architecture files & entry points in ${cwd}...\n`);
@@ -125,14 +175,18 @@ async function runGatekeeper() {
     appendStepLog(2, `✔ Entry points, tsconfig, angular.json & lockfile sync verified\n`);
     updateStep(2, 'pass', 'Entry points, lockfile sync & Linux case-sensitivity verified');
   } catch (err) {
-    const errorMsg = err.message || 'Missing critical architecture files';
-    appendStepLog(2, `\n✖ [Error] ${errorMsg}\n`);
-    updateStep(2, 'error', errorMsg);
-    finalizeProgress(false, '', '[Step 2: Architecture Integrity Error]\n' + stripAnsi(errorMsg));
-    throw err;
+    await handleStepFailure(2, err, 'Step 2: Architecture Integrity Error', err.message || 'Missing critical architecture files');
   }
 
   // STEP 3: Dependency Security & Vulnerability Audit (npm audit)
+  if (isForceCommitRequested()) {
+    handleForceCommit(2);
+    return;
+  }
+  if (isCloseRequested()) {
+    console.log(chalk.red('\n✖ Pre-commit validation cancelled by user closing window.\n'));
+    process.exit(1);
+  }
   _activeStepNum = 3;
   startStep(3, 'Auditing package dependencies (npm audit)...');
   appendStepLog(3, `[Gatekeeper] Running dependency vulnerability scan (npm audit)...\n`);
@@ -141,14 +195,18 @@ async function runGatekeeper() {
     appendStepLog(3, `✔ 0 High/Critical CVE vulnerabilities found in dependencies\n`);
     updateStep(3, 'pass', '0 High/Critical CVE vulnerabilities found in dependencies');
   } catch (err) {
-    const errorMsg = err.auditOutput || err.message || 'High/Critical CVEs detected in package dependencies';
-    appendStepLog(3, `\n✖ [Error] ${errorMsg}\n`);
-    updateStep(3, 'error', 'High/Critical CVEs detected in package dependencies');
-    finalizeProgress(false, '', '[Step 3: Dependency Security Audit]\n' + stripAnsi(errorMsg));
-    throw err;
+    await handleStepFailure(3, err, 'Step 3: Dependency Security Audit', 'High/Critical CVEs detected in package dependencies');
   }
 
   // STEP 4: Strict TypeScript Compilation & Linter Verification
+  if (isForceCommitRequested()) {
+    handleForceCommit(3);
+    return;
+  }
+  if (isCloseRequested()) {
+    console.log(chalk.red('\n✖ Pre-commit validation cancelled by user closing window.\n'));
+    process.exit(1);
+  }
   _activeStepNum = 4;
   startStep(4, 'Executing TypeScript compilation & lint check...');
   appendStepLog(4, `[Gatekeeper] Executing TypeScript compilation & Angular lint check...\n`);
@@ -157,14 +215,18 @@ async function runGatekeeper() {
     appendStepLog(4, `✔ TypeScript compilation & lint passed with 0 errors\n`);
     updateStep(4, 'pass', 'TypeScript compilation passed with 0 type errors');
   } catch (err) {
-    const errorMsg = err.stepOutput || err.stdout?.toString() || err.stderr?.toString() || err.message || 'TypeScript type-check or linter failed';
-    appendStepLog(4, `\n✖ [Error] ${errorMsg}\n`);
-    updateStep(4, 'error', 'TypeScript type-check or linter failed');
-    finalizeProgress(false, '', '[Step 4: TypeScript / Lint Error]\n' + stripAnsi(errorMsg));
-    throw err;
+    await handleStepFailure(4, err, 'Step 4: TypeScript / Lint Error', 'TypeScript type-check or linter failed');
   }
 
   // STEP 5: Automated Unit Tests & CI Regression Suite (npm run test:ci)
+  if (isForceCommitRequested()) {
+    handleForceCommit(4);
+    return;
+  }
+  if (isCloseRequested()) {
+    console.log(chalk.red('\n✖ Pre-commit validation cancelled by user closing window.\n'));
+    process.exit(1);
+  }
   _activeStepNum = 5;
   startStep(5, 'Running headless test runner...');
   appendStepLog(5, `[Gatekeeper] Running automated unit test suite...\n`);
@@ -182,14 +244,18 @@ async function runGatekeeper() {
     appendStepLog(5, `✔ ${detailText}\n`);
     updateStep(5, 'pass', detailText);
   } catch (err) {
-    const errorMsg = err.testOutput || err.stepOutput || err.stdout?.toString() || err.stderr?.toString() || err.message || 'Unit test specs reported failure';
-    appendStepLog(5, `\n✖ [Error] ${errorMsg}\n`);
-    updateStep(5, 'error', 'Unit test specs reported failure');
-    finalizeProgress(false, '', '[Step 5: Automated Unit Tests Failure]\n' + stripAnsi(errorMsg));
-    throw err;
+    await handleStepFailure(5, err, 'Step 5: Automated Unit Tests Failure', 'Unit test specs reported failure');
   }
 
   // STEP 6: Production Build & CD Deployment Readiness Verification
+  if (isForceCommitRequested()) {
+    handleForceCommit(5);
+    return;
+  }
+  if (isCloseRequested()) {
+    console.log(chalk.red('\n✖ Pre-commit validation cancelled by user closing window.\n'));
+    process.exit(1);
+  }
   _activeStepNum = 6;
   startStep(6, 'Compiling production bundle & verifying CD readiness...');
   appendStepLog(6, `[Gatekeeper] Compiling Angular production build & verifying CD readiness in ${cwd}...\n`);
@@ -225,14 +291,18 @@ async function runGatekeeper() {
     appendStepLog(6, `✔ Production bundle verified: ${cdRes?.totalBundleSizeMb || '0'} MB\n`);
     updateStep(6, 'pass', cdDetail);
   } catch (err) {
-    const errorMsg = err.buildOutput || err.stepOutput || err.stdout?.toString() || err.stderr?.toString() || err.message || 'Production build compilation failed';
-    appendStepLog(6, `\n✖ [Error] ${errorMsg}\n`);
-    updateStep(6, 'error', 'Production build compilation or CD artifact verification failed');
-    finalizeProgress(false, '', '[Step 6: Production Build Failure]\n' + stripAnsi(errorMsg));
-    throw err;
+    await handleStepFailure(6, err, 'Step 6: Production Build Failure', 'Production build compilation or CD artifact verification failed');
   }
 
   // STEP 7: Security & Secret Leak Scanning (API keys, Tokens, Heavy Files)
+  if (isForceCommitRequested()) {
+    handleForceCommit(6);
+    return;
+  }
+  if (isCloseRequested()) {
+    console.log(chalk.red('\n✖ Pre-commit validation cancelled by user closing window.\n'));
+    process.exit(1);
+  }
   _activeStepNum = 7;
   startStep(7, 'Scanning full project & staged files for credentials or repo bloat...');
   appendStepLog(7, `[Gatekeeper] Scanning full project files & staged changes for credentials, API tokens, merge conflicts, and oversized files...\n`);
@@ -242,14 +312,18 @@ async function runGatekeeper() {
     appendStepLog(7, `✔ 0 leaked secrets across project, 0 conflict markers, clean file stage (<10MB)\n`);
     updateStep(7, 'pass', '0 leaked secrets across project, 0 conflict markers, clean file stage (<10MB)');
   } catch (err) {
-    const errorMsg = err.message || 'Secret credentials, forbidden files, or conflict markers detected';
-    appendStepLog(7, `\n✖ [Error] ${errorMsg}\n`);
-    updateStep(7, 'error', 'Secret credentials, forbidden files, or conflict markers detected');
-    finalizeProgress(false, '', '[Step 7: Security & Secret Leak Warning]\n' + stripAnsi(errorMsg));
-    throw err;
+    await handleStepFailure(7, err, 'Step 7: Security & Secret Leak Warning', 'Secret credentials, forbidden files, or conflict markers detected');
   }
 
   // STEP 8: AI Knowledge Base Audit (Gemini, Ollama, vLLM / OpenAI-compatible)
+  if (isForceCommitRequested()) {
+    handleForceCommit(7);
+    return;
+  }
+  if (isCloseRequested()) {
+    console.log(chalk.red('\n✖ Pre-commit validation cancelled by user closing window.\n'));
+    process.exit(1);
+  }
   _activeStepNum = 8;
   startStep(8, 'Auditing regression against knowledge base...');
   appendStepLog(8, `[Gatekeeper] Performing AI Knowledge Base regression audit...\n`);
@@ -278,6 +352,15 @@ async function runGatekeeper() {
         appendStepLog(8, `\n✖ [AI Audit Failed]\n${aiReport}\n`);
         updateStep(8, 'error', aiReport);
         finalizeProgress(false, aiReport);
+        if (isForceCommitRequested()) {
+          handleForceCommit(8);
+          return;
+        }
+        const decision = await waitForUserDecisionOnFailure();
+        if (decision === 'force_commit') {
+          handleForceCommit(8);
+          return;
+        }
         process.exit(1);
       } else {
         const status = auditRes.skipped ? 'skip' : 'pass';
@@ -287,10 +370,12 @@ async function runGatekeeper() {
       updateStep(8, 'skip');
     }
   } catch (_err) {
-    appendStepLog(8, `\n✖ [AI Audit Error] ${_err.message}\n`);
-    updateStep(8, 'error', _err.message);
-    finalizeProgress(false, _err.message);
-    throw _err;
+    await handleStepFailure(8, _err, 'Step 8: AI Knowledge Base Audit Error', _err.message);
+  }
+
+  if (isForceCommitRequested()) {
+    handleForceCommit(8);
+    return;
   }
 
   // FINAL VERDICT: 100-Point Pre-Flight Quality Rubric Evaluation

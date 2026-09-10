@@ -53831,6 +53831,7 @@ function getSteps() {
 }
 var STEPS = getSteps();
 var PROGRESS_FILE = import_path6.default.join(import_os.default.tmpdir(), "gk-progress.json");
+var ACTION_FILE = import_path6.default.join(import_os.default.tmpdir(), "gk-action.json");
 var PS_SCRIPT = import_path6.default.join(import_os.default.tmpdir(), "gk-progress-window.ps1");
 var VBS_SCRIPT = import_path6.default.join(import_os.default.tmpdir(), "gk-progress-launcher.vbs");
 var _windowEnabled = false;
@@ -54025,14 +54026,23 @@ $PROGRESS_FILE = "$env:TEMP\\gk-progress.json"
     <!-- Footer -->
     <Border Grid.Row="3" Background="$hdrBg" Padding="16,12" BorderBrush="$border" BorderThickness="0,1,0,0">
       <Grid>
-        <TextBlock x:Name="StatusText" Text="Running pre-commit validations..." FontSize="12" FontWeight="SemiBold" Foreground="$fg" VerticalAlignment="Center"/>
-        <Button x:Name="CloseBtn" Content="Close" HorizontalAlignment="Right" Width="80" Height="28" Cursor="Hand" Background="#3B82F6" Foreground="White" BorderThickness="0">
-          <Button.Resources>
-            <Style TargetType="Border">
-              <Setter Property="CornerRadius" Value="4"/>
-            </Style>
-          </Button.Resources>
-        </Button>
+        <TextBlock x:Name="StatusText" Text="Running pre-commit validations..." FontSize="12" FontWeight="SemiBold" Foreground="$fg" VerticalAlignment="Center" Margin="0,0,220,0" TextTrimming="CharacterEllipsis"/>
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+          <Button x:Name="ForceCommitBtn" Content="\u26A1 Force Commit" Width="112" Height="28" Cursor="Hand" Background="#F59E0B" Foreground="White" BorderThickness="0" FontWeight="SemiBold" FontSize="11" Margin="0,0,8,0">
+            <Button.Resources>
+              <Style TargetType="Border">
+                <Setter Property="CornerRadius" Value="4"/>
+              </Style>
+            </Button.Resources>
+          </Button>
+          <Button x:Name="CloseBtn" Content="Close" Width="80" Height="28" Cursor="Hand" Background="#3B82F6" Foreground="White" BorderThickness="0">
+            <Button.Resources>
+              <Style TargetType="Border">
+                <Setter Property="CornerRadius" Value="4"/>
+              </Style>
+            </Button.Resources>
+          </Button>
+        </StackPanel>
       </Grid>
     </Border>
   </Grid>
@@ -54045,13 +54055,42 @@ $window = [System.Windows.Markup.XamlReader]::Load($reader)
 $panel          = $window.FindName('StepsPanel')
 $statusTb       = $window.FindName('StatusText')
 $closeBtn       = $window.FindName('CloseBtn')
+$forceCommitBtn = $window.FindName('ForceCommitBtn')
 $aiReportBorder = $window.FindName('AiReportBorder')
 $reportTitleTb  = $window.FindName('ReportTitleText')
 $copyBtn        = $window.FindName('CopyBtn')
 $aiReportRtb    = $window.FindName('AiReportRtb')
 
+$ACTION_FILE = "$env:TEMP\\gk-action.json"
+
+if ($forceCommitBtn) {
+    $forceCommitBtn.Add_Click({
+        try {
+            [System.IO.File]::WriteAllText($ACTION_FILE, '{"action":"force_commit"}', [System.Text.Encoding]::UTF8)
+        } catch {}
+        $statusTb.Text = '\u26A1 Force Commit requested! Committing...'
+        $statusTb.Foreground = $amberFg
+        $forceCommitBtn.IsEnabled = $false
+        $closeBtn.IsEnabled = $false
+        $window.Close()
+    })
+}
+
 $closeBtn.Add_Click({
+    try {
+        if (-not (Test-Path $ACTION_FILE)) {
+            [System.IO.File]::WriteAllText($ACTION_FILE, '{"action":"close"}', [System.Text.Encoding]::UTF8)
+        }
+    } catch {}
     $window.Close()
+})
+
+$window.Add_Closed({
+    try {
+        if (-not (Test-Path $ACTION_FILE)) {
+            [System.IO.File]::WriteAllText($ACTION_FILE, '{"action":"close"}', [System.Text.Encoding]::UTF8)
+        }
+    } catch {}
 })
 
 $script:rawErrorText = ''
@@ -54737,13 +54776,19 @@ $timer.Add_Tick({
     if ($done -eq $true) {
         $timer.Stop()
         if ($hasError) {
-            $statusTb.Text = 'Validation failed! Commit rejected. Click Close to dismiss.'
+            $statusTb.Text = 'Validation failed! Commit rejected. Click Close or \u26A1 Force Commit.'
             $statusTb.Foreground = $redFg
             $closeBtn.Background = $redFg
+            if ($forceCommitBtn) {
+                $forceCommitBtn.Visibility = [System.Windows.Visibility]::Visible
+            }
         } else {
             $statusTb.Text = 'All validations passed! Click Close to dismiss.'
             $statusTb.Foreground = $greenFg
             $closeBtn.Background = $greenFg
+            if ($forceCommitBtn) {
+                $forceCommitBtn.Visibility = [System.Windows.Visibility]::Collapsed
+            }
         }
     }
 })
@@ -54767,6 +54812,12 @@ WshShell.Run "powershell.exe -NoProfile -ExecutionPolicy Bypass -File """ & "${P
 }
 function initProgressWindow() {
   _windowEnabled = process.env.SHOW_PROGRESS === "true";
+  try {
+    if (import_fs7.default.existsSync(ACTION_FILE)) {
+      import_fs7.default.unlinkSync(ACTION_FILE);
+    }
+  } catch (_) {
+  }
   if (!_windowEnabled) return;
   const data = {
     done: false,
@@ -54853,6 +54904,52 @@ ${data.aiReport}
   }
   writeProgressFile(data);
 }
+function getRequestedAction() {
+  if (!_windowEnabled) return null;
+  try {
+    if (import_fs7.default.existsSync(ACTION_FILE)) {
+      let raw = import_fs7.default.readFileSync(ACTION_FILE, "utf8").trim();
+      if (raw.charCodeAt(0) === 65279) {
+        raw = raw.slice(1);
+      }
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        return parsed.action || null;
+      }
+    }
+  } catch (_) {
+  }
+  return null;
+}
+function isForceCommitRequested() {
+  return getRequestedAction() === "force_commit";
+}
+function isCloseRequested() {
+  return getRequestedAction() === "close";
+}
+function waitForUserDecisionOnFailure(pollIntervalMs = 100, timeoutMs = 6e5) {
+  if (!_windowEnabled) {
+    return Promise.resolve("close");
+  }
+  return new Promise((resolve) => {
+    const immediateAction = getRequestedAction();
+    if (immediateAction === "force_commit" || immediateAction === "close") {
+      return resolve(immediateAction);
+    }
+    const startTime = Date.now();
+    const timer = setInterval(() => {
+      const action = getRequestedAction();
+      if (action === "force_commit" || action === "close") {
+        clearInterval(timer);
+        return resolve(action);
+      }
+      if (Date.now() - startTime > timeoutMs) {
+        clearInterval(timer);
+        return resolve("close");
+      }
+    }, pollIntervalMs);
+  });
+}
 
 // src/engine.js
 function stripAnsi2(str) {
@@ -54893,6 +54990,42 @@ if (import_fs8.default.existsSync(envPath)) {
   import_dotenv2.default.config({ path: envPath, quiet: true });
 }
 import_dotenv2.default.config({ quiet: true });
+function handleForceCommit(stepNum = null) {
+  const stepInfo = stepNum ? ` (at Step ${stepNum})` : "";
+  console.log("\n" + source_default.yellow.bold("\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550"));
+  console.log(source_default.yellow.bold(` \u26A1 FORCE COMMIT TRIGGERED BY DEVELOPER${stepInfo.toUpperCase()}`));
+  console.log(source_default.yellow("   All remaining pre-commit validations and checks bypassed."));
+  console.log(source_default.yellow("   Proceeding with git commit without quality gate restrictions."));
+  console.log(source_default.yellow.bold("\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\n"));
+  try {
+    const fromStep = stepNum ? Number(stepNum) : 1;
+    for (let i2 = fromStep; i2 <= 8; i2++) {
+      updateStep(i2, "skip", "Bypassed by Force Commit");
+    }
+    finalizeProgress(true, "\u26A1 Pre-commit checks bypassed via Force Commit.");
+  } catch (_) {
+  }
+  process.exit(0);
+}
+async function handleStepFailure(stepNum, err, defaultTitle, defaultDetail) {
+  const errorMsg = err?.stepOutput || err?.auditOutput || err?.testOutput || err?.buildOutput || err?.stdout?.toString() || err?.stderr?.toString() || err?.message || defaultDetail;
+  appendStepLog(stepNum, `
+\u2716 [Error] ${errorMsg}
+`);
+  updateStep(stepNum, "error", defaultDetail || errorMsg);
+  finalizeProgress(false, "", `[${defaultTitle}]
+` + stripAnsi2(errorMsg));
+  if (isForceCommitRequested()) {
+    handleForceCommit(stepNum);
+    return;
+  }
+  const decision = await waitForUserDecisionOnFailure();
+  if (decision === "force_commit") {
+    handleForceCommit(stepNum);
+    return;
+  }
+  throw err;
+}
 async function runGatekeeper() {
   console.log(MINI_BANNER);
   console.log(source_default.gray(`Working Directory: ${process.cwd()}
@@ -54919,6 +55052,14 @@ async function runGatekeeper() {
   appendStepLog(1, `\u2714 Workspace verified: valid Angular structure detected
 `);
   updateStep(1, "pass", `Angular workspace verified (${versionDisplay})`);
+  if (isForceCommitRequested()) {
+    handleForceCommit(1);
+    return;
+  }
+  if (isCloseRequested()) {
+    console.log(source_default.red("\n\u2716 Pre-commit validation cancelled by user closing window.\n"));
+    process.exit(1);
+  }
   _activeStepNum = 2;
   startStep(2, "Validating tsconfig, angular.json & entry points...");
   appendStepLog(2, `[Gatekeeper] Checking critical architecture files & entry points in ${cwd}...
@@ -54930,13 +55071,15 @@ async function runGatekeeper() {
 `);
     updateStep(2, "pass", "Entry points, lockfile sync & Linux case-sensitivity verified");
   } catch (err) {
-    const errorMsg = err.message || "Missing critical architecture files";
-    appendStepLog(2, `
-\u2716 [Error] ${errorMsg}
-`);
-    updateStep(2, "error", errorMsg);
-    finalizeProgress(false, "", "[Step 2: Architecture Integrity Error]\n" + stripAnsi2(errorMsg));
-    throw err;
+    await handleStepFailure(2, err, "Step 2: Architecture Integrity Error", err.message || "Missing critical architecture files");
+  }
+  if (isForceCommitRequested()) {
+    handleForceCommit(2);
+    return;
+  }
+  if (isCloseRequested()) {
+    console.log(source_default.red("\n\u2716 Pre-commit validation cancelled by user closing window.\n"));
+    process.exit(1);
   }
   _activeStepNum = 3;
   startStep(3, "Auditing package dependencies (npm audit)...");
@@ -54948,13 +55091,15 @@ async function runGatekeeper() {
 `);
     updateStep(3, "pass", "0 High/Critical CVE vulnerabilities found in dependencies");
   } catch (err) {
-    const errorMsg = err.auditOutput || err.message || "High/Critical CVEs detected in package dependencies";
-    appendStepLog(3, `
-\u2716 [Error] ${errorMsg}
-`);
-    updateStep(3, "error", "High/Critical CVEs detected in package dependencies");
-    finalizeProgress(false, "", "[Step 3: Dependency Security Audit]\n" + stripAnsi2(errorMsg));
-    throw err;
+    await handleStepFailure(3, err, "Step 3: Dependency Security Audit", "High/Critical CVEs detected in package dependencies");
+  }
+  if (isForceCommitRequested()) {
+    handleForceCommit(3);
+    return;
+  }
+  if (isCloseRequested()) {
+    console.log(source_default.red("\n\u2716 Pre-commit validation cancelled by user closing window.\n"));
+    process.exit(1);
   }
   _activeStepNum = 4;
   startStep(4, "Executing TypeScript compilation & lint check...");
@@ -54966,13 +55111,15 @@ async function runGatekeeper() {
 `);
     updateStep(4, "pass", "TypeScript compilation passed with 0 type errors");
   } catch (err) {
-    const errorMsg = err.stepOutput || err.stdout?.toString() || err.stderr?.toString() || err.message || "TypeScript type-check or linter failed";
-    appendStepLog(4, `
-\u2716 [Error] ${errorMsg}
-`);
-    updateStep(4, "error", "TypeScript type-check or linter failed");
-    finalizeProgress(false, "", "[Step 4: TypeScript / Lint Error]\n" + stripAnsi2(errorMsg));
-    throw err;
+    await handleStepFailure(4, err, "Step 4: TypeScript / Lint Error", "TypeScript type-check or linter failed");
+  }
+  if (isForceCommitRequested()) {
+    handleForceCommit(4);
+    return;
+  }
+  if (isCloseRequested()) {
+    console.log(source_default.red("\n\u2716 Pre-commit validation cancelled by user closing window.\n"));
+    process.exit(1);
   }
   _activeStepNum = 5;
   startStep(5, "Running headless test runner...");
@@ -54993,13 +55140,15 @@ async function runGatekeeper() {
 `);
     updateStep(5, "pass", detailText);
   } catch (err) {
-    const errorMsg = err.testOutput || err.stepOutput || err.stdout?.toString() || err.stderr?.toString() || err.message || "Unit test specs reported failure";
-    appendStepLog(5, `
-\u2716 [Error] ${errorMsg}
-`);
-    updateStep(5, "error", "Unit test specs reported failure");
-    finalizeProgress(false, "", "[Step 5: Automated Unit Tests Failure]\n" + stripAnsi2(errorMsg));
-    throw err;
+    await handleStepFailure(5, err, "Step 5: Automated Unit Tests Failure", "Unit test specs reported failure");
+  }
+  if (isForceCommitRequested()) {
+    handleForceCommit(5);
+    return;
+  }
+  if (isCloseRequested()) {
+    console.log(source_default.red("\n\u2716 Pre-commit validation cancelled by user closing window.\n"));
+    process.exit(1);
   }
   _activeStepNum = 6;
   startStep(6, "Compiling production bundle & verifying CD readiness...");
@@ -55045,13 +55194,15 @@ async function runGatekeeper() {
 `);
     updateStep(6, "pass", cdDetail);
   } catch (err) {
-    const errorMsg = err.buildOutput || err.stepOutput || err.stdout?.toString() || err.stderr?.toString() || err.message || "Production build compilation failed";
-    appendStepLog(6, `
-\u2716 [Error] ${errorMsg}
-`);
-    updateStep(6, "error", "Production build compilation or CD artifact verification failed");
-    finalizeProgress(false, "", "[Step 6: Production Build Failure]\n" + stripAnsi2(errorMsg));
-    throw err;
+    await handleStepFailure(6, err, "Step 6: Production Build Failure", "Production build compilation or CD artifact verification failed");
+  }
+  if (isForceCommitRequested()) {
+    handleForceCommit(6);
+    return;
+  }
+  if (isCloseRequested()) {
+    console.log(source_default.red("\n\u2716 Pre-commit validation cancelled by user closing window.\n"));
+    process.exit(1);
   }
   _activeStepNum = 7;
   startStep(7, "Scanning full project & staged files for credentials or repo bloat...");
@@ -55064,13 +55215,15 @@ async function runGatekeeper() {
 `);
     updateStep(7, "pass", "0 leaked secrets across project, 0 conflict markers, clean file stage (<10MB)");
   } catch (err) {
-    const errorMsg = err.message || "Secret credentials, forbidden files, or conflict markers detected";
-    appendStepLog(7, `
-\u2716 [Error] ${errorMsg}
-`);
-    updateStep(7, "error", "Secret credentials, forbidden files, or conflict markers detected");
-    finalizeProgress(false, "", "[Step 7: Security & Secret Leak Warning]\n" + stripAnsi2(errorMsg));
-    throw err;
+    await handleStepFailure(7, err, "Step 7: Security & Secret Leak Warning", "Secret credentials, forbidden files, or conflict markers detected");
+  }
+  if (isForceCommitRequested()) {
+    handleForceCommit(7);
+    return;
+  }
+  if (isCloseRequested()) {
+    console.log(source_default.red("\n\u2716 Pre-commit validation cancelled by user closing window.\n"));
+    process.exit(1);
   }
   _activeStepNum = 8;
   startStep(8, "Auditing regression against knowledge base...");
@@ -55104,6 +55257,15 @@ ${aiReport}
 `);
         updateStep(8, "error", aiReport);
         finalizeProgress(false, aiReport);
+        if (isForceCommitRequested()) {
+          handleForceCommit(8);
+          return;
+        }
+        const decision = await waitForUserDecisionOnFailure();
+        if (decision === "force_commit") {
+          handleForceCommit(8);
+          return;
+        }
         process.exit(1);
       } else {
         const status = auditRes.skipped ? "skip" : "pass";
@@ -55113,12 +55275,11 @@ ${aiReport}
       updateStep(8, "skip");
     }
   } catch (_err) {
-    appendStepLog(8, `
-\u2716 [AI Audit Error] ${_err.message}
-`);
-    updateStep(8, "error", _err.message);
-    finalizeProgress(false, _err.message);
-    throw _err;
+    await handleStepFailure(8, _err, "Step 8: AI Knowledge Base Audit Error", _err.message);
+  }
+  if (isForceCommitRequested()) {
+    handleForceCommit(8);
+    return;
   }
   const rubricInput = {
     securityScanPassed: true,

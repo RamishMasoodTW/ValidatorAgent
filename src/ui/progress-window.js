@@ -59,6 +59,7 @@ export function getSteps() {
 export const STEPS = getSteps();
 
 const PROGRESS_FILE = path.join(os.tmpdir(), 'gk-progress.json');
+export const ACTION_FILE = path.join(os.tmpdir(), 'gk-action.json');
 const PS_SCRIPT = path.join(os.tmpdir(), 'gk-progress-window.ps1');
 const VBS_SCRIPT = path.join(os.tmpdir(), 'gk-progress-launcher.vbs');
 
@@ -260,14 +261,23 @@ $PROGRESS_FILE = "$env:TEMP\\gk-progress.json"
     <!-- Footer -->
     <Border Grid.Row="3" Background="$hdrBg" Padding="16,12" BorderBrush="$border" BorderThickness="0,1,0,0">
       <Grid>
-        <TextBlock x:Name="StatusText" Text="Running pre-commit validations..." FontSize="12" FontWeight="SemiBold" Foreground="$fg" VerticalAlignment="Center"/>
-        <Button x:Name="CloseBtn" Content="Close" HorizontalAlignment="Right" Width="80" Height="28" Cursor="Hand" Background="#3B82F6" Foreground="White" BorderThickness="0">
-          <Button.Resources>
-            <Style TargetType="Border">
-              <Setter Property="CornerRadius" Value="4"/>
-            </Style>
-          </Button.Resources>
-        </Button>
+        <TextBlock x:Name="StatusText" Text="Running pre-commit validations..." FontSize="12" FontWeight="SemiBold" Foreground="$fg" VerticalAlignment="Center" Margin="0,0,220,0" TextTrimming="CharacterEllipsis"/>
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+          <Button x:Name="ForceCommitBtn" Content="⚡ Force Commit" Width="112" Height="28" Cursor="Hand" Background="#F59E0B" Foreground="White" BorderThickness="0" FontWeight="SemiBold" FontSize="11" Margin="0,0,8,0">
+            <Button.Resources>
+              <Style TargetType="Border">
+                <Setter Property="CornerRadius" Value="4"/>
+              </Style>
+            </Button.Resources>
+          </Button>
+          <Button x:Name="CloseBtn" Content="Close" Width="80" Height="28" Cursor="Hand" Background="#3B82F6" Foreground="White" BorderThickness="0">
+            <Button.Resources>
+              <Style TargetType="Border">
+                <Setter Property="CornerRadius" Value="4"/>
+              </Style>
+            </Button.Resources>
+          </Button>
+        </StackPanel>
       </Grid>
     </Border>
   </Grid>
@@ -280,13 +290,42 @@ $window = [System.Windows.Markup.XamlReader]::Load($reader)
 $panel          = $window.FindName('StepsPanel')
 $statusTb       = $window.FindName('StatusText')
 $closeBtn       = $window.FindName('CloseBtn')
+$forceCommitBtn = $window.FindName('ForceCommitBtn')
 $aiReportBorder = $window.FindName('AiReportBorder')
 $reportTitleTb  = $window.FindName('ReportTitleText')
 $copyBtn        = $window.FindName('CopyBtn')
 $aiReportRtb    = $window.FindName('AiReportRtb')
 
+$ACTION_FILE = "$env:TEMP\\gk-action.json"
+
+if ($forceCommitBtn) {
+    $forceCommitBtn.Add_Click({
+        try {
+            [System.IO.File]::WriteAllText($ACTION_FILE, '{"action":"force_commit"}', [System.Text.Encoding]::UTF8)
+        } catch {}
+        $statusTb.Text = '⚡ Force Commit requested! Committing...'
+        $statusTb.Foreground = $amberFg
+        $forceCommitBtn.IsEnabled = $false
+        $closeBtn.IsEnabled = $false
+        $window.Close()
+    })
+}
+
 $closeBtn.Add_Click({
+    try {
+        if (-not (Test-Path $ACTION_FILE)) {
+            [System.IO.File]::WriteAllText($ACTION_FILE, '{"action":"close"}', [System.Text.Encoding]::UTF8)
+        }
+    } catch {}
     $window.Close()
+})
+
+$window.Add_Closed({
+    try {
+        if (-not (Test-Path $ACTION_FILE)) {
+            [System.IO.File]::WriteAllText($ACTION_FILE, '{"action":"close"}', [System.Text.Encoding]::UTF8)
+        }
+    } catch {}
 })
 
 $script:rawErrorText = ''
@@ -972,13 +1011,19 @@ $timer.Add_Tick({
     if ($done -eq $true) {
         $timer.Stop()
         if ($hasError) {
-            $statusTb.Text = 'Validation failed! Commit rejected. Click Close to dismiss.'
+            $statusTb.Text = 'Validation failed! Commit rejected. Click Close or ⚡ Force Commit.'
             $statusTb.Foreground = $redFg
             $closeBtn.Background = $redFg
+            if ($forceCommitBtn) {
+                $forceCommitBtn.Visibility = [System.Windows.Visibility]::Visible
+            }
         } else {
             $statusTb.Text = 'All validations passed! Click Close to dismiss.'
             $statusTb.Foreground = $greenFg
             $closeBtn.Background = $greenFg
+            if ($forceCommitBtn) {
+                $forceCommitBtn.Visibility = [System.Windows.Visibility]::Collapsed
+            }
         }
     }
 })
@@ -1008,6 +1053,11 @@ WshShell.Run "powershell.exe -NoProfile -ExecutionPolicy Bypass -File """ & "${P
  */
 export function initProgressWindow() {
   _windowEnabled = process.env.SHOW_PROGRESS === 'true';
+  try {
+    if (fs.existsSync(ACTION_FILE)) {
+      fs.unlinkSync(ACTION_FILE);
+    }
+  } catch (_) {}
   if (!_windowEnabled) return;
 
   const data = {
@@ -1107,4 +1157,76 @@ export function finalizeProgress(passed, finalReport = '', errorLog = '') {
   }
   writeProgressFile(data);
 }
+
+/**
+ * Returns whether the progress window is active for this run.
+ */
+export function isProgressWindowEnabled() {
+  return _windowEnabled;
+}
+
+/**
+ * Reads any user action ('force_commit' | 'close') written by the WPF window.
+ */
+export function getRequestedAction() {
+  if (!_windowEnabled) return null;
+  try {
+    if (fs.existsSync(ACTION_FILE)) {
+      let raw = fs.readFileSync(ACTION_FILE, 'utf8').trim();
+      if (raw.charCodeAt(0) === 0xFEFF) {
+        raw = raw.slice(1);
+      }
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        return parsed.action || null;
+      }
+    }
+  } catch (_) { }
+  return null;
+}
+
+/**
+ * Returns true if the user clicked "⚡ Force Commit" in the progress window.
+ */
+export function isForceCommitRequested() {
+  return getRequestedAction() === 'force_commit';
+}
+
+/**
+ * Returns true if the user clicked "Close" or closed the progress window.
+ */
+export function isCloseRequested() {
+  return getRequestedAction() === 'close';
+}
+
+/**
+ * Waits for the user to make a decision in the GUI window upon failure.
+ * Resolves with 'force_commit' if Force Commit clicked, or 'close' if dismissed.
+ */
+export function waitForUserDecisionOnFailure(pollIntervalMs = 100, timeoutMs = 600000) {
+  if (!_windowEnabled) {
+    return Promise.resolve('close');
+  }
+
+  return new Promise((resolve) => {
+    const immediateAction = getRequestedAction();
+    if (immediateAction === 'force_commit' || immediateAction === 'close') {
+      return resolve(immediateAction);
+    }
+
+    const startTime = Date.now();
+    const timer = setInterval(() => {
+      const action = getRequestedAction();
+      if (action === 'force_commit' || action === 'close') {
+        clearInterval(timer);
+        return resolve(action);
+      }
+      if (Date.now() - startTime > timeoutMs) {
+        clearInterval(timer);
+        return resolve('close');
+      }
+    }, pollIntervalMs);
+  });
+}
+
 
