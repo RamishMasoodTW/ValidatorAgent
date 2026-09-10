@@ -10,6 +10,8 @@ import os from 'os';
 import {
   scanSecurityRules,
   scanStagedFileIntegrity,
+  scanProjectSourceFilesForSecrets,
+  scanProjectFilesIntegrity,
   scanDependencyVulnerabilities
 } from '../src/rules/security-rules.js';
 
@@ -224,4 +226,69 @@ describe('scanDependencyVulnerabilities()', () => {
     }
   });
 });
+
+// ─────────────────────────────────────────────────
+// Full-Project Secret & Credential Scanning
+// ─────────────────────────────────────────────────
+describe('Full Project Source Code Secret Scanning', () => {
+  let tempDir;
+
+  beforeEach(() => {
+    tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'gk-sec-test-'));
+  });
+
+  afterEach(() => {
+    try {
+      fs.rmSync(tempDir, { recursive: true, force: true });
+    } catch (_) {}
+  });
+
+  test('scanProjectSourceFilesForSecrets() detects hardcoded apiKey and passwords in existing files', () => {
+    const envDir = path.join(tempDir, 'src', 'app');
+    fs.mkdirSync(envDir, { recursive: true });
+    const envContent = `
+export const environment = {
+  production: true,
+  apiKey: 'LBOj3gS8ELfYlSsuUvoq6bF9P0zq30TZjnna',
+  guestUsername: '5PLR.Adil',
+  guestPassword: 'Abc#123',
+};
+`;
+    fs.writeFileSync(path.join(envDir, 'environment.ts'), envContent, 'utf8');
+
+    const violations = scanProjectSourceFilesForSecrets(tempDir);
+    expect(violations.length).toBeGreaterThanOrEqual(2);
+    expect(violations.some(v => v.name.includes('API Key') && v.file.includes('environment.ts'))).toBe(true);
+    expect(violations.some(v => v.name.includes('Password') && v.file.includes('environment.ts'))).toBe(true);
+  });
+
+  test('scanSecurityRules() fails on hardcoded credentials in project files even with empty diff', () => {
+    const envDir = path.join(tempDir, 'src', 'app');
+    fs.mkdirSync(envDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(envDir, 'environment.ts'),
+      "export const environment = { apiKey: 'LBOj3gS8ELfYlSsuUvoq6bF9P0zq30TZjnna' };",
+      'utf8'
+    );
+
+    expect(() => scanSecurityRules('', tempDir)).toThrow(/Hardcoded secrets detected/i);
+  });
+
+  test('scanProjectFilesIntegrity() blocks .env files placed inside src/ directory', () => {
+    const srcDir = path.join(tempDir, 'src');
+    fs.mkdirSync(srcDir, { recursive: true });
+    fs.writeFileSync(path.join(srcDir, '.env'), 'SECRET=123', 'utf8');
+
+    expect(() => scanProjectFilesIntegrity(tempDir)).toThrow(/Forbidden sensitive files/i);
+  });
+
+  test('scanSecurityRules() passes on clean project files with no secrets', () => {
+    const srcDir = path.join(tempDir, 'src', 'app');
+    fs.mkdirSync(srcDir, { recursive: true });
+    fs.writeFileSync(path.join(srcDir, 'app.component.ts'), 'export class AppComponent { title = "MyApp"; }', 'utf8');
+
+    expect(() => scanSecurityRules('', tempDir)).not.toThrow();
+  });
+});
+
 

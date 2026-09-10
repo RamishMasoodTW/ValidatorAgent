@@ -199,12 +199,13 @@ Whenever you commit code (`git commit`), Gatekeeper intercepts the process and r
 │ ├─ Computes Conventional Commit SemVer bump and stamps src/build-metadata.json     │
 │ └─ Subtitle: "CD Verified: 1.46 MB | SPA: ✔ | BaseHref: ✔ | Manifest: ✔"          │
 ├────────────────────────────────────────────────────────────────────────────────────┤
-│ STEP 7: Security & Secret Leak Scanning                                            │
-│ ├─ Scans staged diff for API keys (Google, OpenAI, AWS, Stripe, Slack, DB strings) │
+│ STEP 7: Security & Secret Leak Scanning (Full Project & Staged Changes)            │
+│ ├─ Scans full project source files & staged diff for API keys & tokens             │
+│ │   (Google, OpenAI, AWS, Stripe, Slack, DB strings, generic apiKey, passwords)    │
 │ ├─ Blocks unresolved Git merge conflict markers (<<<<<<< HEAD, =======, >>>>>>>)   │
-│ ├─ Blocks forbidden staged files (.env, .pem, .key, .pfx, .DS_Store, Thumbs.db)    │
+│ ├─ Blocks forbidden sensitive files (.env, .pem, .key, .pfx, .DS_Store, Thumbs.db) │
 │ ├─ Blocks oversized binary files (>10 MB) to prevent CI repository bloat           │
-│ └─ Subtitle: "0 leaked secrets, 0 conflict markers, clean file stage (<10MB)"      │
+│ └─ Subtitle: "0 leaked secrets across project, 0 conflict markers, clean file stage"│
 ├────────────────────────────────────────────────────────────────────────────────────┤
 │ STEP 8: Multi-Provider AI Knowledge Base Regression Audit                          │
 │ ├─ Consults configured AI Provider (Gemini 3.8/3.7, Claude, OpenAI, DeepSeek,      │

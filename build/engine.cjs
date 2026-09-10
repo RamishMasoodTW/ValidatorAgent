@@ -1022,62 +1022,132 @@ var init_exec = __esm({
 });
 
 // src/rules/security-rules.js
-function scanSecurityRules(diffOutput) {
-  if (!diffOutput || diffOutput.trim() === "") return true;
-  logStep(7, "Security & Secret Leak Scanning");
-  const forbiddenPatterns = [
-    // 1. Google / Gemini / Vertex AI Keys
-    { pattern: /AIzaSy[0-9A-Za-z-_]{33}/, name: "Google / Gemini Studio API Key" },
-    { pattern: /AQ\.[0-9A-Za-z_-]{40,}/, name: "Google Cloud / Vertex AI Bearer Token (AQ...)" },
-    { pattern: /ya29\.[0-9A-Za-z_-]{70,}/, name: "Google OAuth Access Token (ya29...)" },
-    // 2. OpenAI & AI Providers
-    { pattern: /sk-(?:proj-|admin-|none-)?[a-zA-Z0-9_-]{20,}/, name: "OpenAI Secret API Key" },
-    { pattern: /sk-ant-api[0-9]{2}-[a-zA-Z0-9_-]{80,}/, name: "Anthropic Claude API Key" },
-    { pattern: /hf_[a-zA-Z0-9]{34,}/, name: "HuggingFace Access Token" },
-    { pattern: /co-[a-zA-Z0-9]{40,}/, name: "Cohere API Key" },
-    // 3. Cloud Providers (AWS, Azure, GCP)
-    { pattern: /(?:A3T[A-Z0-9]|AKIA|AGPA|AIDA|AROA|AIPA|ANPA|ANVA|ASIA)[0-9A-Z]{16}/, name: "AWS Access Key ID" },
-    { pattern: /(?:aws_secret_access_key|aws_access_key_id)\s*=\s*['"][A-Za-z0-9\/+=]{20,}['"]/i, name: "AWS Secret Access Key" },
-    { pattern: /(?:AccountKey=[a-zA-Z0-9+\/=]{80,}|DefaultEndpointsProtocol=https;AccountName=)/i, name: "Azure Storage Connection String" },
-    // 4. Source Control & Developer Platforms (GitHub, GitLab, NPM)
-    { pattern: /gh[pousr]_[0-9a-zA-Z]{36,}/, name: "GitHub Token (Personal / OAuth / User / Refresh)" },
-    { pattern: /glpat-[0-9a-zA-Z\-_]{20,}/, name: "GitLab Personal Access Token" },
-    { pattern: /npm_[0-9a-zA-Z]{36}/, name: "NPM Access Token" },
-    // 5. Payment & Communication (Stripe, Twilio, Slack, SendGrid)
-    { pattern: /(?:sk|rk)_(?:test|live)_[0-9a-zA-Z]{24,}/, name: "Stripe Secret API Key" },
-    { pattern: /xox[baprs]-[0-9a-zA-Z]{10,48}/, name: "Slack Bot / User Token" },
-    { pattern: /SG\.[0-9A-Za-z-_]{22}\.[0-9A-Za-z-_]{43}/, name: "SendGrid API Key" },
-    { pattern: /SK[0-9a-fA-F]{32}/, name: "Twilio API Key" },
-    // 6. Database Connection Strings & Generic Secrets
-    { pattern: /(?:mongodb(?:\+srv)?|postgres|postgresql|mysql|redis):\/\/[^:\s]+:[^@\s]+@[^\s/]+/i, name: "Database Connection String with Password" },
-    { pattern: /(?:password|secret|passwd|pwd)\s*[:=]\s*['"][^'"\s]{8,}['"]/i, name: "Hardcoded Password Assignment" },
-    // 7. Cryptographic Keys & Certificates
-    { pattern: /-----BEGIN\s+(?:RSA\s+|EC\s+|DSA\s+|OPENSSH\s+)?PRIVATE\s+KEY-----/, name: "Unencrypted Private Key (PEM/RSA/EC)" },
-    { pattern: /-----BEGIN\s+CERTIFICATE-----/, name: "Raw SSL/TLS Certificate Block" },
-    // 8. Git Merge Conflict Markers (Stops CI Syntax/Compilation Disasters)
-    { pattern: /<{7}\s+HEAD/, name: "Unresolved Git Merge Conflict Marker (<<<<<<< HEAD)" },
-    { pattern: /={7}/, name: "Unresolved Git Merge Conflict Separator (=======)" },
-    { pattern: />{7}\s+/, name: "Unresolved Git Merge Conflict Marker (>>>>>>> branch)" }
-  ];
-  let violations = [];
-  const lines = diffOutput.split("\n");
-  const addedLines = lines.filter((l) => l.startsWith("+") && !l.startsWith("+++"));
-  for (const item of forbiddenPatterns) {
-    for (const line of addedLines) {
-      if (item.pattern.test(line)) {
-        const match2 = line.match(item.pattern);
-        const snippet = match2 ? match2[0].substring(0, 8) + "..." + match2[0].slice(-4) : "***";
-        violations.push({ name: item.name, snippet, rawLine: line.substring(1).trim() });
-        break;
+function scanProjectSourceFilesForSecrets(cwd = process.cwd()) {
+  if (!cwd || !import_fs.default.existsSync(cwd)) return [];
+  const allowedExtensions = /* @__PURE__ */ new Set([".ts", ".js", ".mjs", ".html", ".json"]);
+  const ignoredDirs = /* @__PURE__ */ new Set([
+    "node_modules",
+    "dist",
+    ".git",
+    ".angular",
+    "build",
+    "coverage",
+    ".vscode",
+    ".idea",
+    ".github",
+    ".gitlab",
+    "bin",
+    "obj",
+    "tests",
+    "test",
+    "scripts"
+  ]);
+  const ignoredFiles = /* @__PURE__ */ new Set([
+    "package-lock.json",
+    "yarn.lock",
+    "pnpm-lock.yaml",
+    "resolved_issues.md",
+    "security-rules.js",
+    "security-rules.test.js",
+    "installer.js",
+    "engine.js"
+  ]);
+  const fileList = [];
+  function walk(dir) {
+    if (!import_fs.default.existsSync(dir)) return;
+    let entries;
+    try {
+      entries = import_fs.default.readdirSync(dir, { withFileTypes: true });
+    } catch (_) {
+      return;
+    }
+    for (const entry of entries) {
+      const lowerName = entry.name.toLowerCase();
+      if (entry.isDirectory()) {
+        if (!ignoredDirs.has(lowerName) && !lowerName.startsWith(".")) {
+          walk(import_path.default.join(dir, entry.name));
+        }
+      } else if (entry.isFile()) {
+        const ext = import_path.default.extname(entry.name).toLowerCase();
+        if (allowedExtensions.has(ext) && !ignoredFiles.has(lowerName)) {
+          fileList.push(import_path.default.join(dir, entry.name));
+        }
       }
     }
   }
+  const srcDir = import_path.default.join(cwd, "src");
+  if (import_fs.default.existsSync(srcDir)) {
+    walk(srcDir);
+  } else {
+    walk(cwd);
+  }
+  const violations = [];
+  for (const filePath of fileList) {
+    const relPath = import_path.default.relative(cwd, filePath).replace(/\\/g, "/");
+    try {
+      const content = import_fs.default.readFileSync(filePath, "utf8");
+      const lines = content.split("\n");
+      for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
+        const line = lines[lineIndex];
+        const trimmed = line.trim();
+        if (trimmed.startsWith("//") || trimmed.startsWith("/*") || trimmed.startsWith("*")) {
+          if (!/AIzaSy|sk-|AKIA|ghp_|glpat-|xox[baprs]-/i.test(line)) {
+            continue;
+          }
+        }
+        for (const item of FORBIDDEN_SECURITY_PATTERNS) {
+          if (item.pattern.test(line)) {
+            const match2 = line.match(item.pattern);
+            const snippet = match2 ? match2[0].substring(0, 8) + "..." + match2[0].slice(-4) : "***";
+            violations.push({
+              name: item.name,
+              snippet,
+              rawLine: trimmed,
+              file: relPath,
+              line: lineIndex + 1
+            });
+            break;
+          }
+        }
+      }
+    } catch (_) {
+    }
+  }
+  return violations;
+}
+function scanSecurityRules(diffOutput = "", cwd = null) {
+  logStep(7, "Security & Secret Leak Scanning (Full Project & Staged Changes)");
+  let violations = [];
+  if (diffOutput && diffOutput.trim() !== "") {
+    const lines = diffOutput.split("\n");
+    const addedLines = lines.filter((l) => l.startsWith("+") && !l.startsWith("+++"));
+    for (const item of FORBIDDEN_SECURITY_PATTERNS) {
+      for (const line of addedLines) {
+        if (item.pattern.test(line)) {
+          const match2 = line.match(item.pattern);
+          const snippet = match2 ? match2[0].substring(0, 8) + "..." + match2[0].slice(-4) : "***";
+          violations.push({
+            name: item.name,
+            snippet,
+            rawLine: line.substring(1).trim(),
+            file: "Staged Changes"
+          });
+          break;
+        }
+      }
+    }
+  }
+  if (cwd && import_fs.default.existsSync(cwd)) {
+    const projectViolations = scanProjectSourceFilesForSecrets(cwd);
+    violations.push(...projectViolations);
+  }
   if (violations.length > 0) {
-    logError("CRITICAL SECURITY ALERT: Hardcoded credentials / secret tokens detected in staged commit!");
+    logError("CRITICAL SECURITY ALERT: Hardcoded credentials / secret tokens detected in project!");
     console.log(source_default.red("\n  \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550"));
-    console.log(source_default.red.bold("  \u274C COMMIT REJECTED: Sensitive credentials found in your staged files:"));
+    console.log(source_default.red.bold("  \u274C COMMIT REJECTED: Sensitive credentials found in repository files:"));
     violations.forEach((v) => {
-      console.log(source_default.red(`    \u2022 ${source_default.bold(v.name)} [Pattern: ${source_default.yellow(v.snippet)}]`));
+      const location = v.file ? v.line ? `${v.file}:${v.line}` : v.file : "Staged Changes";
+      console.log(source_default.red(`    \u2022 [${location}] ${source_default.bold(v.name)} [Pattern: ${source_default.yellow(v.snippet)}]`));
       if (v.rawLine) {
         console.log(source_default.gray(`      Code: "${v.rawLine.substring(0, 60)}${v.rawLine.length > 60 ? "..." : ""}"`));
       }
@@ -1085,11 +1155,51 @@ function scanSecurityRules(diffOutput) {
     console.log(source_default.yellow("\n  Security Requirement:"));
     console.log(source_default.yellow("  Never commit secrets to Git. Move credentials to .env / environment variables."));
     console.log(source_default.red("  \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\n"));
-    throw new Error(`Hardcoded secrets detected: ${violations.map((v) => v.name).join(", ")}`);
+    throw new Error(`Hardcoded secrets detected in project:
+${violations.map((v) => `  \u2022 [${v.file || "staged"}] ${v.name}`).join("\n")}`);
   }
-  scanStagedFileIntegrity();
-  logSuccess("Security scan passed: Zero leaked API keys, tokens, or private credentials.");
+  scanStagedFileIntegrity(cwd);
+  scanProjectFilesIntegrity(cwd);
+  logSuccess("Security scan passed: Zero leaked API keys, tokens, or private credentials found in project.");
   return true;
+}
+function scanProjectFilesIntegrity(cwd = process.cwd()) {
+  if (!cwd || !import_fs.default.existsSync(cwd)) return;
+  const srcDir = import_path.default.join(cwd, "src");
+  if (!import_fs.default.existsSync(srcDir)) return;
+  const forbiddenFiles = [];
+  function checkDir(dir) {
+    let entries;
+    try {
+      entries = import_fs.default.readdirSync(dir, { withFileTypes: true });
+    } catch (_) {
+      return;
+    }
+    for (const entry of entries) {
+      const fullPath = import_path.default.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        if (!["node_modules", "dist", ".git", ".angular", "build"].includes(entry.name.toLowerCase())) {
+          checkDir(fullPath);
+        }
+      } else if (entry.isFile()) {
+        const base = entry.name.toLowerCase();
+        if (base.startsWith(".env") && !base.endsWith(".example") && !base.endsWith(".template") || base.endsWith(".pem") || base.endsWith(".key") || base.endsWith(".pfx") || base.endsWith(".p12")) {
+          const relPath = import_path.default.relative(cwd, fullPath).replace(/\\/g, "/");
+          forbiddenFiles.push({ file: relPath, reason: "Sensitive environment/key file in project source tree" });
+        }
+      }
+    }
+  }
+  checkDir(srcDir);
+  if (forbiddenFiles.length > 0) {
+    logError("CRITICAL: Forbidden sensitive files found in project directory:");
+    forbiddenFiles.forEach((item) => {
+      console.log(source_default.red(`    \u2022 ${source_default.bold(item.file)} [${item.reason}]`));
+    });
+    const fileListStr = forbiddenFiles.map((item) => `  \u2022 ${item.file} [${item.reason}]`).join("\n");
+    throw new Error(`Forbidden sensitive files detected in project tree:
+${fileListStr}`);
+  }
 }
 function scanStagedFileIntegrity(cwd = process.cwd(), stagedFilesOverride = null) {
   try {
@@ -1181,7 +1291,7 @@ function validateCommitMessage(message) {
     description: match2[3].trim()
   };
 }
-var import_fs, import_path;
+var import_fs, import_path, FORBIDDEN_SECURITY_PATTERNS;
 var init_security_rules = __esm({
   "src/rules/security-rules.js"() {
     import_fs = __toESM(require("fs"), 1);
@@ -1190,6 +1300,42 @@ var init_security_rules = __esm({
     init_logger();
     init_git();
     init_exec();
+    FORBIDDEN_SECURITY_PATTERNS = [
+      // 1. Google / Gemini / Vertex AI Keys
+      { pattern: /AIzaSy[0-9A-Za-z-_]{33}/, name: "Google / Gemini Studio API Key" },
+      { pattern: /AQ\.[0-9A-Za-z_-]{40,}/, name: "Google Cloud / Vertex AI Bearer Token (AQ...)" },
+      { pattern: /ya29\.[0-9A-Za-z_-]{70,}/, name: "Google OAuth Access Token (ya29...)" },
+      // 2. OpenAI & AI Providers
+      { pattern: /sk-(?:proj-|admin-|none-)?[a-zA-Z0-9_-]{20,}/, name: "OpenAI Secret API Key" },
+      { pattern: /sk-ant-api[0-9]{2}-[a-zA-Z0-9_-]{80,}/, name: "Anthropic Claude API Key" },
+      { pattern: /hf_[a-zA-Z0-9]{34,}/, name: "HuggingFace Access Token" },
+      { pattern: /co-[a-zA-Z0-9]{40,}/, name: "Cohere API Key" },
+      // 3. Cloud Providers (AWS, Azure, GCP)
+      { pattern: /(?:A3T[A-Z0-9]|AKIA|AGPA|AIDA|AROA|AIPA|ANPA|ANVA|ASIA)[0-9A-Z]{16}/, name: "AWS Access Key ID" },
+      { pattern: /(?:aws_secret_access_key|aws_access_key_id)\s*=\s*['"][A-Za-z0-9\/+=]{20,}['"]/i, name: "AWS Secret Access Key" },
+      { pattern: /(?:AccountKey=[a-zA-Z0-9+\/=]{80,}|DefaultEndpointsProtocol=https;AccountName=)/i, name: "Azure Storage Connection String" },
+      // 4. Source Control & Developer Platforms (GitHub, GitLab, NPM)
+      { pattern: /gh[pousr]_[0-9a-zA-Z]{36,}/, name: "GitHub Token (Personal / OAuth / User / Refresh)" },
+      { pattern: /glpat-[0-9a-zA-Z\-_]{20,}/, name: "GitLab Personal Access Token" },
+      { pattern: /npm_[0-9a-zA-Z]{36}/, name: "NPM Access Token" },
+      // 5. Payment & Communication (Stripe, Twilio, Slack, SendGrid)
+      { pattern: /(?:sk|rk)_(?:test|live)_[0-9a-zA-Z]{24,}/, name: "Stripe Secret API Key" },
+      { pattern: /xox[baprs]-[0-9a-zA-Z]{10,48}/, name: "Slack Bot / User Token" },
+      { pattern: /SG\.[0-9A-Za-z-_]{22}\.[0-9A-Za-z-_]{43}/, name: "SendGrid API Key" },
+      { pattern: /SK[0-9a-fA-F]{32}/, name: "Twilio API Key" },
+      // 6. Generic API Keys & Auth Tokens
+      { pattern: /(?:apiKey|api_key|clientSecret|client_secret|authToken|auth_token)\s*[:=]\s*['"][A-Za-z0-9_\-]{16,}['"]/i, name: "Hardcoded API Key / Client Secret" },
+      // 7. Database Connection Strings & Hardcoded Passwords
+      { pattern: /(?:mongodb(?:\+srv)?|postgres|postgresql|mysql|redis):\/\/[^:\s]+:[^@\s]+@[^\s/]+/i, name: "Database Connection String with Password" },
+      { pattern: /(?:password|secret|passwd|pwd|guestPassword)\s*[:=]\s*['"][^'"\s]{6,}['"]/i, name: "Hardcoded Password Assignment" },
+      // 8. Cryptographic Keys & Certificates
+      { pattern: /-----BEGIN\s+(?:RSA\s+|EC\s+|DSA\s+|OPENSSH\s+)?PRIVATE\s+KEY-----/, name: "Unencrypted Private Key (PEM/RSA/EC)" },
+      { pattern: /-----BEGIN\s+CERTIFICATE-----/, name: "Raw SSL/TLS Certificate Block" },
+      // 9. Git Merge Conflict Markers (Stops CI Syntax/Compilation Disasters)
+      { pattern: /^\+?[ \t]*<{7}\s+HEAD/, name: "Unresolved Git Merge Conflict Marker (<<<<<<< HEAD)" },
+      { pattern: /^\+?[ \t]*={7}[ \t]*$/, name: "Unresolved Git Merge Conflict Separator (=======)" },
+      { pattern: /^\+?[ \t]*>{7}\s+/, name: "Unresolved Git Merge Conflict Marker (>>>>>>> branch)" }
+    ];
   }
 });
 
@@ -54908,15 +55054,15 @@ async function runGatekeeper() {
     throw err;
   }
   _activeStepNum = 7;
-  startStep(7, "Scanning staged diff & files for credentials or repo bloat...");
-  appendStepLog(7, `[Gatekeeper] Scanning staged changes for credentials, API tokens, merge conflicts, and oversized files...
+  startStep(7, "Scanning full project & staged files for credentials or repo bloat...");
+  appendStepLog(7, `[Gatekeeper] Scanning full project files & staged changes for credentials, API tokens, merge conflicts, and oversized files...
 `);
   try {
     const diffOutput = getDiff(cwd);
-    scanSecurityRules(diffOutput);
-    appendStepLog(7, `\u2714 0 leaked secrets, 0 conflict markers, clean file stage (<10MB)
+    scanSecurityRules(diffOutput, cwd);
+    appendStepLog(7, `\u2714 0 leaked secrets across project, 0 conflict markers, clean file stage (<10MB)
 `);
-    updateStep(7, "pass", "0 leaked secrets, 0 conflict markers, clean file stage (<10MB)");
+    updateStep(7, "pass", "0 leaked secrets across project, 0 conflict markers, clean file stage (<10MB)");
   } catch (err) {
     const errorMsg = err.message || "Secret credentials, forbidden files, or conflict markers detected";
     appendStepLog(7, `

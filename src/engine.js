@@ -234,13 +234,13 @@ async function runGatekeeper() {
 
   // STEP 7: Security & Secret Leak Scanning (API keys, Tokens, Heavy Files)
   _activeStepNum = 7;
-  startStep(7, 'Scanning staged diff & files for credentials or repo bloat...');
-  appendStepLog(7, `[Gatekeeper] Scanning staged changes for credentials, API tokens, merge conflicts, and oversized files...\n`);
+  startStep(7, 'Scanning full project & staged files for credentials or repo bloat...');
+  appendStepLog(7, `[Gatekeeper] Scanning full project files & staged changes for credentials, API tokens, merge conflicts, and oversized files...\n`);
   try {
     const diffOutput = getDiff(cwd);
-    scanSecurityRules(diffOutput);
-    appendStepLog(7, `✔ 0 leaked secrets, 0 conflict markers, clean file stage (<10MB)\n`);
-    updateStep(7, 'pass', '0 leaked secrets, 0 conflict markers, clean file stage (<10MB)');
+    scanSecurityRules(diffOutput, cwd);
+    appendStepLog(7, `✔ 0 leaked secrets across project, 0 conflict markers, clean file stage (<10MB)\n`);
+    updateStep(7, 'pass', '0 leaked secrets across project, 0 conflict markers, clean file stage (<10MB)');
   } catch (err) {
     const errorMsg = err.message || 'Secret credentials, forbidden files, or conflict markers detected';
     appendStepLog(7, `\n✖ [Error] ${errorMsg}\n`);
