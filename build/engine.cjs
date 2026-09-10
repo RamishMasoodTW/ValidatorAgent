@@ -53841,7 +53841,7 @@ $PROGRESS_FILE = "$env:TEMP\\gk-progress.json"
     <!-- Header -->
     <Border Grid.Row="0" Background="$hdrBg" Padding="18,14" BorderBrush="$border" BorderThickness="0,0,0,1">
       <StackPanel>
-        <TextBlock Text="Angular Gatekeeper \u2014 CI/CD Pre-Commit Quality Gate" FontSize="16" FontWeight="Bold" Foreground="$fg"/>
+        <TextBlock Text="Angular Gatekeeper \u2014 Shift-Left Pre-Commit CI/CD Quality Engine" FontSize="16" FontWeight="Bold" Foreground="$fg"/>
         <TextBlock Text="Enforcing strict CI standards, CD deployment readiness &amp; AI regressions in real-time..." FontSize="11" Foreground="#94A3B8" Margin="0,3,0,0"/>
       </StackPanel>
     </Border>
