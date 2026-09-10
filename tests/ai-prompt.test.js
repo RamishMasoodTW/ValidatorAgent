@@ -62,6 +62,8 @@ describe('Step 8: AI Knowledge Base Full-Project Audit Engine', () => {
 
     expect(prompt).toContain('FULL PROJECT AUDIT MANDATE');
     expect(prompt).toContain('DO NOT LIMIT YOUR AUDIT TO ONLY THE GIT DIFF');
+    expect(prompt).toContain('ABSOLUTE RULE: ACCEPT RESOLVED_ISSUES.MD AS-IS');
+    expect(prompt).toContain('NEVER complain, critique, or question whether "resolved_issues.md" is complete');
     expect(prompt).toContain('FULL PROJECT SOURCE CODE AUDIT (Entire Repository Files)');
     expect(prompt).toContain('UserService { data$ = new Subject(); }');
     expect(prompt).toContain('No pending git diff detected');
