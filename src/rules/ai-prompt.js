@@ -7,41 +7,146 @@ import { logStep, logSuccess, logError, logWarning } from '../utils/logger.js';
 import { getDiff, getProjectStructureTree } from '../utils/git.js';
 
 /**
+ * Recursively collect all relevant source code files from the project
+ * to enable a true Full-Project AI Knowledge Base regression audit.
+ */
+export function getProjectSourceSnapshot(cwd = process.cwd(), maxChars = 350000) {
+  const allowedExtensions = new Set([
+    '.ts', '.html', '.css', '.scss', '.sass', '.less', '.json', '.js', '.mjs'
+  ]);
+  const ignoredDirs = new Set([
+    'node_modules', 'dist', '.git', '.angular', 'build', 'coverage',
+    '.vscode', '.idea', '.github', '.gitlab', 'bin', 'obj'
+  ]);
+  const ignoredFiles = new Set([
+    'package-lock.json', 'yarn.lock', 'pnpm-lock.yaml',
+    'resolved_issues.md', '.env', '.env.example', '.gitignore',
+    '.gitattributes', '.gitleaks.toml', 'sha256sums.txt'
+  ]);
+
+  const fileList = [];
+
+  function walk(dir) {
+    if (!fs.existsSync(dir)) return;
+    let entries;
+    try {
+      entries = fs.readdirSync(dir, { withFileTypes: true });
+    } catch (_) {
+      return;
+    }
+
+    for (const entry of entries) {
+      const lowerName = entry.name.toLowerCase();
+      if (entry.isDirectory()) {
+        if (!ignoredDirs.has(lowerName) && !lowerName.startsWith('.')) {
+          walk(path.join(dir, entry.name));
+        }
+      } else if (entry.isFile()) {
+        const ext = path.extname(entry.name).toLowerCase();
+        if (allowedExtensions.has(ext) && !ignoredFiles.has(lowerName)) {
+          fileList.push(path.join(dir, entry.name));
+        }
+      }
+    }
+  }
+
+  // Prioritize src/ directory if it exists, otherwise walk project root
+  const srcDir = path.join(cwd, 'src');
+  if (fs.existsSync(srcDir)) {
+    walk(srcDir);
+    // Also include root configuration files (e.g. angular.json, tsconfig.json, package.json)
+    ['angular.json', 'tsconfig.json', 'package.json'].forEach(cfg => {
+      const cfgPath = path.join(cwd, cfg);
+      if (fs.existsSync(cfgPath) && !fileList.includes(cfgPath)) {
+        fileList.push(cfgPath);
+      }
+    });
+  } else {
+    walk(cwd);
+  }
+
+  let totalChars = 0;
+  let snapshot = '';
+  const MAX_PER_FILE_CHARS = 40000;
+
+  for (const filePath of fileList) {
+    const relPath = path.relative(cwd, filePath).replace(/\\/g, '/');
+    try {
+      let content = fs.readFileSync(filePath, 'utf8');
+      if (content.length > MAX_PER_FILE_CHARS) {
+        content = content.slice(0, MAX_PER_FILE_CHARS) + '\n... [truncated file: exceeds 40KB]';
+      }
+      const fileHeader = `\n--- FILE: ${relPath} ---\n`;
+      if (totalChars + fileHeader.length + content.length > maxChars) {
+        const remaining = maxChars - totalChars - fileHeader.length;
+        if (remaining > 300) {
+          snapshot += fileHeader + content.slice(0, remaining) + '\n... [remaining files truncated to fit context budget]';
+        }
+        break;
+      }
+      snapshot += fileHeader + content;
+      totalChars += fileHeader.length + content.length;
+    } catch (_) {}
+  }
+
+  return { snapshot, fileCount: fileList.length };
+}
+
+/**
  * Generate the Senior Angular Architect & Security Gatekeeper prompt
  */
-export function buildGeminiAuditPrompt(knowledgeBase, diffOutput, projectTree = '') {
+export function buildGeminiAuditPrompt(knowledgeBase, diffOutput = '', projectTree = '', projectSource = '') {
+  const hasDiff = Boolean(diffOutput && diffOutput.trim().length > 0);
+  const diffSection = hasDiff
+    ? `### 3. ACTIVE CODE DIFF / COMMITTED CHANGES:
+\`\`\`diff
+${diffOutput.slice(0, 25000)}
+\`\`\``
+    : `### 3. ACTIVE CODE DIFF / COMMITTED CHANGES:
+*(No pending git diff detected. You must perform a complete audit of the entire project source code provided in Section 2.)*`;
+
+  const projectSourceContent = projectSource && projectSource.trim().length > 0
+    ? projectSource
+    : '*(No project source files detected in workspace)*';
+
   return `
 You are a Principal Angular Architect, DevSecOps Specialist, and Code Quality Gatekeeper.
-Your job is to audit the current Angular repository and incoming Git changes against our repository's Knowledge Base of established standards, architecture patterns, and resolved issues in "resolved_issues.md".
+Your job is to audit the current Angular repository and its codebase against our repository's Knowledge Base of established standards, architecture patterns, and resolved issues in "resolved_issues.md".
 
 ### 1. ESTABLISHED REPOSITORY STANDARDS & RESOLVED ISSUES (Knowledge Base):
 \`\`\`markdown
-${knowledgeBase.slice(0, 15000)}
+${knowledgeBase.slice(0, 20000)}
 \`\`\`
 
-### 2. REPOSITORY PROJECT STRUCTURE SNAPSHOT:
+### 2. FULL PROJECT SOURCE CODE AUDIT (Entire Repository Files):
+\`\`\`text
+${projectSourceContent.slice(0, 350000)}
+\`\`\`
+
+${diffSection}
+
+### 4. REPOSITORY PROJECT STRUCTURE SNAPSHOT:
 \`\`\`text
 ${projectTree.slice(0, 8000)}
 \`\`\`
 
-### 3. ACTIVE CODE DIFF / COMMITTED CHANGES:
-\`\`\`diff
-${diffOutput.slice(0, 25000)}
-\`\`\`
-
 ### CRITICAL EVALUATION RULES:
-1. **IGNORE direct edits or deletions to the "resolved_issues.md" file itself**. Do NOT fail the commit because resolved_issues.md was modified, reformatted, or shortened.
-2. Evaluate the **entire codebase and incoming code changes** against the technical rules, architecture constraints, and bug avoidance guidelines documented in resolved_issues.md.
-3. Verify that the project structure adheres to the architectural requirements (e.g. proper folder layout, RxJS cleanup with takeUntilDestroyed / async pipe, zero direct nativeElement.innerHTML mutations, clean type safety).
-4. If the active code changes reintroduce previously documented bugs, break architecture rules, or violate security standards:
+1. **FULL PROJECT AUDIT MANDATE**: You are strictly required to audit the **ENTIRE PROJECT CODEBASE** (Section 2) against the technical rules, architectural constraints, and previously resolved bugs documented in "resolved_issues.md" (Section 1).
+2. **DO NOT LIMIT YOUR AUDIT TO ONLY THE GIT DIFF**: Even if a file was NOT modified in the current git diff, if ANY source file in the project violates any rule, reintroduces a known bug, or breaks architectural guidelines from resolved_issues.md, you MUST flag it!
+3. **IGNORE direct edits or deletions to the "resolved_issues.md" file itself**. Do NOT fail the commit because resolved_issues.md was modified, reformatted, or shortened.
+4. Verify that all components, services, templates, routing, and configurations in the project adhere to the architectural requirements:
+   - Proper RxJS cleanup (takeUntilDestroyed / async pipe, zero memory leaks).
+   - Template security (zero unsanitized innerHTML or direct nativeElement DOM mutations).
+   - Clean standalone/module architecture, DI token usage, and strict type safety.
+   - Any project-specific bug avoidance guidelines documented in resolved_issues.md.
+5. If ANY file in the project (or in incoming git changes) reintroduces a previously documented bug, breaks architecture rules, or violates security standards:
    - Output: "VERDICT: FAILED"
-   - Provide a concise explanation of the violation with relevant file paths / code snippets.
-5. If the project code adheres to the documented guidelines:
+   - Provide a concise explanation specifying the offending file path(s), relevant code snippet(s), and which documented issue from resolved_issues.md was violated.
+6. If all source files across the project adhere to the documented guidelines:
    - Output: "VERDICT: PASSED"
    - Provide a concise summary and constructive architectural insights.
-
-6. FORMATTING: Use clean, standard Markdown for headings and bullets. Never use LaTeX notation (e.g., do NOT output $\rightarrow$ or \rightarrow; use "→" or "->" instead). Never wrap heading lines in double asterisks.
-7. COMPLETION: Ensure your response is fully complete. Finish all sentences, recommendations, and bullet points cleanly without cutting off mid-thought.
+7. FORMATTING: Use clean, standard Markdown for headings and bullets. Never use LaTeX notation (e.g., do NOT output $\rightarrow$ or \rightarrow; use "→" or "->" instead). Never wrap heading lines in double asterisks.
+8. COMPLETION: Ensure your response is fully complete. Finish all sentences, recommendations, and bullet points cleanly without cutting off mid-thought.
 
 Ensure your response clearly includes either "VERDICT: PASSED" or "VERDICT: FAILED" in capital letters.
 `;
@@ -54,12 +159,12 @@ export async function runAiKnowledgeBaseAudit(config = {}, cwd = process.cwd()) 
   const provider = (config.AI_PROVIDER || (config.GEMINI_API_KEY ? 'gemini' : 'none')).toLowerCase();
   const providerTitles = {
       gemini: 'Google Gemini 3.8',
-      openai: 'OpenAI (${config.OPENAI_MODEL || "gpt-4o-mini"})',
-      anthropic: 'Anthropic Claude (${config.ANTHROPIC_MODEL || "claude-3-7-sonnet"})',
-      deepseek: 'DeepSeek (${config.DEEPSEEK_MODEL || "deepseek-chat"})',
-      groq: 'Groq Ultra-Fast (${config.GROQ_MODEL || "llama-3.3-70b"})',
-      openrouter: 'OpenRouter (${config.OPENROUTER_MODEL || "universal"})',
-      ollama: 'Local Ollama (${config.OLLAMA_MODEL || "local"})'
+      openai: `OpenAI (${config.OPENAI_MODEL || "gpt-4o-mini"})`,
+      anthropic: `Anthropic Claude (${config.ANTHROPIC_MODEL || "claude-3-7-sonnet"})`,
+      deepseek: `DeepSeek (${config.DEEPSEEK_MODEL || "deepseek-chat"})`,
+      groq: `Groq Ultra-Fast (${config.GROQ_MODEL || "llama-3.3-70b"})`,
+      openrouter: `OpenRouter (${config.OPENROUTER_MODEL || "universal"})`,
+      ollama: `Local Ollama (${config.OLLAMA_MODEL || "local"})`
     };
     const providerName = providerTitles[provider] || provider;
   
@@ -77,17 +182,20 @@ export async function runAiKnowledgeBaseAudit(config = {}, cwd = process.cwd()) 
   }
 
   const knowledgeBase = fs.readFileSync(resolvedIssuesPath, 'utf8');
-  console.log(chalk.blue('  Reading git diff for current Angular changes...'));
+  console.log(chalk.blue('  Scanning full project source files & git diff for AI Knowledge Base audit...'));
 
   const diffOutput = getDiff(cwd, true); // true = exclude resolved_issues.md and lockfile diff
   const projectTree = getProjectStructureTree(cwd);
+  const sourceInfo = getProjectSourceSnapshot(cwd);
 
-  if (!diffOutput || diffOutput.trim() === '') {
-    console.log(chalk.gray('  No code diff detected against baseline. AI audit passed.'));
-    return { passed: true, skipped: true, report: 'No active code git diff detected against baseline (documentation edits ignored).' };
+  console.log(chalk.gray(`  Loaded ${sourceInfo.fileCount} project file(s) into AI audit context (${Math.round(sourceInfo.snapshot.length / 1024)} KB)...`));
+
+  if (!sourceInfo.snapshot && (!diffOutput || diffOutput.trim() === '')) {
+    console.log(chalk.gray('  No project source code or git diff detected. AI audit passed.'));
+    return { passed: true, skipped: true, report: 'No project source files or active git diff detected against baseline.' };
   }
 
-  const prompt = buildGeminiAuditPrompt(knowledgeBase, diffOutput, projectTree);
+  const prompt = buildGeminiAuditPrompt(knowledgeBase, diffOutput, projectTree, sourceInfo.snapshot);
 
   // 1. OLLAMA LOCAL AI PROVIDER
   if (provider === 'ollama') {
@@ -95,11 +203,12 @@ export async function runAiKnowledgeBaseAudit(config = {}, cwd = process.cwd()) 
     const model = config.OLLAMA_MODEL || 'qwen2.5-coder:latest';
     console.log(chalk.cyan(`  Consulting Local Ollama (${rawOllamaUrl} - ${model}) to audit Angular code...`));
 
-    // Tailor prompt for local models: keep critical rules & diff, without flooding CPU with 150-file tree
+    // Tailor prompt for local models: keep critical rules, project source slice & diff, without flooding CPU with 150-file tree
     const localPrompt = buildGeminiAuditPrompt(
       knowledgeBase.slice(0, 8000),
-      diffOutput.slice(0, 10000),
-      projectTree ? projectTree.slice(0, 800) : ''
+      diffOutput ? diffOutput.slice(0, 10000) : '',
+      projectTree ? projectTree.slice(0, 800) : '',
+      sourceInfo.snapshot ? sourceInfo.snapshot.slice(0, 35000) : ''
     );
 
     try {

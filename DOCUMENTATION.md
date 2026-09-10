@@ -209,8 +209,9 @@ Whenever you commit code (`git commit`), Gatekeeper intercepts the process and r
 │ STEP 8: Multi-Provider AI Knowledge Base Regression Audit                          │
 │ ├─ Consults configured AI Provider (Gemini 3.8/3.7, Claude, OpenAI, DeepSeek,      │
 │ │   Groq, OpenRouter, or Local Offline Ollama)                                     │
-│ ├─ Reads resolved_issues.md & live project structure tree                          │
-│ ├─ Analyzes code diff to ensure past architectural mistakes are not repeated       │
+│ ├─ Reads resolved_issues.md, full project source code tree & active git diff        │
+│ ├─ Audits the entire codebase & diff to ensure past architectural mistakes are not  │
+│ │   repeated anywhere in the project (regardless of whether diff exists)           │
 │ ├─ Ignores documentation modifications to resolved_issues.md itself                │
 │ └─ Subtitle: "AI Knowledge Base Audit & Insights (Google Gemini 3.8 / Multi-AI)"   │
 └────────────────────────────────────────────────────────────────────────────────────┘
