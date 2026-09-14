@@ -44,6 +44,9 @@ import {
   finalizeProgress,
   isForceCommitRequested,
   isCloseRequested,
+  isSkipStepRequested,
+  consumeSkipStepRequest,
+  clearStepError,
   waitForUserDecisionOnFailure
 } from './ui/progress-window.js';
 
@@ -107,7 +110,33 @@ function handleForceCommit(stepNum = null) {
   process.exit(0);
 }
 
+function handleStepSkip(stepNum) {
+  const stepInfo = stepNum ? ` (Step ${stepNum})` : '';
+  console.log('\n' + chalk.yellow.bold('═══════════════════════════════════════════════════════════════'));
+  console.log(chalk.yellow.bold(` ⏭ STEP ${stepNum} SKIPPED BY DEVELOPER${stepInfo.toUpperCase()}`));
+  console.log(chalk.yellow(`   Bypassing Step ${stepNum} checks and proceeding to next validation...`));
+  console.log(chalk.yellow.bold('═══════════════════════════════════════════════════════════════\n'));
+
+  try {
+    clearStepError(stepNum);
+    updateStep(stepNum, 'skip', 'Skipped by developer');
+  } catch (_) {}
+}
+
 async function handleStepFailure(stepNum, err, defaultTitle, defaultDetail) {
+  if (err?.isSkipped || consumeSkipStepRequest(stepNum)) {
+    handleStepSkip(stepNum);
+    return;
+  }
+  if (err?.isForceCommit || isForceCommitRequested()) {
+    handleForceCommit(stepNum);
+    return;
+  }
+  if (err?.isClose || isCloseRequested()) {
+    console.log(chalk.red('\n✖ Pre-commit validation cancelled by user closing window.\n'));
+    process.exit(1);
+  }
+
   const errorMsg = err?.stepOutput || err?.auditOutput || err?.testOutput || err?.buildOutput || err?.stdout?.toString() || err?.stderr?.toString() || err?.message || defaultDetail;
   appendStepLog(stepNum, `\n✖ [Error] ${errorMsg}\n`);
   updateStep(stepNum, 'error', defaultDetail || errorMsg);
@@ -117,10 +146,19 @@ async function handleStepFailure(stepNum, err, defaultTitle, defaultDetail) {
     handleForceCommit(stepNum);
     return;
   }
+  if (consumeSkipStepRequest(stepNum)) {
+    handleStepSkip(stepNum);
+    return;
+  }
 
   const decision = await waitForUserDecisionOnFailure();
   if (decision === 'force_commit') {
     handleForceCommit(stepNum);
+    return;
+  }
+  if (decision?.action === 'skip_step' || decision === 'skip_step' || isSkipStepRequested(stepNum)) {
+    consumeSkipStepRequest(stepNum);
+    handleStepSkip(stepNum);
     return;
   }
 
@@ -166,16 +204,20 @@ async function runGatekeeper() {
     console.log(chalk.red('\n✖ Pre-commit validation cancelled by user closing window.\n'));
     process.exit(1);
   }
-  _activeStepNum = 2;
-  startStep(2, 'Validating tsconfig, angular.json & entry points...');
-  appendStepLog(2, `[Gatekeeper] Checking critical architecture files & entry points in ${cwd}...\n`);
   let archRes = {};
-  try {
-    archRes = checkCriticalArchitecture(cwd);
-    appendStepLog(2, `✔ Entry points, tsconfig, angular.json & lockfile sync verified\n`);
-    updateStep(2, 'pass', 'Entry points, lockfile sync & Linux case-sensitivity verified');
-  } catch (err) {
-    await handleStepFailure(2, err, 'Step 2: Architecture Integrity Error', err.message || 'Missing critical architecture files');
+  if (consumeSkipStepRequest(2)) {
+    handleStepSkip(2);
+  } else {
+    _activeStepNum = 2;
+    startStep(2, 'Validating tsconfig, angular.json & entry points...');
+    appendStepLog(2, `[Gatekeeper] Checking critical architecture files & entry points in ${cwd}...\n`);
+    try {
+      archRes = checkCriticalArchitecture(cwd);
+      appendStepLog(2, `✔ Entry points, tsconfig, angular.json & lockfile sync verified\n`);
+      updateStep(2, 'pass', 'Entry points, lockfile sync & Linux case-sensitivity verified');
+    } catch (err) {
+      await handleStepFailure(2, err, 'Step 2: Architecture Integrity Error', err.message || 'Missing critical architecture files');
+    }
   }
 
   // STEP 3: Dependency Security & Vulnerability Audit (npm audit)
@@ -187,15 +229,19 @@ async function runGatekeeper() {
     console.log(chalk.red('\n✖ Pre-commit validation cancelled by user closing window.\n'));
     process.exit(1);
   }
-  _activeStepNum = 3;
-  startStep(3, 'Auditing package dependencies (npm audit)...');
-  appendStepLog(3, `[Gatekeeper] Running dependency vulnerability scan (npm audit)...\n`);
-  try {
-    await scanDependencyVulnerabilities(cwd);
-    appendStepLog(3, `✔ 0 High/Critical CVE vulnerabilities found in dependencies\n`);
-    updateStep(3, 'pass', '0 High/Critical CVE vulnerabilities found in dependencies');
-  } catch (err) {
-    await handleStepFailure(3, err, 'Step 3: Dependency Security Audit', 'High/Critical CVEs detected in package dependencies');
+  if (consumeSkipStepRequest(3)) {
+    handleStepSkip(3);
+  } else {
+    _activeStepNum = 3;
+    startStep(3, 'Auditing package dependencies (npm audit)...');
+    appendStepLog(3, `[Gatekeeper] Running dependency vulnerability scan (npm audit)...\n`);
+    try {
+      await scanDependencyVulnerabilities(cwd);
+      appendStepLog(3, `✔ 0 High/Critical CVE vulnerabilities found in dependencies\n`);
+      updateStep(3, 'pass', '0 High/Critical CVE vulnerabilities found in dependencies');
+    } catch (err) {
+      await handleStepFailure(3, err, 'Step 3: Dependency Security Audit', 'High/Critical CVEs detected in package dependencies');
+    }
   }
 
   // STEP 4: Strict TypeScript Compilation & Linter Verification
@@ -207,15 +253,19 @@ async function runGatekeeper() {
     console.log(chalk.red('\n✖ Pre-commit validation cancelled by user closing window.\n'));
     process.exit(1);
   }
-  _activeStepNum = 4;
-  startStep(4, 'Executing TypeScript compilation & lint check...');
-  appendStepLog(4, `[Gatekeeper] Executing TypeScript compilation & Angular lint check...\n`);
-  try {
-    await runTypeScriptAndLintChecks(cwd, projectPkg);
-    appendStepLog(4, `✔ TypeScript compilation & lint passed with 0 errors\n`);
-    updateStep(4, 'pass', 'TypeScript compilation passed with 0 type errors');
-  } catch (err) {
-    await handleStepFailure(4, err, 'Step 4: TypeScript / Lint Error', 'TypeScript type-check or linter failed');
+  if (consumeSkipStepRequest(4)) {
+    handleStepSkip(4);
+  } else {
+    _activeStepNum = 4;
+    startStep(4, 'Executing TypeScript compilation & lint check...');
+    appendStepLog(4, `[Gatekeeper] Executing TypeScript compilation & Angular lint check...\n`);
+    try {
+      await runTypeScriptAndLintChecks(cwd, projectPkg);
+      appendStepLog(4, `✔ TypeScript compilation & lint passed with 0 errors\n`);
+      updateStep(4, 'pass', 'TypeScript compilation passed with 0 type errors');
+    } catch (err) {
+      await handleStepFailure(4, err, 'Step 4: TypeScript / Lint Error', 'TypeScript type-check or linter failed');
+    }
   }
 
   // STEP 5: Automated Unit Tests & CI Regression Suite (npm run test:ci)
@@ -227,24 +277,28 @@ async function runGatekeeper() {
     console.log(chalk.red('\n✖ Pre-commit validation cancelled by user closing window.\n'));
     process.exit(1);
   }
-  _activeStepNum = 5;
-  startStep(5, 'Running headless test runner...');
-  appendStepLog(5, `[Gatekeeper] Running automated unit test suite...\n`);
   let testRes = {};
-  try {
-    testRes = await runAutomatedUnitTests(cwd, projectPkg);
-    let detailText = 'Unit tests passed (0 failures)';
-    if (testRes && testRes.autoInjected) {
-      detailText = 'Auto-injected smoke spec verified & safely cleaned up (0 failures)';
-    } else if (testRes && testRes.specCount > 0) {
-      detailText = `Verified ${testRes.specCount} project test spec file(s) with 0 failures`;
-    } else if (testRes && testRes.skipped) {
-      detailText = 'Skipped: missing testing browser provider';
+  if (consumeSkipStepRequest(5)) {
+    handleStepSkip(5);
+  } else {
+    _activeStepNum = 5;
+    startStep(5, 'Running headless test runner...');
+    appendStepLog(5, `[Gatekeeper] Running automated unit test suite...\n`);
+    try {
+      testRes = await runAutomatedUnitTests(cwd, projectPkg);
+      let detailText = 'Unit tests passed (0 failures)';
+      if (testRes && testRes.autoInjected) {
+        detailText = 'Auto-injected smoke spec verified & safely cleaned up (0 failures)';
+      } else if (testRes && testRes.specCount > 0) {
+        detailText = `Verified ${testRes.specCount} project test spec file(s) with 0 failures`;
+      } else if (testRes && testRes.skipped) {
+        detailText = 'Skipped: missing testing browser provider';
+      }
+      appendStepLog(5, `✔ ${detailText}\n`);
+      updateStep(5, 'pass', detailText);
+    } catch (err) {
+      await handleStepFailure(5, err, 'Step 5: Automated Unit Tests Failure', 'Unit test specs reported failure');
     }
-    appendStepLog(5, `✔ ${detailText}\n`);
-    updateStep(5, 'pass', detailText);
-  } catch (err) {
-    await handleStepFailure(5, err, 'Step 5: Automated Unit Tests Failure', 'Unit test specs reported failure');
   }
 
   // STEP 6: Production Build & CD Deployment Readiness Verification
@@ -256,42 +310,46 @@ async function runGatekeeper() {
     console.log(chalk.red('\n✖ Pre-commit validation cancelled by user closing window.\n'));
     process.exit(1);
   }
-  _activeStepNum = 6;
-  startStep(6, 'Compiling production bundle & verifying CD readiness...');
-  appendStepLog(6, `[Gatekeeper] Compiling Angular production build & verifying CD readiness in ${cwd}...\n`);
   let cdRes = {};
-  try {
-    await runAngularProductionBuild(cwd, projectPkg);
-    appendStepLog(6, `\n[Gatekeeper] Validating compiled distribution artifacts in dist/...\n`);
-    cdRes = validateCompiledArtifacts(cwd, { strict: isStrictMode });
-    updateBuildMetadata(cwd, projectPkg);
-    let cdDetail = `CD Verified: ${cdRes?.totalBundleSizeMb || '0'} MB`;
-    if (cdRes?.totalGzipSizeKb && cdRes.totalGzipSizeKb !== '0.0') {
-      cdDetail += ` (Gzip: ${cdRes.totalGzipSizeKb} KB)`;
+  if (consumeSkipStepRequest(6)) {
+    handleStepSkip(6);
+  } else {
+    _activeStepNum = 6;
+    startStep(6, 'Compiling production bundle & verifying CD readiness...');
+    appendStepLog(6, `[Gatekeeper] Compiling Angular production build & verifying CD readiness in ${cwd}...\n`);
+    try {
+      await runAngularProductionBuild(cwd, projectPkg);
+      appendStepLog(6, `\n[Gatekeeper] Validating compiled distribution artifacts in dist/...\n`);
+      cdRes = validateCompiledArtifacts(cwd, { strict: isStrictMode });
+      updateBuildMetadata(cwd, projectPkg);
+      let cdDetail = `CD Verified: ${cdRes?.totalBundleSizeMb || '0'} MB`;
+      if (cdRes?.totalGzipSizeKb && cdRes.totalGzipSizeKb !== '0.0') {
+        cdDetail += ` (Gzip: ${cdRes.totalGzipSizeKb} KB)`;
+      }
+      if (cdRes && cdRes.hasSpaRewrite) {
+        cdDetail += ' | SPA: ✔';
+        appendStepLog(6, `✔ SPA Deep Rewrite rule confirmed\n`);
+      } else {
+        cdDetail += ' | SPA: ⚠ Missing';
+        appendStepLog(6, `⚠ SPA Deep Rewrite rule missing\n`);
+      }
+      if (cdRes && cdRes.hasBaseHref) {
+        cdDetail += ' | BaseHref: ✔';
+        appendStepLog(6, `✔ Base href verified in index.html\n`);
+      }
+      if (cdRes && cdRes.assetAudit && cdRes.assetAudit.valid) {
+        cdDetail += ' | Assets: ✔';
+        appendStepLog(6, `✔ Asset integrity audit passed\n`);
+      }
+      if (cdRes && cdRes.releaseManifestCreated) {
+        cdDetail += ' | Manifest: ✔';
+        appendStepLog(6, `✔ CD Release Candidate Manifest created\n`);
+      }
+      appendStepLog(6, `✔ Production bundle verified: ${cdRes?.totalBundleSizeMb || '0'} MB\n`);
+      updateStep(6, 'pass', cdDetail);
+    } catch (err) {
+      await handleStepFailure(6, err, 'Step 6: Production Build Failure', 'Production build compilation or CD artifact verification failed');
     }
-    if (cdRes && cdRes.hasSpaRewrite) {
-      cdDetail += ' | SPA: ✔';
-      appendStepLog(6, `✔ SPA Deep Rewrite rule confirmed\n`);
-    } else {
-      cdDetail += ' | SPA: ⚠ Missing';
-      appendStepLog(6, `⚠ SPA Deep Rewrite rule missing\n`);
-    }
-    if (cdRes && cdRes.hasBaseHref) {
-      cdDetail += ' | BaseHref: ✔';
-      appendStepLog(6, `✔ Base href verified in index.html\n`);
-    }
-    if (cdRes && cdRes.assetAudit && cdRes.assetAudit.valid) {
-      cdDetail += ' | Assets: ✔';
-      appendStepLog(6, `✔ Asset integrity audit passed\n`);
-    }
-    if (cdRes && cdRes.releaseManifestCreated) {
-      cdDetail += ' | Manifest: ✔';
-      appendStepLog(6, `✔ CD Release Candidate Manifest created\n`);
-    }
-    appendStepLog(6, `✔ Production bundle verified: ${cdRes?.totalBundleSizeMb || '0'} MB\n`);
-    updateStep(6, 'pass', cdDetail);
-  } catch (err) {
-    await handleStepFailure(6, err, 'Step 6: Production Build Failure', 'Production build compilation or CD artifact verification failed');
   }
 
   // STEP 7: Security & Secret Leak Scanning (API keys, Tokens, Heavy Files)
@@ -303,16 +361,20 @@ async function runGatekeeper() {
     console.log(chalk.red('\n✖ Pre-commit validation cancelled by user closing window.\n'));
     process.exit(1);
   }
-  _activeStepNum = 7;
-  startStep(7, 'Scanning full project & staged files for credentials or repo bloat...');
-  appendStepLog(7, `[Gatekeeper] Scanning full project files & staged changes for credentials, API tokens, merge conflicts, and oversized files...\n`);
-  try {
-    const diffOutput = getDiff(cwd);
-    scanSecurityRules(diffOutput, cwd);
-    appendStepLog(7, `✔ 0 leaked secrets across project, 0 conflict markers, clean file stage (<10MB)\n`);
-    updateStep(7, 'pass', '0 leaked secrets across project, 0 conflict markers, clean file stage (<10MB)');
-  } catch (err) {
-    await handleStepFailure(7, err, 'Step 7: Security & Secret Leak Warning', 'Secret credentials, forbidden files, or conflict markers detected');
+  if (consumeSkipStepRequest(7)) {
+    handleStepSkip(7);
+  } else {
+    _activeStepNum = 7;
+    startStep(7, 'Scanning full project & staged files for credentials or repo bloat...');
+    appendStepLog(7, `[Gatekeeper] Scanning full project files & staged changes for credentials, API tokens, merge conflicts, and oversized files...\n`);
+    try {
+      const diffOutput = getDiff(cwd);
+      scanSecurityRules(diffOutput, cwd);
+      appendStepLog(7, `✔ 0 leaked secrets across project, 0 conflict markers, clean file stage (<10MB)\n`);
+      updateStep(7, 'pass', '0 leaked secrets across project, 0 conflict markers, clean file stage (<10MB)');
+    } catch (err) {
+      await handleStepFailure(7, err, 'Step 7: Security & Secret Leak Warning', 'Secret credentials, forbidden files, or conflict markers detected');
+    }
   }
 
   // STEP 8: AI Knowledge Base Audit (Gemini, Ollama, vLLM / OpenAI-compatible)
@@ -324,53 +386,66 @@ async function runGatekeeper() {
     console.log(chalk.red('\n✖ Pre-commit validation cancelled by user closing window.\n'));
     process.exit(1);
   }
-  _activeStepNum = 8;
-  startStep(8, 'Auditing regression against knowledge base...');
-  appendStepLog(8, `[Gatekeeper] Performing AI Knowledge Base regression audit...\n`);
-  const aiConfig = {
-    AI_PROVIDER: process.env.AI_PROVIDER,
-    GEMINI_API_KEY: process.env.GEMINI_API_KEY,
-    OLLAMA_BASE_URL: process.env.OLLAMA_BASE_URL,
-    OLLAMA_MODEL: process.env.OLLAMA_MODEL,
-    OPENAI_API_KEY: process.env.OPENAI_API_KEY,
-    OPENAI_MODEL: process.env.OPENAI_MODEL,
-    ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY,
-    ANTHROPIC_MODEL: process.env.ANTHROPIC_MODEL,
-    DEEPSEEK_API_KEY: process.env.DEEPSEEK_API_KEY,
-    DEEPSEEK_MODEL: process.env.DEEPSEEK_MODEL,
-    GROQ_API_KEY: process.env.GROQ_API_KEY,
-    GROQ_MODEL: process.env.GROQ_MODEL,
-    OPENROUTER_API_KEY: process.env.OPENROUTER_API_KEY,
-    OPENROUTER_MODEL: process.env.OPENROUTER_MODEL
-  };
   let aiReport = '';
-  try {
-    const auditRes = await runAiKnowledgeBaseAudit(aiConfig, cwd);
-    if (auditRes) {
-      aiReport = auditRes.report || '';
-      if (!auditRes.passed) {
-        appendStepLog(8, `\n✖ [AI Audit Failed]\n${aiReport}\n`);
-        updateStep(8, 'error', aiReport);
-        finalizeProgress(false, aiReport);
-        if (isForceCommitRequested()) {
-          handleForceCommit(8);
-          return;
+  if (consumeSkipStepRequest(8)) {
+    handleStepSkip(8);
+  } else {
+    _activeStepNum = 8;
+    startStep(8, 'Auditing regression against knowledge base...');
+    appendStepLog(8, `[Gatekeeper] Performing AI Knowledge Base regression audit...\n`);
+    const aiConfig = {
+      AI_PROVIDER: process.env.AI_PROVIDER,
+      GEMINI_API_KEY: process.env.GEMINI_API_KEY,
+      OLLAMA_BASE_URL: process.env.OLLAMA_BASE_URL,
+      OLLAMA_MODEL: process.env.OLLAMA_MODEL,
+      OPENAI_API_KEY: process.env.OPENAI_API_KEY,
+      OPENAI_MODEL: process.env.OPENAI_MODEL,
+      ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY,
+      ANTHROPIC_MODEL: process.env.ANTHROPIC_MODEL,
+      DEEPSEEK_API_KEY: process.env.DEEPSEEK_API_KEY,
+      DEEPSEEK_MODEL: process.env.DEEPSEEK_MODEL,
+      GROQ_API_KEY: process.env.GROQ_API_KEY,
+      GROQ_MODEL: process.env.GROQ_MODEL,
+      OPENROUTER_API_KEY: process.env.OPENROUTER_API_KEY,
+      OPENROUTER_MODEL: process.env.OPENROUTER_MODEL
+    };
+    try {
+      const auditRes = await runAiKnowledgeBaseAudit(aiConfig, cwd);
+      if (auditRes) {
+        aiReport = auditRes.report || '';
+        if (!auditRes.passed) {
+          appendStepLog(8, `\n✖ [AI Audit Failed]\n${aiReport}\n`);
+          updateStep(8, 'error', aiReport);
+          finalizeProgress(false, aiReport);
+          if (isForceCommitRequested()) {
+            handleForceCommit(8);
+            return;
+          }
+          if (consumeSkipStepRequest(8)) {
+            handleStepSkip(8);
+          } else {
+            const decision = await waitForUserDecisionOnFailure();
+            if (decision === 'force_commit') {
+              handleForceCommit(8);
+              return;
+            }
+            if (decision?.action === 'skip_step' || decision === 'skip_step' || isSkipStepRequested(8)) {
+              consumeSkipStepRequest(8);
+              handleStepSkip(8);
+            } else {
+              process.exit(1);
+            }
+          }
+        } else {
+          const status = auditRes.skipped ? 'skip' : 'pass';
+          updateStep(8, status, aiReport);
         }
-        const decision = await waitForUserDecisionOnFailure();
-        if (decision === 'force_commit') {
-          handleForceCommit(8);
-          return;
-        }
-        process.exit(1);
       } else {
-        const status = auditRes.skipped ? 'skip' : 'pass';
-        updateStep(8, status, aiReport);
+        updateStep(8, 'skip');
       }
-    } else {
-      updateStep(8, 'skip');
+    } catch (_err) {
+      await handleStepFailure(8, _err, 'Step 8: AI Knowledge Base Audit Error', _err.message);
     }
-  } catch (_err) {
-    await handleStepFailure(8, _err, 'Step 8: AI Knowledge Base Audit Error', _err.message);
   }
 
   if (isForceCommitRequested()) {

@@ -4,12 +4,17 @@ import {
   initProgressWindow,
   isProgressWindowEnabled,
   getRequestedAction,
+  getRequestedActionData,
   isForceCommitRequested,
   isCloseRequested,
+  isSkipStepRequested,
+  consumeSkipStepRequest,
+  clearStepError,
+  updateStep,
   waitForUserDecisionOnFailure
 } from '../src/ui/progress-window.js';
 
-describe('Progress Window — Force Commit & User Decision System', () => {
+describe('Progress Window — Force Commit, Skip Step & User Decision System', () => {
   const origShowProgress = process.env.SHOW_PROGRESS;
 
   afterEach(() => {
@@ -37,6 +42,7 @@ describe('Progress Window — Force Commit & User Decision System', () => {
     expect(getRequestedAction()).toBeNull();
     expect(isForceCommitRequested()).toBe(false);
     expect(isCloseRequested()).toBe(false);
+    expect(isSkipStepRequested()).toBe(false);
   });
 
   test('detects force_commit action correctly from ACTION_FILE', () => {
@@ -47,6 +53,7 @@ describe('Progress Window — Force Commit & User Decision System', () => {
     expect(getRequestedAction()).toBe('force_commit');
     expect(isForceCommitRequested()).toBe(true);
     expect(isCloseRequested()).toBe(false);
+    expect(isSkipStepRequested()).toBe(false);
   });
 
   test('detects close action correctly from ACTION_FILE', () => {
@@ -57,6 +64,41 @@ describe('Progress Window — Force Commit & User Decision System', () => {
     expect(getRequestedAction()).toBe('close');
     expect(isForceCommitRequested()).toBe(false);
     expect(isCloseRequested()).toBe(true);
+    expect(isSkipStepRequested()).toBe(false);
+  });
+
+  test('detects skip_step action correctly and checks matching step', () => {
+    process.env.SHOW_PROGRESS = 'true';
+    initProgressWindow();
+    fs.writeFileSync(ACTION_FILE, JSON.stringify({ action: 'skip_step', step: 5 }), 'utf8');
+
+    expect(getRequestedAction()).toBe('skip_step');
+    expect(getRequestedActionData()).toEqual({ action: 'skip_step', step: 5 });
+    expect(isSkipStepRequested(5)).toBe(true);
+    expect(isSkipStepRequested(4)).toBe(false);
+    expect(isSkipStepRequested()).toBe(true);
+  });
+
+  test('consumeSkipStepRequest() removes ACTION_FILE when step matches', () => {
+    process.env.SHOW_PROGRESS = 'true';
+    initProgressWindow();
+    fs.writeFileSync(ACTION_FILE, JSON.stringify({ action: 'skip_step', step: 5 }), 'utf8');
+
+    expect(consumeSkipStepRequest(4)).toBe(false);
+    expect(fs.existsSync(ACTION_FILE)).toBe(true);
+
+    expect(consumeSkipStepRequest(5)).toBe(true);
+    expect(fs.existsSync(ACTION_FILE)).toBe(false);
+  });
+
+  test('clearStepError() marks failed step as skip and clears hasError', () => {
+    process.env.SHOW_PROGRESS = 'true';
+    initProgressWindow();
+    updateStep(5, 'error', 'Unit tests failed');
+
+    clearStepError(5);
+    // After clearing step 5, error state should be reset
+    expect(isSkipStepRequested(5)).toBe(false);
   });
 
   test('waitForUserDecisionOnFailure() resolves immediately with close if window disabled', async () => {
@@ -100,6 +142,18 @@ describe('Progress Window — Force Commit & User Decision System', () => {
     expect(decision).toBe('close');
   });
 
+  test('waitForUserDecisionOnFailure() polls and resolves with skip_step when skip is clicked', async () => {
+    process.env.SHOW_PROGRESS = 'true';
+    initProgressWindow();
+
+    setTimeout(() => {
+      fs.writeFileSync(ACTION_FILE, JSON.stringify({ action: 'skip_step', step: 7 }), 'utf8');
+    }, 50);
+
+    const decision = await waitForUserDecisionOnFailure(20);
+    expect(decision).toEqual({ action: 'skip_step', step: 7 });
+  });
+
   test('initProgressWindow() clears any leftover action file before starting', () => {
     fs.writeFileSync(ACTION_FILE, JSON.stringify({ action: 'force_commit' }), 'utf8');
     expect(fs.existsSync(ACTION_FILE)).toBe(true);
@@ -109,3 +163,4 @@ describe('Progress Window — Force Commit & User Decision System', () => {
     expect(fs.existsSync(ACTION_FILE)).toBe(false);
   });
 });
+

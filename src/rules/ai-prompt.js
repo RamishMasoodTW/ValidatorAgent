@@ -145,14 +145,21 @@ ${projectTree.slice(0, 8000)}
    - Clean standalone/module architecture, DI token usage, and strict type safety.
    - Any project-specific bug avoidance guidelines documented in resolved_issues.md.
 5. If ANY file in the project (or in incoming git changes) reintroduces a previously documented bug, breaks architecture rules, or violates security standards:
-   - Output: "VERDICT: FAILED"
-   - Provide a concise explanation specifying the offending file path(s), relevant code snippet(s), and which documented issue from resolved_issues.md was violated.
+   - Start your response immediately with:
+     **VERDICT: FAILED**
+   - Provide a comprehensive, structured breakdown of ALL identified violations across the project.
+   - For each violation, specify:
+     * **File:** Exact file path
+     * **Violation:** Clear explanation of what rule or resolved_issues.md standard is broken
+     * **Remediation:** Actionable instructions on how to fix it
+   - Do NOT stop prematurely after listing just one file or partial thought. Audit and enumerate ALL violations across the codebase and finish with a conclusive summary.
    - (REMINDER: Never cite "incomplete resolved_issues.md documentation" as a failure reason or action item).
 6. If all source files across the project adhere to the documented guidelines:
-   - Output: "VERDICT: PASSED"
+   - Start your response immediately with:
+     **VERDICT: PASSED**
    - Provide a concise summary and constructive architectural insights.
 7. FORMATTING: Use clean, standard Markdown for headings and bullets. Never use LaTeX notation (e.g., do NOT output $\rightarrow$ or \rightarrow; use "→" or "->" instead). Never wrap heading lines in double asterisks.
-8. COMPLETION: Ensure your response is fully complete. Finish all sentences, recommendations, and bullet points cleanly without cutting off mid-thought.
+8. COMPLETION MANDATE: You MUST complete your entire response. Finish all sections, sentences, recommendations, and bullet points cleanly without cutting off mid-thought. Always conclude with a final summary.
 
 Ensure your response clearly includes either "VERDICT: PASSED" or "VERDICT: FAILED" in capital letters.
 `;
@@ -247,7 +254,7 @@ export async function runAiKnowledgeBaseAudit(config = {}, cwd = process.cwd()) 
             model,
             messages: [{ role: 'user', content: prompt }],
             temperature: 0.2,
-            max_tokens: 4096
+            max_tokens: 8192
           })
         });
         if (!res.ok) {
@@ -282,7 +289,7 @@ export async function runAiKnowledgeBaseAudit(config = {}, cwd = process.cwd()) 
           },
           body: JSON.stringify({
             model,
-            max_tokens: 4096,
+            max_tokens: 8192,
             messages: [{ role: 'user', content: prompt }],
             temperature: 0.2
           })
@@ -320,7 +327,7 @@ export async function runAiKnowledgeBaseAudit(config = {}, cwd = process.cwd()) 
             model,
             messages: [{ role: 'user', content: prompt }],
             temperature: 0.2,
-            max_tokens: 4096
+            max_tokens: 8192
           })
         });
         if (!res.ok) {
@@ -356,7 +363,7 @@ export async function runAiKnowledgeBaseAudit(config = {}, cwd = process.cwd()) 
             model,
             messages: [{ role: 'user', content: prompt }],
             temperature: 0.2,
-            max_tokens: 4096
+            max_tokens: 8192
           })
         });
         if (!res.ok) {
@@ -394,7 +401,7 @@ export async function runAiKnowledgeBaseAudit(config = {}, cwd = process.cwd()) 
             model,
             messages: [{ role: 'user', content: prompt }],
             temperature: 0.2,
-            max_tokens: 4096
+            max_tokens: 8192
           })
         });
         if (!res.ok) {
@@ -419,14 +426,17 @@ export async function runAiKnowledgeBaseAudit(config = {}, cwd = process.cwd()) 
   }
 
   console.log(chalk.cyan('  Consulting Gemini AI to audit Angular code against known issues...'));
-  const candidateModels = [
-      'gemini-3.8-flash',
-      'gemini-3.7-flash',
-      'gemini-3.6-flash',
-      'gemini-3.5-flash',
-      'gemini-3.5-flash-lite',
-      'gemini-flash-lite-latest'
-    ];
+  const envGeminiModel = config.GEMINI_MODEL || process.env.GEMINI_MODEL;
+  const candidateModels = envGeminiModel
+    ? [envGeminiModel, 'gemini-3.6-flash', 'gemini-3.5-flash', 'gemini-3.8-flash', 'gemini-3.7-flash', 'gemini-flash-lite-latest']
+    : [
+        'gemini-3.6-flash',
+        'gemini-3.5-flash',
+        'gemini-3.8-flash',
+        'gemini-3.7-flash',
+        'gemini-3.5-flash-lite',
+        'gemini-flash-lite-latest'
+      ];
   let lastError = null;
 
   for (const modelName of candidateModels) {
@@ -436,7 +446,7 @@ export async function runAiKnowledgeBaseAudit(config = {}, cwd = process.cwd()) 
         model: modelName,
         contents: prompt,
         config: {
-          maxOutputTokens: 4096,
+          maxOutputTokens: 16384,
           temperature: 0.2
         }
       });
@@ -472,8 +482,8 @@ function callOllamaViaHttp(url, model, prompt) {
         stream: false,
         options: {
           temperature: 0.2,
-          num_predict: 4096,
-          num_ctx: 8192
+          num_predict: 8192,
+          num_ctx: 16384
         }
       });
 

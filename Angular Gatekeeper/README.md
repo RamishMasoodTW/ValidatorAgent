@@ -79,14 +79,16 @@ If **Yes** is selected, every `git commit` in an Angular project launches a floa
 ║  📋 AI Report Card                                ║
 ║  No issues detected in staged changes.            ║
 ╠═══════════════════════════════════════════════════╣
-║                  [ Close ]                        ║
+║          [ ⚡ Force Commit ]   [ Close ]           ║
 ╚═══════════════════════════════════════════════════╝
 ```
 
 - ✅ Steps light up green as they complete in real time
-- ❌ If any step fails, the window **stays open** — it does **not** auto-close
-- 📋 AI Report Card from Gemini displayed in a scrollable panel on success
-- 🖱️ Window only closes when you click **[ Close ]** — never automatically
+- ⚡ **Force Commit Button (Amber):** Click at any time while checks are running to bypass remaining steps and commit immediately (`exit 0`).
+- ❌ If any step fails, the window **stays open** with full diagnostic error details:
+  - Click **[ Close ]** to dismiss and reject the commit (`exit 1`) to fix code.
+  - Click **[ ⚡ Force Commit ]** to bypass the failure and commit immediately without checks (`exit 0`).
+- 📋 AI Report Card displayed in a scrollable panel with 1-click clipboard copy
 - Only appears for **Angular projects** — non-Angular repos have zero interruption
 
 ---

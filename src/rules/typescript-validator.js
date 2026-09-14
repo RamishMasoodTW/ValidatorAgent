@@ -17,9 +17,12 @@ export async function runTypeScriptAndLintChecks(cwd = process.cwd(), projectPkg
   if (scripts['lint']) {
     console.log(chalk.blue('  Running Angular Linter (npm run lint)...'));
     try {
-      await execStreaming('npm run lint', { cwd });
+      await execStreaming('npm run lint', { cwd, stepNum: 4 });
       logSuccess('Angular linter passed with zero errors.');
     } catch (err) {
+      if (err.isSkipped || err.isForceCommit || err.isClose) {
+        throw err;
+      }
       logError('Angular linter reported errors!');
       console.log(chalk.red('\n  Fix the linting issues before committing code.\n'));
       const failErr = new Error('Angular linting failed');
@@ -33,9 +36,12 @@ export async function runTypeScriptAndLintChecks(cwd = process.cwd(), projectPkg
     const typeScript = scripts['type-check'] ? 'type-check' : 'typecheck';
     console.log(chalk.blue(`  Running TypeScript Check (npm run ${typeScript})...`));
     try {
-      await execStreaming(`npm run ${typeScript}`, { cwd });
+      await execStreaming(`npm run ${typeScript}`, { cwd, stepNum: 4 });
       logSuccess('TypeScript checks passed.');
     } catch (err) {
+      if (err.isSkipped || err.isForceCommit || err.isClose) {
+        throw err;
+      }
       logError('TypeScript type checking failed!');
       console.log(chalk.red('\n  Fix the TypeScript errors before committing code.\n'));
       const failErr = new Error('TypeScript type checking failed');
@@ -46,9 +52,12 @@ export async function runTypeScriptAndLintChecks(cwd = process.cwd(), projectPkg
     // Run direct tsc --noEmit check if tsconfig exists
     console.log(chalk.blue('  Running Type Safety Check (npx tsc --noEmit)...'));
     try {
-      await execStreaming('npx tsc --noEmit --skipLibCheck', { cwd });
+      await execStreaming('npx tsc --noEmit --skipLibCheck', { cwd, stepNum: 4 });
       logSuccess('TypeScript compilation verification passed with zero type errors.');
     } catch (err) {
+      if (err.isSkipped || err.isForceCommit || err.isClose) {
+        throw err;
+      }
       logError('TypeScript type checking failed!');
       const failErr = new Error('TypeScript compilation failed');
       failErr.stepOutput = err.combined || err.stepOutput || err.message;
@@ -192,9 +201,12 @@ describe('Angular CI Pipeline Verification', () => {
     console.log(chalk.blue(`  Executing Automated Unit Tests (${testCommand})...`));
     let _output = '';
     try {
-      const res = await execStreaming(testCommand, { cwd });
+      const res = await execStreaming(testCommand, { cwd, stepNum: 5 });
       _output = res.combined;
     } catch (testExecErr) {
+      if (testExecErr.isSkipped || testExecErr.isForceCommit || testExecErr.isClose) {
+        throw testExecErr;
+      }
       const combined = (testExecErr.combined || testExecErr.stdout || testExecErr.stderr || testExecErr.message || '').trim();
 
       // Recovery 1: If auto-injected smoke spec failed because describe is not defined (e.g. Vitest without globals)
@@ -212,9 +224,12 @@ describe('Angular CI Pipeline Verification', () => {
 `;
           fs.writeFileSync(tempSpecPath, vitestSmokeSpec, 'utf8');
           console.log(chalk.yellow('  ⚠ Smoke spec missing test runner globals. Retrying with explicit Vitest imports...'));
-          const retryRes = await execStreaming(testCommand, { cwd });
+          const retryRes = await execStreaming(testCommand, { cwd, stepNum: 5 });
           _output = retryRes.combined;
         } catch (vitestRetryErr) {
+          if (vitestRetryErr.isSkipped || vitestRetryErr.isForceCommit || vitestRetryErr.isClose) {
+            throw vitestRetryErr;
+          }
           const vCombined = (vitestRetryErr.combined || vitestRetryErr.stdout || vitestRetryErr.stderr || vitestRetryErr.message || '').trim();
           capturedTestOutput = vCombined;
           vitestRetryErr.testOutput = vCombined;
@@ -252,10 +267,13 @@ describe('Angular CI Pipeline Verification', () => {
         if ((fallbackCommand !== testCommand || scriptCleaned) && fallbackCommand.length > 0) {
           console.log(chalk.yellow(`  ⚠ Test runner rejected argument. Retrying without unsupported flag: (${fallbackCommand})...`));
           try {
-            const fbRes = await execStreaming(fallbackCommand, { cwd });
+            const fbRes = await execStreaming(fallbackCommand, { cwd, stepNum: 5 });
             _output = fbRes.combined;
             testCommand = fallbackCommand;
           } catch (retryErr) {
+            if (retryErr.isSkipped || retryErr.isForceCommit || retryErr.isClose) {
+              throw retryErr;
+            }
             const rCombined = (retryErr.combined || retryErr.stdout || retryErr.stderr || retryErr.message || '').trim();
             capturedTestOutput = rCombined;
             retryErr.testOutput = rCombined;
@@ -343,9 +361,12 @@ export async function runAngularProductionBuild(cwd = process.cwd(), projectPkg 
 
   console.log(chalk.gray(`  Executing: ${buildCommand}`));
   try {
-    await execStreaming(buildCommand, { cwd });
+    await execStreaming(buildCommand, { cwd, stepNum: 6 });
     logSuccess('Angular compilation & build completed successfully with ZERO errors.');
   } catch (buildErr) {
+    if (buildErr.isSkipped || buildErr.isForceCommit || buildErr.isClose) {
+      throw buildErr;
+    }
     logError('Angular Build FAILED! Compilation or TypeScript errors detected.');
     const combined = (buildErr.combined || buildErr.stdout || buildErr.stderr || buildErr.message || '').trim();
     console.log(chalk.red('\n  ═════════════════════════════════════════════════════════════════'));

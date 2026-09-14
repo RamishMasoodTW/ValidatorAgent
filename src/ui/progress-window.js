@@ -261,8 +261,15 @@ $PROGRESS_FILE = "$env:TEMP\\gk-progress.json"
     <!-- Footer -->
     <Border Grid.Row="3" Background="$hdrBg" Padding="16,12" BorderBrush="$border" BorderThickness="0,1,0,0">
       <Grid>
-        <TextBlock x:Name="StatusText" Text="Running pre-commit validations..." FontSize="12" FontWeight="SemiBold" Foreground="$fg" VerticalAlignment="Center" Margin="0,0,220,0" TextTrimming="CharacterEllipsis"/>
+        <TextBlock x:Name="StatusText" Text="Running pre-commit validations..." FontSize="12" FontWeight="SemiBold" Foreground="$fg" VerticalAlignment="Center" Margin="0,0,320,0" TextTrimming="CharacterEllipsis"/>
         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+          <Button x:Name="SkipStepBtn" Content="⏭ Skip Step" Width="96" Height="28" Cursor="Hand" Background="#475569" Foreground="White" BorderThickness="0" FontWeight="SemiBold" FontSize="11" Margin="0,0,8,0" Visibility="Collapsed">
+            <Button.Resources>
+              <Style TargetType="Border">
+                <Setter Property="CornerRadius" Value="4"/>
+              </Style>
+            </Button.Resources>
+          </Button>
           <Button x:Name="ForceCommitBtn" Content="⚡ Force Commit" Width="112" Height="28" Cursor="Hand" Background="#F59E0B" Foreground="White" BorderThickness="0" FontWeight="SemiBold" FontSize="11" Margin="0,0,8,0">
             <Button.Resources>
               <Style TargetType="Border">
@@ -291,12 +298,14 @@ $panel          = $window.FindName('StepsPanel')
 $statusTb       = $window.FindName('StatusText')
 $closeBtn       = $window.FindName('CloseBtn')
 $forceCommitBtn = $window.FindName('ForceCommitBtn')
+$skipStepBtn    = $window.FindName('SkipStepBtn')
 $aiReportBorder = $window.FindName('AiReportBorder')
 $reportTitleTb  = $window.FindName('ReportTitleText')
 $copyBtn        = $window.FindName('CopyBtn')
 $aiReportRtb    = $window.FindName('AiReportRtb')
 
 $ACTION_FILE = "$env:TEMP\\gk-action.json"
+$script:lastFailedStep = 0
 
 if ($forceCommitBtn) {
     $forceCommitBtn.Add_Click({
@@ -306,8 +315,25 @@ if ($forceCommitBtn) {
         $statusTb.Text = '⚡ Force Commit requested! Committing...'
         $statusTb.Foreground = $amberFg
         $forceCommitBtn.IsEnabled = $false
+        if ($skipStepBtn) { $skipStepBtn.IsEnabled = $false }
         $closeBtn.IsEnabled = $false
         $window.Close()
+    })
+}
+
+if ($skipStepBtn) {
+    $skipStepBtn.Add_Click({
+        try {
+            $errStep = 0
+            if ($script:lastFailedStep -gt 0) {
+                $errStep = $script:lastFailedStep
+            }
+            $targetStep = if ($errStep -gt 0) { $errStep } elseif ($activeRunningStep -gt 0) { $activeRunningStep } else { $script:lastRunningStep }
+            $skipData = '{"action":"skip_step","step":' + $targetStep + '}'
+            [System.IO.File]::WriteAllText($ACTION_FILE, $skipData, [System.Text.Encoding]::UTF8)
+        } catch {}
+        $skipStepBtn.IsEnabled = $false
+        $skipStepBtn.Content = "Skipping..."
     })
 }
 
@@ -577,6 +603,7 @@ $stepIcons     = @{}
 $stepTexts     = @{}
 $stepSubs      = @{}
 $stepBadges    = @{}
+$stepSkipBtns  = @{}
 $stepBodies    = @{}
 $stepTextBoxes = @{}
 $stepLastLogs  = @{}
@@ -607,11 +634,13 @@ for ($i = 0; $i -lt $stepLabels.Count; $i++) {
     $col0 = New-Object System.Windows.Controls.ColumnDefinition; $col0.Width = New-Object System.Windows.GridLength(18) # Chevron
     $col1 = New-Object System.Windows.Controls.ColumnDefinition; $col1.Width = New-Object System.Windows.GridLength(28) # Icon
     $col2 = New-Object System.Windows.Controls.ColumnDefinition; $col2.Width = New-Object System.Windows.GridLength(1, [System.Windows.GridUnitType]::Star) # Text
-    $col3 = New-Object System.Windows.Controls.ColumnDefinition; $col3.Width = New-Object System.Windows.GridLength(0, [System.Windows.GridUnitType]::Auto) # Badge
+    $col3 = New-Object System.Windows.Controls.ColumnDefinition; $col3.Width = New-Object System.Windows.GridLength(0, [System.Windows.GridUnitType]::Auto) # Skip Button
+    $col4 = New-Object System.Windows.Controls.ColumnDefinition; $col4.Width = New-Object System.Windows.GridLength(0, [System.Windows.GridUnitType]::Auto) # Badge
     $grid.ColumnDefinitions.Add($col0)
     $grid.ColumnDefinitions.Add($col1)
     $grid.ColumnDefinitions.Add($col2)
     $grid.ColumnDefinitions.Add($col3)
+    $grid.ColumnDefinitions.Add($col4)
 
     # Column 0: Chevron arrow (▶ / ▼)
     $chev = New-Object System.Windows.Controls.TextBlock
@@ -651,7 +680,42 @@ for ($i = 0; $i -lt $stepLabels.Count; $i++) {
     $textStack.Children.Add($subLbl) | Out-Null
     [System.Windows.Controls.Grid]::SetColumn($textStack, 2)
 
-    # Column 3: Badge
+    # Column 3: Skip Button
+    $stepSkipBtn = New-Object System.Windows.Controls.Button
+    $stepSkipBtn.Content             = "Skip"
+    $stepSkipBtn.Width               = 46
+    $stepSkipBtn.Height              = 20
+    $stepSkipBtn.FontSize            = 9.5
+    $stepSkipBtn.FontWeight          = [System.Windows.FontWeights]::SemiBold
+    $stepSkipBtn.Cursor              = [System.Windows.Input.Cursors]::Hand
+    $stepSkipBtn.Background          = [System.Windows.Media.BrushConverter]::new().ConvertFrom('#334155')
+    $stepSkipBtn.Foreground          = [System.Windows.Media.Brushes]::White
+    $stepSkipBtn.BorderThickness     = New-Object System.Windows.Thickness(0)
+    $stepSkipBtn.Margin              = New-Object System.Windows.Thickness(0, 0, 6, 0)
+    $stepSkipBtn.VerticalAlignment   = [System.Windows.VerticalAlignment]::Center
+    $stepSkipBtn.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Right
+    $stepSkipBtn.Visibility          = [System.Windows.Visibility]::Collapsed
+    $stepSkipBtn.Tag                 = $stepNum
+
+    $stepSkipBtn.Resources.Add([System.Windows.Controls.Border], $(
+        $bdrStyle = New-Object System.Windows.Style([System.Windows.Controls.Border])
+        $bdrStyle.Setters.Add((New-Object System.Windows.Setter([System.Windows.Controls.Border]::CornerRadiusProperty, (New-Object System.Windows.CornerRadius(3)))))
+        $bdrStyle
+    ))
+
+    $stepSkipBtn.Add_Click({
+        param($sender, $e)
+        $sIdx = [int]$sender.Tag
+        try {
+            $skipData = '{"action":"skip_step","step":' + $sIdx + '}'
+            [System.IO.File]::WriteAllText($ACTION_FILE, $skipData, [System.Text.Encoding]::UTF8)
+        } catch {}
+        $sender.IsEnabled = $false
+        $sender.Content = "Skipping..."
+    })
+    [System.Windows.Controls.Grid]::SetColumn($stepSkipBtn, 3)
+
+    # Column 4: Badge
     $badge = New-Object System.Windows.Controls.Border
     $badge.CornerRadius        = New-Object System.Windows.CornerRadius(4)
     $badge.Padding             = New-Object System.Windows.Thickness(8, 2, 8, 2)
@@ -668,12 +732,13 @@ for ($i = 0; $i -lt $stepLabels.Count; $i++) {
     $badgeTb.VerticalAlignment   = [System.Windows.VerticalAlignment]::Center
     $badgeTb.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Center
     $badge.Child = $badgeTb
-    [System.Windows.Controls.Grid]::SetColumn($badge, 3)
+    [System.Windows.Controls.Grid]::SetColumn($badge, 4)
 
-    $grid.Children.Add($chev)      | Out-Null
-    $grid.Children.Add($icon)      | Out-Null
-    $grid.Children.Add($textStack) | Out-Null
-    $grid.Children.Add($badge)     | Out-Null
+    $grid.Children.Add($chev)        | Out-Null
+    $grid.Children.Add($icon)        | Out-Null
+    $grid.Children.Add($textStack)   | Out-Null
+    $grid.Children.Add($stepSkipBtn) | Out-Null
+    $grid.Children.Add($badge)       | Out-Null
     $header.Child = $grid
 
     # Accordion Body (Collapsible Log Box)
@@ -757,6 +822,7 @@ for ($i = 0; $i -lt $stepLabels.Count; $i++) {
     $stepTexts[$stepNum]     = $lbl
     $stepSubs[$stepNum]      = $subLbl
     $stepBadges[$stepNum]    = @{ border = $badge; text = $badgeTb }
+    $stepSkipBtns[$stepNum]  = $stepSkipBtn
     $stepBodies[$stepNum]    = $body
     $stepTextBoxes[$stepNum] = $logTb
     $stepLastLogs[$stepNum]  = ''
@@ -906,6 +972,9 @@ $timer.Add_Tick({
                 $badge.border.Visibility = [System.Windows.Visibility]::Collapsed
                 $card.Background = $cardBrush
                 $card.BorderBrush = $borderBrush
+                if ($stepSkipBtns.ContainsKey($num)) {
+                    $stepSkipBtns[$num].Visibility = [System.Windows.Visibility]::Collapsed
+                }
             }
             'running' {
                 $icon.Text       = '>>'
@@ -916,6 +985,13 @@ $timer.Add_Tick({
                 $badge.border.Visibility = [System.Windows.Visibility]::Visible
                 $card.Background = $cardBrush
                 $card.BorderBrush = $runningBdrBrush
+                if ($stepSkipBtns.ContainsKey($num)) {
+                    $stepSkipBtns[$num].Visibility = [System.Windows.Visibility]::Visible
+                    if (-not $stepSkipBtns[$num].IsEnabled -and -not (Test-Path $ACTION_FILE)) {
+                        $stepSkipBtns[$num].IsEnabled = $true
+                        $stepSkipBtns[$num].Content = "Skip"
+                    }
+                }
             }
             'pass' {
                 $icon.Text       = 'OK'
@@ -926,6 +1002,9 @@ $timer.Add_Tick({
                 $badge.border.Visibility = [System.Windows.Visibility]::Visible
                 $card.Background = $passBrush
                 $card.BorderBrush = $borderBrush
+                if ($stepSkipBtns.ContainsKey($num)) {
+                    $stepSkipBtns[$num].Visibility = [System.Windows.Visibility]::Collapsed
+                }
             }
             'error' {
                 $icon.Text       = 'ERR'
@@ -937,6 +1016,14 @@ $timer.Add_Tick({
                 $card.Background = $errBrush
                 $card.BorderBrush = $redFg
                 $hasError = $true
+                $script:lastFailedStep = $num
+                if ($stepSkipBtns.ContainsKey($num)) {
+                    $stepSkipBtns[$num].Visibility = [System.Windows.Visibility]::Visible
+                    if (-not $stepSkipBtns[$num].IsEnabled -and -not (Test-Path $ACTION_FILE)) {
+                        $stepSkipBtns[$num].IsEnabled = $true
+                        $stepSkipBtns[$num].Content = "Skip"
+                    }
+                }
 
                 # Always keep failed step accordion open so developer sees why it failed
                 if ($body.Visibility -ne [System.Windows.Visibility]::Visible) {
@@ -954,7 +1041,23 @@ $timer.Add_Tick({
                 $badge.border.Visibility = [System.Windows.Visibility]::Visible
                 $card.Background = $cardBrush
                 $card.BorderBrush = $borderBrush
+                if ($stepSkipBtns.ContainsKey($num)) {
+                    $stepSkipBtns[$num].Visibility = [System.Windows.Visibility]::Collapsed
+                }
             }
+        }
+    }
+
+    # Update Footer Skip Step Button visibility and state
+    if ($skipStepBtn) {
+        if ($activeRunningStep -gt 0 -or $hasError) {
+            $skipStepBtn.Visibility = [System.Windows.Visibility]::Visible
+            if (-not $skipStepBtn.IsEnabled -and -not (Test-Path $ACTION_FILE)) {
+                $skipStepBtn.IsEnabled = $true
+                $skipStepBtn.Content = "⏭ Skip Step"
+            }
+        } else {
+            $skipStepBtn.Visibility = [System.Windows.Visibility]::Collapsed
         }
     }
 
@@ -1009,20 +1112,28 @@ $timer.Add_Tick({
     }
 
     if ($done -eq $true) {
-        $timer.Stop()
         if ($hasError) {
-            $statusTb.Text = 'Validation failed! Commit rejected. Click Close or ⚡ Force Commit.'
+            $statusTb.Text = 'Validation failed! Click Skip Step, ⚡ Force Commit, or Close.'
             $statusTb.Foreground = $redFg
             $closeBtn.Background = $redFg
             if ($forceCommitBtn) {
                 $forceCommitBtn.Visibility = [System.Windows.Visibility]::Visible
             }
+            if ($skipStepBtn) {
+                $skipStepBtn.Visibility = [System.Windows.Visibility]::Visible
+                $skipStepBtn.IsEnabled = $true
+                $skipStepBtn.Content = "⏭ Skip Step"
+            }
         } else {
+            $timer.Stop()
             $statusTb.Text = 'All validations passed! Click Close to dismiss.'
             $statusTb.Foreground = $greenFg
             $closeBtn.Background = $greenFg
             if ($forceCommitBtn) {
                 $forceCommitBtn.Visibility = [System.Windows.Visibility]::Collapsed
+            }
+            if ($skipStepBtn) {
+                $skipStepBtn.Visibility = [System.Windows.Visibility]::Collapsed
             }
         }
     }
@@ -1168,7 +1279,10 @@ export function isProgressWindowEnabled() {
 /**
  * Reads any user action ('force_commit' | 'close') written by the WPF window.
  */
-export function getRequestedAction() {
+/**
+ * Reads full action object ({ action, step }) written by the WPF window.
+ */
+export function getRequestedActionData() {
   if (!_windowEnabled) return null;
   try {
     if (fs.existsSync(ACTION_FILE)) {
@@ -1177,12 +1291,19 @@ export function getRequestedAction() {
         raw = raw.slice(1);
       }
       if (raw) {
-        const parsed = JSON.parse(raw);
-        return parsed.action || null;
+        return JSON.parse(raw);
       }
     }
   } catch (_) { }
   return null;
+}
+
+/**
+ * Reads any user action ('force_commit' | 'close' | 'skip_step') written by the WPF window.
+ */
+export function getRequestedAction() {
+  const data = getRequestedActionData();
+  return data?.action || null;
 }
 
 /**
@@ -1200,8 +1321,55 @@ export function isCloseRequested() {
 }
 
 /**
+ * Returns true if the user requested to skip a specific step (or any step if stepNum is null).
+ */
+export function isSkipStepRequested(stepNum = null) {
+  const data = getRequestedActionData();
+  if (!data || data.action !== 'skip_step') return false;
+  if (stepNum === null || stepNum === undefined) return true;
+  return !data.step || Number(data.step) === Number(stepNum);
+}
+
+/**
+ * Consumes and clears the skip action if it matches the given step.
+ * Returns true if a skip action was consumed.
+ */
+export function consumeSkipStepRequest(stepNum = null) {
+  if (isSkipStepRequested(stepNum)) {
+    try {
+      if (fs.existsSync(ACTION_FILE)) {
+        fs.unlinkSync(ACTION_FILE);
+      }
+    } catch (_) {}
+    return true;
+  }
+  return false;
+}
+
+/**
+ * Clears the error state for a skipped step in gk-progress.json, allowing subsequent steps to run.
+ */
+export function clearStepError(stepId) {
+  if (!_windowEnabled) return;
+  flushStepLogs();
+  const data = readProgressFile();
+  if (!data || !data.steps) return;
+  if (data.steps[stepId]) {
+    data.steps[stepId].status = 'skip';
+    data.steps[stepId].detail = 'Skipped by developer';
+  }
+  const remainingErrors = Object.values(data.steps).some(s => s.status === 'error');
+  if (!remainingErrors) {
+    data.hasError = false;
+    data.done = false;
+    data.errorLog = '';
+  }
+  writeProgressFile(data);
+}
+
+/**
  * Waits for the user to make a decision in the GUI window upon failure.
- * Resolves with 'force_commit' if Force Commit clicked, or 'close' if dismissed.
+ * Resolves with 'force_commit', 'close', or { action: 'skip_step', step }.
  */
 export function waitForUserDecisionOnFailure(pollIntervalMs = 100, timeoutMs = 600000) {
   if (!_windowEnabled) {
@@ -1209,15 +1377,26 @@ export function waitForUserDecisionOnFailure(pollIntervalMs = 100, timeoutMs = 6
   }
 
   return new Promise((resolve) => {
-    const immediateAction = getRequestedAction();
-    if (immediateAction === 'force_commit' || immediateAction === 'close') {
-      return resolve(immediateAction);
+    const checkAction = () => {
+      const data = getRequestedActionData();
+      if (data?.action === 'force_commit' || data?.action === 'close') {
+        return data.action;
+      }
+      if (data?.action === 'skip_step') {
+        return data;
+      }
+      return null;
+    };
+
+    const immediate = checkAction();
+    if (immediate) {
+      return resolve(immediate);
     }
 
     const startTime = Date.now();
     const timer = setInterval(() => {
-      const action = getRequestedAction();
-      if (action === 'force_commit' || action === 'close') {
+      const action = checkAction();
+      if (action) {
         clearInterval(timer);
         return resolve(action);
       }
@@ -1228,5 +1407,6 @@ export function waitForUserDecisionOnFailure(pollIntervalMs = 100, timeoutMs = 6
     }, pollIntervalMs);
   });
 }
+
 
 

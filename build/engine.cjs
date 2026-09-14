@@ -952,15 +952,1360 @@ var init_logger = __esm({
   }
 });
 
+// src/ui/progress-window.js
+function stripAnsi(str) {
+  if (!str) return "";
+  return str.replace(/[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g, "").replace(/\[[0-9;]+m/g, "");
+}
+function getAiStepLabel() {
+  if (!process.env.AI_PROVIDER && !process.env.GEMINI_API_KEY) {
+    try {
+      const appDataDir2 = process.env.APPDATA ? import_path.default.join(process.env.APPDATA, "FrontendGatekeeper") : import_path.default.join(process.env.HOME || process.env.USERPROFILE || ".", ".frontend-gatekeeper");
+      const envPath2 = import_path.default.join(appDataDir2, ".env");
+      if (import_fs.default.existsSync(envPath2)) {
+        import_dotenv.default.config({ path: envPath2, quiet: true });
+      }
+      import_dotenv.default.config({ quiet: true });
+    } catch (_) {
+    }
+  }
+  const provider = (process.env.AI_PROVIDER || (process.env.GEMINI_API_KEY ? "gemini" : "none")).toLowerCase();
+  switch (provider) {
+    case "ollama":
+      return "8. AI Knowledge Base Audit (Ollama)";
+    case "openai":
+      return "8. AI Knowledge Base Audit (OpenAI)";
+    case "anthropic":
+      return "8. AI Knowledge Base Audit (Anthropic Claude)";
+    case "deepseek":
+      return "8. AI Knowledge Base Audit (DeepSeek)";
+    case "groq":
+      return "8. AI Knowledge Base Audit (Groq)";
+    case "openrouter":
+      return "8. AI Knowledge Base Audit (OpenRouter)";
+    case "gemini":
+      return "8. AI Knowledge Base Audit (Google Gemini)";
+    case "none":
+      return "8. AI Knowledge Base Audit (Disabled)";
+    default: {
+      const capitalized = provider.charAt(0).toUpperCase() + provider.slice(1);
+      return `8. AI Knowledge Base Audit (${capitalized})`;
+    }
+  }
+}
+function getSteps() {
+  return [
+    { id: 1, label: "1. Angular Project Detection" },
+    { id: 2, label: "2. Critical Architecture & Entry Points" },
+    { id: 3, label: "3. Dependency Vulnerability Audit (npm audit)" },
+    { id: 4, label: "4. TypeScript & Linter Verification" },
+    { id: 5, label: "5. Automated Unit Tests (test:ci) + Coverage Gate" },
+    { id: 6, label: "6. Production Build & CD Deployment Verification" },
+    { id: 7, label: "7. Security & Secret Leak Scanning" },
+    { id: 8, label: getAiStepLabel() }
+  ];
+}
+function queueStepLog(stepId, text) {
+  if (!_windowEnabled || !text) return;
+  _stepLogBuffers[stepId] = (_stepLogBuffers[stepId] || "") + stripAnsi(text);
+  if (!_flushTimer) {
+    _flushTimer = setTimeout(() => {
+      flushStepLogs();
+    }, 40);
+  }
+}
+function flushStepLogs() {
+  if (_flushTimer) {
+    clearTimeout(_flushTimer);
+    _flushTimer = null;
+  }
+  const stepIds = Object.keys(_stepLogBuffers);
+  if (stepIds.length === 0) return;
+  const data = readProgressFile();
+  if (!data || !data.steps) return;
+  let changed = false;
+  for (const id of stepIds) {
+    const chunk = _stepLogBuffers[id];
+    if (chunk && data.steps[id]) {
+      data.steps[id].log = (data.steps[id].log || "") + chunk;
+      if (data.steps[id].log.length > 5e4) {
+        data.steps[id].log = data.steps[id].log.slice(-5e4);
+      }
+      changed = true;
+    }
+  }
+  _stepLogBuffers = {};
+  if (changed) {
+    writeProgressFile(data);
+  }
+}
+function writeProgressFile(data) {
+  try {
+    const jsonStr = JSON.stringify(data, null, 2);
+    import_fs.default.writeFileSync(PROGRESS_FILE, "\uFEFF" + jsonStr, "utf8");
+  } catch (_) {
+  }
+}
+function readProgressFile() {
+  try {
+    if (import_fs.default.existsSync(PROGRESS_FILE)) {
+      let raw = import_fs.default.readFileSync(PROGRESS_FILE, "utf8");
+      if (raw.charCodeAt(0) === 65279) {
+        raw = raw.slice(1);
+      }
+      return JSON.parse(raw);
+    }
+  } catch (_) {
+  }
+  return null;
+}
+function generatePsScript() {
+  return `
+Add-Type -AssemblyName PresentationFramework, PresentationCore, WindowsBase, System.Windows.Forms
+
+# \u2500\u2500 Detect Dark/Light Theme \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+$isDark = $false
+try {
+    $regVal = Get-ItemPropertyValue -Path 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize' -Name 'AppsUseLightTheme' -ErrorAction SilentlyContinue
+    $isDark = ($regVal -eq 0)
+} catch {}
+
+$bg                 = if ($isDark) { '#181825' } else { '#F8FAFC' }
+$fg                 = if ($isDark) { '#CDD6F4' } else { '#1E293B' }
+$hdrBg              = if ($isDark) { '#11111B' } else { '#FFFFFF' }
+$cardBg             = if ($isDark) { '#1E1E2E' } else { '#FFFFFF' }
+$border             = if ($isDark) { '#313244' } else { '#CBD5E1' }
+$aiBoxBg            = if ($isDark) { '#181825' } else { '#F8FAFC' }
+$aiBoxBdr           = if ($isDark) { '#313244' } else { '#CBD5E1' }
+
+$consoleBg          = if ($isDark) { '#11111B' } else { '#0F172A' }
+$consoleBdr         = if ($isDark) { '#26283B' } else { '#334155' }
+$consoleFg          = if ($isDark) { '#A6ADC8' } else { '#E2E8F0' }
+$hoverBg            = if ($isDark) { '#282A3E' } else { '#F1F5F9' }
+
+$passBg             = if ($isDark) { '#132A1C' } else { '#F0FDF4' }
+$errBg              = if ($isDark) { '#2D1515' } else { '#FEF2F2' }
+
+$brushConverter     = [System.Windows.Media.BrushConverter]::new()
+$passBrush          = $brushConverter.ConvertFrom($passBg)
+$errBrush           = $brushConverter.ConvertFrom($errBg)
+$cardBrush          = $brushConverter.ConvertFrom($cardBg)
+$borderBrush        = $brushConverter.ConvertFrom($border)
+$hoverBrush         = $brushConverter.ConvertFrom($hoverBg)
+$consoleBgBrush     = $brushConverter.ConvertFrom($consoleBg)
+$consoleBdrBrush    = $brushConverter.ConvertFrom($consoleBdr)
+$consoleFgBrush     = $brushConverter.ConvertFrom($consoleFg)
+$greenBadgeBg       = $brushConverter.ConvertFrom('#15803D')
+$redBadgeBg         = $brushConverter.ConvertFrom('#B91C1C')
+$grayBadgeBg        = $brushConverter.ConvertFrom('#64748B')
+$blueBadgeBg        = $brushConverter.ConvertFrom('#0284C7')
+$runningBdrBrush    = $brushConverter.ConvertFrom('#38BDF8')
+$greenFg            = $brushConverter.ConvertFrom('#22C55E')
+$redFg              = $brushConverter.ConvertFrom('#EF4444')
+$blueFg             = $brushConverter.ConvertFrom('#38BDF8')
+$grayFg             = $brushConverter.ConvertFrom('#94A3B8')
+$mainFg             = $brushConverter.ConvertFrom($fg)
+$cyanFg             = $brushConverter.ConvertFrom('#38BDF8')
+$amberFg            = $brushConverter.ConvertFrom('#FBBF24')
+$boldFg             = if ($isDark) { $brushConverter.ConvertFrom('#FFFFFF') } else { $brushConverter.ConvertFrom('#0F172A') }
+$bulletColor        = $brushConverter.ConvertFrom('#60A5FA')
+
+$PROGRESS_FILE = "$env:TEMP\\gk-progress.json"
+
+[xml]$xaml = @"
+<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Angular Gatekeeper \u2014 Live CI/CD Commit Validation"
+        Width="620" Height="740"
+        MinWidth="560" MinHeight="620"
+        WindowStartupLocation="CenterScreen"
+        Topmost="True"
+        ResizeMode="CanResize"
+        ShowInTaskbar="True"
+        Background="$bg">
+  <Window.Resources>
+    <!-- Modern Sleek Themed ScrollBar Style -->
+    <Style TargetType="{x:Type ScrollBar}">
+      <Setter Property="Stylus.IsPressAndHoldEnabled" Value="false"/>
+      <Setter Property="Stylus.IsFlicksEnabled" Value="false"/>
+      <Setter Property="Width" Value="6"/>
+      <Setter Property="MinWidth" Value="6"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="{x:Type ScrollBar}">
+            <Grid x:Name="Bg" SnapsToDevicePixels="true" Background="Transparent">
+              <Track x:Name="PART_Track" IsDirectionReversed="true" IsEnabled="{TemplateBinding IsMouseOver}">
+                <Track.Thumb>
+                  <Thumb>
+                    <Thumb.Template>
+                      <ControlTemplate TargetType="{x:Type Thumb}">
+                        <Border Background="$border" CornerRadius="3" Opacity="0.75"/>
+                      </ControlTemplate>
+                    </Thumb.Template>
+                  </Thumb>
+                </Track.Thumb>
+              </Track>
+            </Grid>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+  </Window.Resources>
+  <Grid>
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="*"/>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="Auto"/>
+    </Grid.RowDefinitions>
+
+    <!-- Header -->
+    <Border Grid.Row="0" Background="$hdrBg" Padding="18,14" BorderBrush="$border" BorderThickness="0,0,0,1">
+      <StackPanel>
+        <TextBlock Text="Angular Gatekeeper \u2014 Shift-Left Pre-Commit CI/CD Quality Engine" FontSize="16" FontWeight="Bold" Foreground="$fg"/>
+        <TextBlock Text="Enforcing strict CI standards, CD deployment readiness &amp; AI regressions in real-time..." FontSize="11" Foreground="#94A3B8" Margin="0,3,0,0"/>
+      </StackPanel>
+    </Border>
+
+    <!-- Steps List -->
+    <ScrollViewer Grid.Row="1" Margin="14,8" VerticalScrollBarVisibility="Auto">
+      <StackPanel x:Name="StepsPanel"/>
+    </ScrollViewer>
+
+    <!-- AI Architect / Error Report Card (Dynamically shown) -->
+    <Border Grid.Row="2" x:Name="AiReportBorder" Margin="14,0,14,8" Padding="12" Background="$aiBoxBg" BorderBrush="$aiBoxBdr" BorderThickness="1" CornerRadius="6" Visibility="Collapsed">
+      <StackPanel>
+        <Grid Margin="0,0,0,8">
+          <TextBlock x:Name="ReportTitleText" Text="AI Knowledge Base Audit &amp; Insights:" FontWeight="Bold" FontSize="12" Foreground="$blueFg" VerticalAlignment="Center"/>
+          <Button x:Name="CopyBtn" Content="Copy Error Log" HorizontalAlignment="Right" Width="110" Height="24" Cursor="Hand" Background="#334155" Foreground="White" BorderThickness="0" FontSize="11">
+            <Button.Resources>
+              <Style TargetType="Border">
+                <Setter Property="CornerRadius" Value="4"/>
+              </Style>
+            </Button.Resources>
+          </Button>
+        </Grid>
+        <ScrollViewer MaxHeight="180" VerticalScrollBarVisibility="Auto">
+          <RichTextBox x:Name="AiReportRtb" IsReadOnly="True" IsDocumentEnabled="True" Background="Transparent" BorderThickness="0" Foreground="$fg" FontSize="11" FontFamily="Segoe UI, Consolas"/>
+        </ScrollViewer>
+      </StackPanel>
+    </Border>
+
+    <!-- Footer -->
+    <Border Grid.Row="3" Background="$hdrBg" Padding="16,12" BorderBrush="$border" BorderThickness="0,1,0,0">
+      <Grid>
+        <TextBlock x:Name="StatusText" Text="Running pre-commit validations..." FontSize="12" FontWeight="SemiBold" Foreground="$fg" VerticalAlignment="Center" Margin="0,0,320,0" TextTrimming="CharacterEllipsis"/>
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+          <Button x:Name="SkipStepBtn" Content="\u23ED Skip Step" Width="96" Height="28" Cursor="Hand" Background="#475569" Foreground="White" BorderThickness="0" FontWeight="SemiBold" FontSize="11" Margin="0,0,8,0" Visibility="Collapsed">
+            <Button.Resources>
+              <Style TargetType="Border">
+                <Setter Property="CornerRadius" Value="4"/>
+              </Style>
+            </Button.Resources>
+          </Button>
+          <Button x:Name="ForceCommitBtn" Content="\u26A1 Force Commit" Width="112" Height="28" Cursor="Hand" Background="#F59E0B" Foreground="White" BorderThickness="0" FontWeight="SemiBold" FontSize="11" Margin="0,0,8,0">
+            <Button.Resources>
+              <Style TargetType="Border">
+                <Setter Property="CornerRadius" Value="4"/>
+              </Style>
+            </Button.Resources>
+          </Button>
+          <Button x:Name="CloseBtn" Content="Close" Width="80" Height="28" Cursor="Hand" Background="#3B82F6" Foreground="White" BorderThickness="0">
+            <Button.Resources>
+              <Style TargetType="Border">
+                <Setter Property="CornerRadius" Value="4"/>
+              </Style>
+            </Button.Resources>
+          </Button>
+        </StackPanel>
+      </Grid>
+    </Border>
+  </Grid>
+</Window>
+"@
+
+$reader = [System.Xml.XmlNodeReader]::new($xaml)
+$window = [System.Windows.Markup.XamlReader]::Load($reader)
+
+$panel          = $window.FindName('StepsPanel')
+$statusTb       = $window.FindName('StatusText')
+$closeBtn       = $window.FindName('CloseBtn')
+$forceCommitBtn = $window.FindName('ForceCommitBtn')
+$skipStepBtn    = $window.FindName('SkipStepBtn')
+$aiReportBorder = $window.FindName('AiReportBorder')
+$reportTitleTb  = $window.FindName('ReportTitleText')
+$copyBtn        = $window.FindName('CopyBtn')
+$aiReportRtb    = $window.FindName('AiReportRtb')
+
+$ACTION_FILE = "$env:TEMP\\gk-action.json"
+$script:lastFailedStep = 0
+
+if ($forceCommitBtn) {
+    $forceCommitBtn.Add_Click({
+        try {
+            [System.IO.File]::WriteAllText($ACTION_FILE, '{"action":"force_commit"}', [System.Text.Encoding]::UTF8)
+        } catch {}
+        $statusTb.Text = '\u26A1 Force Commit requested! Committing...'
+        $statusTb.Foreground = $amberFg
+        $forceCommitBtn.IsEnabled = $false
+        if ($skipStepBtn) { $skipStepBtn.IsEnabled = $false }
+        $closeBtn.IsEnabled = $false
+        $window.Close()
+    })
+}
+
+if ($skipStepBtn) {
+    $skipStepBtn.Add_Click({
+        try {
+            $errStep = 0
+            if ($script:lastFailedStep -gt 0) {
+                $errStep = $script:lastFailedStep
+            }
+            $targetStep = if ($errStep -gt 0) { $errStep } elseif ($activeRunningStep -gt 0) { $activeRunningStep } else { $script:lastRunningStep }
+            $skipData = '{"action":"skip_step","step":' + $targetStep + '}'
+            [System.IO.File]::WriteAllText($ACTION_FILE, $skipData, [System.Text.Encoding]::UTF8)
+        } catch {}
+        $skipStepBtn.IsEnabled = $false
+        $skipStepBtn.Content = "Skipping..."
+    })
+}
+
+$closeBtn.Add_Click({
+    try {
+        if (-not (Test-Path $ACTION_FILE)) {
+            [System.IO.File]::WriteAllText($ACTION_FILE, '{"action":"close"}', [System.Text.Encoding]::UTF8)
+        }
+    } catch {}
+    $window.Close()
+})
+
+$window.Add_Closed({
+    try {
+        if (-not (Test-Path $ACTION_FILE)) {
+            [System.IO.File]::WriteAllText($ACTION_FILE, '{"action":"close"}', [System.Text.Encoding]::UTF8)
+        }
+    } catch {}
+})
+
+$script:rawErrorText = ''
+if ($copyBtn) {
+    $copyBtn.Add_Click({
+        try {
+            if ($script:rawErrorText -and $script:rawErrorText.Trim() -ne '') {
+                $cleanClipboard = $script:rawErrorText -replace '\x1B[[0-9;]*[a-zA-Z]', '' -replace '[[0-9;]+m', ''
+                [System.Windows.Forms.Clipboard]::SetText($cleanClipboard)
+                $copyBtn.Content = "Copied!"
+                $resetTimer = New-Object System.Windows.Threading.DispatcherTimer
+                $resetTimer.Interval = [TimeSpan]::FromMilliseconds(1500)
+                $resetTimer.Add_Tick({
+                    $copyBtn.Content = "Copy Error Log"
+                    $resetTimer.Stop()
+                })
+                $resetTimer.Start()
+            }
+        } catch {}
+    })
+}
+
+function Convert-MarkdownToFlowDocument {
+    param(
+        [string]$text,
+        [System.Windows.Media.Brush]$normalBrush,
+        [System.Windows.Media.Brush]$boldBrush,
+        [System.Windows.Media.Brush]$h1Brush,
+        [System.Windows.Media.Brush]$h2Brush,
+        [System.Windows.Media.Brush]$bulletBrush
+    )
+
+    $doc = New-Object System.Windows.Documents.FlowDocument
+    $doc.PagePadding = New-Object System.Windows.Thickness(2, 2, 2, 2)
+
+    if ([string]::IsNullOrWhiteSpace($text)) {
+        return $doc
+    }
+
+    # Strip ANSI escape codes
+    $cleanText = $text -replace '\x1B[[0-9;]*[a-zA-Z]', ''
+
+    # If this is a compiler / test runner error log (starts with [Step ...)
+    if ($cleanText.StartsWith('[Step ') -or $cleanText -match '^[Step d+:') {
+        $lines = $cleanText.Split([char]10)
+        foreach ($rawLine in $lines) {
+            $line = $rawLine.TrimEnd([char]13)
+            if ($line.Trim() -eq '') {
+                $p = New-Object System.Windows.Documents.Paragraph
+                $p.Margin = New-Object System.Windows.Thickness(0, 1, 0, 1)
+                $doc.Blocks.Add($p)
+                continue
+            }
+
+            if ($line.StartsWith('[Step ')) {
+                $p = New-Object System.Windows.Documents.Paragraph
+                $p.Margin = New-Object System.Windows.Thickness(0, 4, 0, 4)
+                $run = New-Object System.Windows.Documents.Run($line)
+                $run.FontWeight = [System.Windows.FontWeights]::Bold
+                $run.FontSize = 12.5
+                $run.Foreground = $h1Brush
+                $p.Inlines.Add($run)
+                $doc.Blocks.Add($p)
+                continue
+            }
+
+            $p = New-Object System.Windows.Documents.Paragraph
+            $p.Margin = New-Object System.Windows.Thickness(0, 1, 0, 1)
+            $p.FontFamily = New-Object System.Windows.Media.FontFamily('Consolas')
+            $p.FontSize = 10.5
+            
+            # Preserve indentation so caret pointers (^ ) align accurately
+            $presLine = $line.Replace(' ', [char]0x00A0)
+            $run = New-Object System.Windows.Documents.Run($presLine)
+            $run.Foreground = $normalBrush
+            $p.Inlines.Add($run)
+            $doc.Blocks.Add($p)
+        }
+        return $doc
+    }
+
+    # Clean arrow notations
+    $arrow = " " + [char]0x2192 + " "
+    $text = $text.Replace('\\rightarrow', $arrow).Replace('$\\rightarrow$', $arrow).Replace('->', $arrow).Replace('\\to', $arrow)
+
+    function Add-InlinesToParagraph($p, [string]$lineContent, $baseFontSize) {
+        $escStar = [System.Text.RegularExpressions.Regex]::Escape('**')
+        $tick = [char]0x60
+        $pattern = '(' + $escStar + '[^*]+?' + $escStar + '|' + $tick + '[^' + $tick + ']+?' + $tick + ')'
+        $parts = [System.Text.RegularExpressions.Regex]::Split($lineContent, $pattern)
+
+        foreach ($part in $parts) {
+            if ([string]::IsNullOrEmpty($part)) { continue }
+
+            if ($part.StartsWith('**') -and $part.EndsWith('**') -and $part.Length -ge 4) {
+                $boldText = $part.Substring(2, $part.Length - 4)
+                $run = New-Object System.Windows.Documents.Run($boldText)
+                $run.FontWeight = [System.Windows.FontWeights]::Bold
+                $run.Foreground = $boldBrush
+                $run.FontSize = $baseFontSize
+                $p.Inlines.Add($run)
+            } elseif ($part.StartsWith($tick) -and $part.EndsWith($tick) -and $part.Length -ge 2) {
+                $codeText = $part.Substring(1, $part.Length - 2)
+                $run = New-Object System.Windows.Documents.Run($codeText)
+                $run.FontFamily = New-Object System.Windows.Media.FontFamily('Consolas')
+                $run.Foreground = $h1Brush
+                $run.FontSize = $baseFontSize
+                $p.Inlines.Add($run)
+            } else {
+                $run = New-Object System.Windows.Documents.Run($part)
+                $run.Foreground = $normalBrush
+                $run.FontSize = $baseFontSize
+                $p.Inlines.Add($run)
+            }
+        }
+    }
+
+    $lines = $text.Split([char]10)
+
+    foreach ($rawLine in $lines) {
+        $trimmed = $rawLine.Trim()
+        if ($trimmed -eq '' -or $trimmed -eq '---' -or $trimmed -eq '***') {
+            continue
+        }
+
+        # Level 4 Heading (####)
+        if ($trimmed.StartsWith('#### ')) {
+            $hText = $trimmed.Substring(5).Trim().TrimStart('*').TrimEnd('*').Trim()
+            $p = New-Object System.Windows.Documents.Paragraph
+            $p.Margin = New-Object System.Windows.Thickness(0, 6, 0, 2)
+            $run = New-Object System.Windows.Documents.Run($hText)
+            $run.FontSize = 12
+            $run.FontWeight = [System.Windows.FontWeights]::SemiBold
+            $run.Foreground = $h2Brush
+            $p.Inlines.Add($run)
+            $doc.Blocks.Add($p)
+            continue
+        }
+
+        # Level 3 Heading (###)
+        if ($trimmed.StartsWith('### ')) {
+            $hText = $trimmed.Substring(4).Trim().TrimStart('*').TrimEnd('*').Trim()
+            $p = New-Object System.Windows.Documents.Paragraph
+            $p.Margin = New-Object System.Windows.Thickness(0, 8, 0, 3)
+            $run = New-Object System.Windows.Documents.Run($hText)
+            $run.FontSize = 13.5
+            $run.FontWeight = [System.Windows.FontWeights]::Bold
+            $run.Foreground = $h1Brush
+            $p.Inlines.Add($run)
+            $doc.Blocks.Add($p)
+            continue
+        }
+
+        # Level 1 or 2 Heading (# or ##)
+        if ($trimmed.StartsWith('# ') -or $trimmed.StartsWith('## ')) {
+            $hText = $trimmed.TrimStart('#').Trim().TrimStart('*').TrimEnd('*').Trim()
+            $p = New-Object System.Windows.Documents.Paragraph
+            $p.Margin = New-Object System.Windows.Thickness(0, 10, 0, 4)
+            $run = New-Object System.Windows.Documents.Run($hText)
+            $run.FontSize = 14.5
+            $run.FontWeight = [System.Windows.FontWeights]::Bold
+            $run.Foreground = $h1Brush
+            $p.Inlines.Add($run)
+            $doc.Blocks.Add($p)
+            continue
+        }
+
+        # Standalone bold header line (e.g. **Remediation Steps:**)
+        if ($trimmed.StartsWith('**') -and ($trimmed.EndsWith('**') -or $trimmed.EndsWith('**:'))) {
+            $hText = $trimmed.Trim(':').Trim('*').Trim()
+            $p = New-Object System.Windows.Documents.Paragraph
+            $p.Margin = New-Object System.Windows.Thickness(0, 8, 0, 3)
+            $run = New-Object System.Windows.Documents.Run($hText)
+            $run.FontSize = 13
+            $run.FontWeight = [System.Windows.FontWeights]::Bold
+            $run.Foreground = $h1Brush
+            $p.Inlines.Add($run)
+            $doc.Blocks.Add($p)
+            continue
+        }
+
+        # Numbered list item (e.g. "1. Directory Convention Mismatches:")
+        if ($rawLine -match '^([ \\t]*)(\\d+\\.)\\s+(.*)$') {
+            $indentSpaces = $matches[1].Length
+            $numLabel = $matches[2]
+            $content = $matches[3]
+            $itemLeft = if ($indentSpaces -ge 2) { 20 } else { 4 }
+
+            $p = New-Object System.Windows.Documents.Paragraph
+            $p.Margin = New-Object System.Windows.Thickness($itemLeft, 3, 0, 2)
+
+            $nRun = New-Object System.Windows.Documents.Run("$numLabel ")
+            $nRun.FontWeight = [System.Windows.FontWeights]::Bold
+            $nRun.Foreground = $bulletBrush
+            $nRun.FontSize = 11.5
+            $p.Inlines.Add($nRun)
+
+            Add-InlinesToParagraph $p $content 11
+            $doc.Blocks.Add($p)
+            continue
+        }
+
+        # Bullet point (* or -)
+        if ($rawLine -match '^([ \\t]*)([*+-])\\s+(.*)$') {
+            $indentSpaces = $matches[1].Length
+            $bulletChar = if ($indentSpaces -ge 2) { [char]0x25E6 } else { [char]0x2022 }
+            $bulletLeft = if ($indentSpaces -ge 2) { 22 } else { 8 }
+            $content = $matches[3]
+
+            $p = New-Object System.Windows.Documents.Paragraph
+            $p.Margin = New-Object System.Windows.Thickness($bulletLeft, 2, 0, 2)
+
+            $bRun = New-Object System.Windows.Documents.Run("$bulletChar  ")
+            $bRun.FontWeight = [System.Windows.FontWeights]::Bold
+            $bRun.Foreground = $bulletBrush
+            $bRun.FontSize = 11
+            $p.Inlines.Add($bRun)
+
+            Add-InlinesToParagraph $p $content 11
+            $doc.Blocks.Add($p)
+            continue
+        }
+
+        # Standard paragraph line
+        $p = New-Object System.Windows.Documents.Paragraph
+        $p.Margin = New-Object System.Windows.Thickness(0, 2, 0, 2)
+        Add-InlinesToParagraph $p $trimmed 11
+        $doc.Blocks.Add($p)
+    }
+
+    return $doc
+}
+
+$stepLabels = @(
+  '1. Angular Project Detection',
+  '2. Critical Architecture & Entry Points',
+  '3. Dependency Security & Vulnerability Audit (npm audit)',
+  '4. Strict TypeScript Compilation & Linter Verification',
+  '5. Automated Unit Tests & CI Regression Suite (test:ci)',
+  '6. Production Build & CD Deployment Readiness Verification',
+  '7. Security & Secret Leak Scanning',
+  '${getAiStepLabel().replace(/'/g, "''")}'
+);
+
+$stepCards     = @{}
+$stepHeaders   = @{}
+$stepChevrons  = @{}
+$stepIcons     = @{}
+$stepTexts     = @{}
+$stepSubs      = @{}
+$stepBadges    = @{}
+$stepSkipBtns  = @{}
+$stepBodies    = @{}
+$stepTextBoxes = @{}
+$stepLastLogs  = @{}
+
+for ($i = 0; $i -lt $stepLabels.Count; $i++) {
+    $stepNum = $i + 1
+
+    # Outer Card Container (Accordion Item)
+    $card = New-Object System.Windows.Controls.Border
+    $card.CornerRadius    = New-Object System.Windows.CornerRadius(6)
+    $card.Margin          = New-Object System.Windows.Thickness(0, 2, 0, 3)
+    $card.Background      = $cardBrush
+    $card.BorderBrush     = $borderBrush
+    $card.BorderThickness = New-Object System.Windows.Thickness(1)
+
+    $stack = New-Object System.Windows.Controls.StackPanel
+    $card.Child = $stack
+
+    # Clickable Header Row
+    $header = New-Object System.Windows.Controls.Border
+    $header.Background   = [System.Windows.Media.Brushes]::Transparent
+    $header.Padding      = New-Object System.Windows.Thickness(10, 8, 10, 8)
+    $header.Cursor       = [System.Windows.Input.Cursors]::Hand
+    $header.CornerRadius = New-Object System.Windows.CornerRadius(5)
+    $header.Tag          = $stepNum
+
+    $grid = New-Object System.Windows.Controls.Grid
+    $col0 = New-Object System.Windows.Controls.ColumnDefinition; $col0.Width = New-Object System.Windows.GridLength(18) # Chevron
+    $col1 = New-Object System.Windows.Controls.ColumnDefinition; $col1.Width = New-Object System.Windows.GridLength(28) # Icon
+    $col2 = New-Object System.Windows.Controls.ColumnDefinition; $col2.Width = New-Object System.Windows.GridLength(1, [System.Windows.GridUnitType]::Star) # Text
+    $col3 = New-Object System.Windows.Controls.ColumnDefinition; $col3.Width = New-Object System.Windows.GridLength(0, [System.Windows.GridUnitType]::Auto) # Skip Button
+    $col4 = New-Object System.Windows.Controls.ColumnDefinition; $col4.Width = New-Object System.Windows.GridLength(0, [System.Windows.GridUnitType]::Auto) # Badge
+    $grid.ColumnDefinitions.Add($col0)
+    $grid.ColumnDefinitions.Add($col1)
+    $grid.ColumnDefinitions.Add($col2)
+    $grid.ColumnDefinitions.Add($col3)
+    $grid.ColumnDefinitions.Add($col4)
+
+    # Column 0: Chevron arrow (\u25B6 / \u25BC)
+    $chev = New-Object System.Windows.Controls.TextBlock
+    $chev.Text              = [char]0x25B6 # \u25B6 (collapsed)
+    $chev.FontSize          = 9.5
+    $chev.Foreground        = $grayFg
+    $chev.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+    [System.Windows.Controls.Grid]::SetColumn($chev, 0)
+
+    # Column 1: Status Icon
+    $icon = New-Object System.Windows.Controls.TextBlock
+    $icon.Text              = '[ ]'
+    $icon.FontSize          = 11
+    $icon.FontWeight        = [System.Windows.FontWeights]::Bold
+    $icon.Foreground        = $grayFg
+    $icon.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+    [System.Windows.Controls.Grid]::SetColumn($icon, 1)
+
+    # Column 2: Labels
+    $lbl = New-Object System.Windows.Controls.TextBlock
+    $lbl.Text              = $stepLabels[$i]
+    $lbl.FontSize          = 12
+    $lbl.FontWeight        = [System.Windows.FontWeights]::SemiBold
+    $lbl.Foreground        = $grayFg
+    $lbl.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+
+    $subLbl = New-Object System.Windows.Controls.TextBlock
+    $subLbl.FontSize       = 10
+    $subLbl.Foreground     = $blueFg
+    $subLbl.Visibility     = [System.Windows.Visibility]::Collapsed
+    $subLbl.Margin         = New-Object System.Windows.Thickness(0, 2, 0, 0)
+    $subLbl.TextTrimming   = [System.Windows.TextTrimming]::CharacterEllipsis
+
+    $textStack = New-Object System.Windows.Controls.StackPanel
+    $textStack.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+    $textStack.Children.Add($lbl)    | Out-Null
+    $textStack.Children.Add($subLbl) | Out-Null
+    [System.Windows.Controls.Grid]::SetColumn($textStack, 2)
+
+    # Column 3: Skip Button
+    $stepSkipBtn = New-Object System.Windows.Controls.Button
+    $stepSkipBtn.Content             = "Skip"
+    $stepSkipBtn.Width               = 46
+    $stepSkipBtn.Height              = 20
+    $stepSkipBtn.FontSize            = 9.5
+    $stepSkipBtn.FontWeight          = [System.Windows.FontWeights]::SemiBold
+    $stepSkipBtn.Cursor              = [System.Windows.Input.Cursors]::Hand
+    $stepSkipBtn.Background          = [System.Windows.Media.BrushConverter]::new().ConvertFrom('#334155')
+    $stepSkipBtn.Foreground          = [System.Windows.Media.Brushes]::White
+    $stepSkipBtn.BorderThickness     = New-Object System.Windows.Thickness(0)
+    $stepSkipBtn.Margin              = New-Object System.Windows.Thickness(0, 0, 6, 0)
+    $stepSkipBtn.VerticalAlignment   = [System.Windows.VerticalAlignment]::Center
+    $stepSkipBtn.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Right
+    $stepSkipBtn.Visibility          = [System.Windows.Visibility]::Collapsed
+    $stepSkipBtn.Tag                 = $stepNum
+
+    $stepSkipBtn.Resources.Add([System.Windows.Controls.Border], $(
+        $bdrStyle = New-Object System.Windows.Style([System.Windows.Controls.Border])
+        $bdrStyle.Setters.Add((New-Object System.Windows.Setter([System.Windows.Controls.Border]::CornerRadiusProperty, (New-Object System.Windows.CornerRadius(3)))))
+        $bdrStyle
+    ))
+
+    $stepSkipBtn.Add_Click({
+        param($sender, $e)
+        $sIdx = [int]$sender.Tag
+        try {
+            $skipData = '{"action":"skip_step","step":' + $sIdx + '}'
+            [System.IO.File]::WriteAllText($ACTION_FILE, $skipData, [System.Text.Encoding]::UTF8)
+        } catch {}
+        $sender.IsEnabled = $false
+        $sender.Content = "Skipping..."
+    })
+    [System.Windows.Controls.Grid]::SetColumn($stepSkipBtn, 3)
+
+    # Column 4: Badge
+    $badge = New-Object System.Windows.Controls.Border
+    $badge.CornerRadius        = New-Object System.Windows.CornerRadius(4)
+    $badge.Padding             = New-Object System.Windows.Thickness(8, 2, 8, 2)
+    $badge.MinWidth            = 62
+    $badge.VerticalAlignment   = [System.Windows.VerticalAlignment]::Center
+    $badge.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Right
+    $badge.Visibility          = [System.Windows.Visibility]::Collapsed
+
+    $badgeTb = New-Object System.Windows.Controls.TextBlock
+    $badgeTb.FontSize            = 9.5
+    $badgeTb.FontWeight          = [System.Windows.FontWeights]::Bold
+    $badgeTb.Foreground          = [System.Windows.Media.Brushes]::White
+    $badgeTb.TextAlignment       = [System.Windows.TextAlignment]::Center
+    $badgeTb.VerticalAlignment   = [System.Windows.VerticalAlignment]::Center
+    $badgeTb.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Center
+    $badge.Child = $badgeTb
+    [System.Windows.Controls.Grid]::SetColumn($badge, 4)
+
+    $grid.Children.Add($chev)        | Out-Null
+    $grid.Children.Add($icon)        | Out-Null
+    $grid.Children.Add($textStack)   | Out-Null
+    $grid.Children.Add($stepSkipBtn) | Out-Null
+    $grid.Children.Add($badge)       | Out-Null
+    $header.Child = $grid
+
+    # Accordion Body (Collapsible Log Box)
+    $body = New-Object System.Windows.Controls.Border
+    $body.Visibility      = [System.Windows.Visibility]::Collapsed
+    $body.Margin          = New-Object System.Windows.Thickness(8, 0, 8, 8)
+    $body.Padding         = New-Object System.Windows.Thickness(8)
+    $body.CornerRadius    = New-Object System.Windows.CornerRadius(4)
+    $body.Background      = $consoleBgBrush
+    $body.BorderBrush     = $consoleBdrBrush
+    $body.BorderThickness = New-Object System.Windows.Thickness(1)
+
+    $bGrid = New-Object System.Windows.Controls.Grid
+    $bRow0 = New-Object System.Windows.Controls.RowDefinition; $bRow0.Height = New-Object System.Windows.GridLength(0, [System.Windows.GridUnitType]::Auto)
+    $bRow1 = New-Object System.Windows.Controls.RowDefinition; $bRow1.Height = New-Object System.Windows.GridLength(1, [System.Windows.GridUnitType]::Star)
+    $bGrid.RowDefinitions.Add($bRow0)
+    $bGrid.RowDefinitions.Add($bRow1)
+
+    # Accordion Toolbar
+    $tbGrid = New-Object System.Windows.Controls.Grid
+    $tbGrid.Margin = New-Object System.Windows.Thickness(0, 0, 0, 6)
+
+    $tbTitle = New-Object System.Windows.Controls.TextBlock
+    $tbTitle.Text              = "LIVE PROCESS OUTPUT"
+    $tbTitle.FontSize          = 9.5
+    $tbTitle.FontWeight        = [System.Windows.FontWeights]::Bold
+    $tbTitle.Foreground        = $cyanFg
+    $tbTitle.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+
+    $copyStepBtn = New-Object System.Windows.Controls.Button
+    $copyStepBtn.Content             = "Copy"
+    $copyStepBtn.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Right
+    $copyStepBtn.Width               = 46
+    $copyStepBtn.Height              = 20
+    $copyStepBtn.FontSize            = 9.5
+    $copyStepBtn.Cursor              = [System.Windows.Input.Cursors]::Hand
+    $copyStepBtn.Background          = [System.Windows.Media.BrushConverter]::new().ConvertFrom('#334155')
+    $copyStepBtn.Foreground          = [System.Windows.Media.Brushes]::White
+    $copyStepBtn.BorderThickness     = New-Object System.Windows.Thickness(0)
+    $copyStepBtn.Tag                 = $stepNum
+
+    $copyStepBtn.Resources.Add([System.Windows.Controls.Border], $(
+        $bdrStyle = New-Object System.Windows.Style([System.Windows.Controls.Border])
+        $bdrStyle.Setters.Add((New-Object System.Windows.Setter([System.Windows.Controls.Border]::CornerRadiusProperty, (New-Object System.Windows.CornerRadius(3)))))
+        $bdrStyle
+    ))
+
+    $tbGrid.Children.Add($tbTitle)     | Out-Null
+    $tbGrid.Children.Add($copyStepBtn) | Out-Null
+    [System.Windows.Controls.Grid]::SetRow($tbGrid, 0)
+    $bGrid.Children.Add($tbGrid) | Out-Null
+
+    # Log TextBox directly with scrolling & auto-scroll support
+    $logTb = New-Object System.Windows.Controls.TextBox
+    $logTb.IsReadOnly                        = $true
+    $logTb.AcceptsReturn                     = $true
+    $logTb.TextWrapping                      = [System.Windows.TextWrapping]::NoWrap
+    $logTb.Background                        = [System.Windows.Media.Brushes]::Transparent
+    $logTb.BorderThickness                   = New-Object System.Windows.Thickness(0)
+    $logTb.Foreground                        = $consoleFgBrush
+    $logTb.FontFamily                        = New-Object System.Windows.Media.FontFamily('Consolas, Courier New, monospace')
+    $logTb.FontSize                          = 10
+    $logTb.MaxHeight                         = 190
+    $logTb.VerticalScrollBarVisibility       = [System.Windows.Controls.ScrollBarVisibility]::Auto
+    $logTb.HorizontalScrollBarVisibility     = [System.Windows.Controls.ScrollBarVisibility]::Auto
+    $logTb.Text                              = "Waiting for step execution to start..."
+
+    [System.Windows.Controls.Grid]::SetRow($logTb, 1)
+    $bGrid.Children.Add($logTb) | Out-Null
+
+    $body.Child = $bGrid
+
+    $stack.Children.Add($header) | Out-Null
+    $stack.Children.Add($body)   | Out-Null
+    $panel.Children.Add($card)   | Out-Null
+
+    $stepCards[$stepNum]     = $card
+    $stepHeaders[$stepNum]   = $header
+    $stepChevrons[$stepNum]  = $chev
+    $stepIcons[$stepNum]     = $icon
+    $stepTexts[$stepNum]     = $lbl
+    $stepSubs[$stepNum]      = $subLbl
+    $stepBadges[$stepNum]    = @{ border = $badge; text = $badgeTb }
+    $stepSkipBtns[$stepNum]  = $stepSkipBtn
+    $stepBodies[$stepNum]    = $body
+    $stepTextBoxes[$stepNum] = $logTb
+    $stepLastLogs[$stepNum]  = ''
+
+    # Interactive Accordion Click Handler
+    $header.Add_MouseLeftButtonDown({
+        param($sender, $e)
+        $sIdx = [int]$sender.Tag
+        $b = $stepBodies[$sIdx]
+        $c = $stepChevrons[$sIdx]
+        if ($b.Visibility -eq [System.Windows.Visibility]::Visible) {
+            $b.Visibility = [System.Windows.Visibility]::Collapsed
+            $c.Text = [char]0x25B6 # \u25B6
+        } else {
+            $b.Visibility = [System.Windows.Visibility]::Visible
+            $c.Text = [char]0x25BC # \u25BC
+            $stepTextBoxes[$sIdx].ScrollToEnd()
+        }
+    })
+
+    # Header Hover Effect
+    $header.Add_MouseEnter({
+        param($sender, $e)
+        $sender.Background = $hoverBrush
+    })
+    $header.Add_MouseLeave({
+        param($sender, $e)
+        $sender.Background = [System.Windows.Media.Brushes]::Transparent
+    })
+
+    # Copy Step Log Handler
+    $copyStepBtn.Add_Click({
+        param($sender, $e)
+        try {
+            $sIdx = [int]$sender.Tag
+            $t = $stepTextBoxes[$sIdx].Text
+            if ($t -and $t.Trim() -ne '') {
+                [System.Windows.Forms.Clipboard]::SetText($t)
+                $sender.Content = "Copied!"
+                $rst = New-Object System.Windows.Threading.DispatcherTimer
+                $rst.Interval = [TimeSpan]::FromMilliseconds(1500)
+                $rst.Add_Tick({
+                    $sender.Content = "Copy"
+                    $rst.Stop()
+                })
+                $rst.Start()
+            }
+        } catch {}
+    })
+}
+
+$timer = New-Object System.Windows.Threading.DispatcherTimer
+$timer.Interval = [TimeSpan]::FromMilliseconds(100)
+$script:lastRunningStep = 0
+$script:lastRenderedLog = ''
+
+$timer.Add_Tick({
+    if (-not (Test-Path $PROGRESS_FILE)) { return }
+    try {
+        $fileStream = [System.IO.File]::Open($PROGRESS_FILE, [System.IO.FileMode]::Open, [System.IO.FileAccess]::Read, [System.IO.FileShare]::ReadWrite)
+        $sr = New-Object System.IO.StreamReader($fileStream, [System.Text.Encoding]::UTF8)
+        $raw = $sr.ReadToEnd()
+        $sr.Close()
+        $fileStream.Close()
+        if ([string]::IsNullOrWhiteSpace($raw)) { return }
+        $json = $raw | ConvertFrom-Json
+    } catch { return }
+
+    $steps = $json.steps
+    $done  = $json.done
+    $hasError = $false
+
+    # Find the current active/running step
+    $activeRunningStep = 0
+    if ($json.activeStep) {
+        $activeRunningStep = [int]$json.activeStep
+    } else {
+        foreach ($s in $steps.PSObject.Properties) {
+            if ($s.Value.status -eq 'running') {
+                $activeRunningStep = [int]$s.Name
+                break
+            }
+        }
+    }
+
+    # Auto-transition accordions as steps progress
+    if ($activeRunningStep -gt 0 -and $activeRunningStep -ne $script:lastRunningStep) {
+        # Auto-collapse previous step if it did not fail
+        if ($script:lastRunningStep -gt 0 -and $stepBodies.ContainsKey($script:lastRunningStep)) {
+            $prevProp = $steps.PSObject.Properties[$script:lastRunningStep.ToString()]
+            $prevStatus = if ($prevProp) { $prevProp.Value.status } else { '' }
+            if ($prevStatus -ne 'error') {
+                $stepBodies[$script:lastRunningStep].Visibility = [System.Windows.Visibility]::Collapsed
+                $stepChevrons[$script:lastRunningStep].Text = [char]0x25B6 # \u25B6
+            }
+        }
+        # Auto-expand the newly active step
+        if ($stepBodies.ContainsKey($activeRunningStep)) {
+            $stepBodies[$activeRunningStep].Visibility = [System.Windows.Visibility]::Visible
+            $stepChevrons[$activeRunningStep].Text = [char]0x25BC # \u25BC
+            $stepCards[$activeRunningStep].BringIntoView()
+        }
+        $script:lastRunningStep = $activeRunningStep
+    }
+
+    foreach ($s in $steps.PSObject.Properties) {
+        $num   = [int]$s.Name
+        $state = $s.Value
+        if (-not $stepIcons.ContainsKey($num)) { continue }
+
+        $icon  = $stepIcons[$num]
+        $lbl   = $stepTexts[$num]
+        $sub   = $stepSubs[$num]
+        $card  = $stepCards[$num]
+        $badge = $stepBadges[$num]
+        $tb    = $stepTextBoxes[$num]
+        $body  = $stepBodies[$num]
+        $chev  = $stepChevrons[$num]
+
+        if ($state.label -and $state.label.Trim() -ne '') {
+            $lbl.Text = $state.label
+        }
+
+        if ($state.detail -and $state.detail.Trim() -ne '') {
+            $sub.Text = $state.detail
+            $sub.Visibility = [System.Windows.Visibility]::Visible
+        } else {
+            $sub.Visibility = [System.Windows.Visibility]::Collapsed
+        }
+
+        # Update step's live log output
+        $logContent = if ($state.log) { $state.log } else { '' }
+        if ($logContent -and $logContent -ne $stepLastLogs[$num]) {
+            $stepLastLogs[$num] = $logContent
+            $tb.Text = $logContent
+            if ($body.Visibility -eq [System.Windows.Visibility]::Visible) {
+                $tb.CaretIndex = $tb.Text.Length
+                $tb.ScrollToEnd()
+            }
+        }
+
+        switch ($state.status) {
+            'pending' {
+                $icon.Text       = '[ ]'
+                $icon.Foreground = $grayFg
+                $lbl.Foreground  = $grayFg
+                $badge.border.Visibility = [System.Windows.Visibility]::Collapsed
+                $card.Background = $cardBrush
+                $card.BorderBrush = $borderBrush
+                if ($stepSkipBtns.ContainsKey($num)) {
+                    $stepSkipBtns[$num].Visibility = [System.Windows.Visibility]::Collapsed
+                }
+            }
+            'running' {
+                $icon.Text       = '>>'
+                $icon.Foreground = $blueFg
+                $lbl.Foreground  = $mainFg
+                $badge.border.Background = $blueBadgeBg
+                $badge.text.Text = 'RUNNING'
+                $badge.border.Visibility = [System.Windows.Visibility]::Visible
+                $card.Background = $cardBrush
+                $card.BorderBrush = $runningBdrBrush
+                if ($stepSkipBtns.ContainsKey($num)) {
+                    $stepSkipBtns[$num].Visibility = [System.Windows.Visibility]::Visible
+                    if (-not $stepSkipBtns[$num].IsEnabled -and -not (Test-Path $ACTION_FILE)) {
+                        $stepSkipBtns[$num].IsEnabled = $true
+                        $stepSkipBtns[$num].Content = "Skip"
+                    }
+                }
+            }
+            'pass' {
+                $icon.Text       = 'OK'
+                $icon.Foreground = $greenFg
+                $lbl.Foreground  = $mainFg
+                $badge.border.Background = $greenBadgeBg
+                $badge.text.Text = 'PASS'
+                $badge.border.Visibility = [System.Windows.Visibility]::Visible
+                $card.Background = $passBrush
+                $card.BorderBrush = $borderBrush
+                if ($stepSkipBtns.ContainsKey($num)) {
+                    $stepSkipBtns[$num].Visibility = [System.Windows.Visibility]::Collapsed
+                }
+            }
+            'error' {
+                $icon.Text       = 'ERR'
+                $icon.Foreground = $redFg
+                $lbl.Foreground  = $redFg
+                $badge.border.Background = $redBadgeBg
+                $badge.text.Text = 'FAILED'
+                $badge.border.Visibility = [System.Windows.Visibility]::Visible
+                $card.Background = $errBrush
+                $card.BorderBrush = $redFg
+                $hasError = $true
+                $script:lastFailedStep = $num
+                if ($stepSkipBtns.ContainsKey($num)) {
+                    $stepSkipBtns[$num].Visibility = [System.Windows.Visibility]::Visible
+                    if (-not $stepSkipBtns[$num].IsEnabled -and -not (Test-Path $ACTION_FILE)) {
+                        $stepSkipBtns[$num].IsEnabled = $true
+                        $stepSkipBtns[$num].Content = "Skip"
+                    }
+                }
+
+                # Always keep failed step accordion open so developer sees why it failed
+                if ($body.Visibility -ne [System.Windows.Visibility]::Visible) {
+                    $body.Visibility = [System.Windows.Visibility]::Visible
+                    $chev.Text = [char]0x25BC # \u25BC
+                    $card.BringIntoView()
+                }
+            }
+            'skip' {
+                $icon.Text       = '--'
+                $icon.Foreground = $grayFg
+                $lbl.Foreground  = $grayFg
+                $badge.border.Background = $grayBadgeBg
+                $badge.text.Text = 'SKIP'
+                $badge.border.Visibility = [System.Windows.Visibility]::Visible
+                $card.Background = $cardBrush
+                $card.BorderBrush = $borderBrush
+                if ($stepSkipBtns.ContainsKey($num)) {
+                    $stepSkipBtns[$num].Visibility = [System.Windows.Visibility]::Collapsed
+                }
+            }
+        }
+    }
+
+    # Update Footer Skip Step Button visibility and state
+    if ($skipStepBtn) {
+        if ($activeRunningStep -gt 0 -or $hasError) {
+            $skipStepBtn.Visibility = [System.Windows.Visibility]::Visible
+            if (-not $skipStepBtn.IsEnabled -and -not (Test-Path $ACTION_FILE)) {
+                $skipStepBtn.IsEnabled = $true
+                $skipStepBtn.Content = "\u23ED Skip Step"
+            }
+        } else {
+            $skipStepBtn.Visibility = [System.Windows.Visibility]::Collapsed
+        }
+    }
+
+    # Dynamically show Error Log or AI Report in the rich box
+    $displayLog = ''
+    $isFail = $false
+
+    if ($json.errorLog -and $json.errorLog.Trim() -ne '') {
+        $displayLog = $json.errorLog
+        $isFail = $true
+    } elseif ($json.aiReport -and $json.aiReport.Trim() -ne '') {
+        $displayLog = $json.aiReport
+        $isFail = ($hasError -or $json.hasError)
+    } elseif ($hasError) {
+        $msgList = @()
+        for ($k = 1; $k -le 9; $k++) {
+            $st = $json.steps["$k"]
+            if ($st -and $st.status -eq 'error' -and $st.detail) {
+                $msgList += "[$($st.label)] Error: $($st.detail)"
+            }
+        }
+        if ($msgList.Count -gt 0) {
+            $displayLog = $msgList -join [Environment]::NewLine
+            $isFail = $true
+        }
+    }
+
+    if ($displayLog -and $displayLog.Trim() -ne '') {
+        $displayLog = $displayLog -replace '\x1B[[0-9;]*[a-zA-Z]', '' -replace '[[0-9;]+m', ''
+        $script:rawErrorText = $displayLog
+
+        if ($script:lastRenderedLog -ne $displayLog) {
+            $script:lastRenderedLog = $displayLog
+            $doc = Convert-MarkdownToFlowDocument -text $displayLog -normalBrush $mainFg -boldBrush $boldFg -h1Brush $cyanFg -h2Brush $amberFg -bulletBrush $bulletColor
+            $aiReportRtb.Document = $doc
+            $aiReportBorder.Visibility = [System.Windows.Visibility]::Visible
+        }
+
+        if ($isFail) {
+            if ($reportTitleTb) {
+                $reportTitleTb.Text = 'Validation Failure Details (Select & Copy):'
+                $reportTitleTb.Foreground = $redFg
+            }
+            $aiReportBorder.BorderBrush = $errBrush
+        } else {
+            if ($reportTitleTb) {
+                $reportTitleTb.Text = 'AI Knowledge Base Audit & Insights:'
+                $reportTitleTb.Foreground = $blueFg
+            }
+            $aiReportBorder.BorderBrush = $cardBrush
+        }
+    }
+
+    if ($done -eq $true) {
+        if ($hasError) {
+            $statusTb.Text = 'Validation failed! Click Skip Step, \u26A1 Force Commit, or Close.'
+            $statusTb.Foreground = $redFg
+            $closeBtn.Background = $redFg
+            if ($forceCommitBtn) {
+                $forceCommitBtn.Visibility = [System.Windows.Visibility]::Visible
+            }
+            if ($skipStepBtn) {
+                $skipStepBtn.Visibility = [System.Windows.Visibility]::Visible
+                $skipStepBtn.IsEnabled = $true
+                $skipStepBtn.Content = "\u23ED Skip Step"
+            }
+        } else {
+            $timer.Stop()
+            $statusTb.Text = 'All validations passed! Click Close to dismiss.'
+            $statusTb.Foreground = $greenFg
+            $closeBtn.Background = $greenFg
+            if ($forceCommitBtn) {
+                $forceCommitBtn.Visibility = [System.Windows.Visibility]::Collapsed
+            }
+            if ($skipStepBtn) {
+                $skipStepBtn.Visibility = [System.Windows.Visibility]::Collapsed
+            }
+        }
+    }
+})
+
+$timer.Start()
+$window.ShowDialog() | Out-Null
+`;
+}
+function launchWindowProcess() {
+  try {
+    const psContent = "\uFEFF" + generatePsScript();
+    import_fs.default.writeFileSync(PS_SCRIPT, psContent, "utf8");
+    const vbsContent = `
+Set WshShell = CreateObject("WScript.Shell")
+WshShell.Run "powershell.exe -NoProfile -ExecutionPolicy Bypass -File """ & "${PS_SCRIPT.replace(/\\/g, "\\\\")}" & """", 0, False
+`;
+    import_fs.default.writeFileSync(VBS_SCRIPT, vbsContent, "utf8");
+    (0, import_child_process2.spawn)("wscript.exe", [VBS_SCRIPT], { detached: true, stdio: "ignore" }).unref();
+  } catch (_) {
+  }
+}
+function initProgressWindow() {
+  _windowEnabled = process.env.SHOW_PROGRESS === "true";
+  try {
+    if (import_fs.default.existsSync(ACTION_FILE)) {
+      import_fs.default.unlinkSync(ACTION_FILE);
+    }
+  } catch (_) {
+  }
+  if (!_windowEnabled) return;
+  const data = {
+    done: false,
+    hasError: false,
+    aiReport: "",
+    errorLog: "",
+    activeStep: null,
+    steps: {}
+  };
+  for (const s2 of getSteps()) {
+    data.steps[s2.id] = { status: "pending", label: s2.label, detail: "", log: "" };
+  }
+  writeProgressFile(data);
+  launchWindowProcess();
+}
+function startStep(stepId, detail = "") {
+  if (!_windowEnabled) return;
+  flushStepLogs();
+  const data = readProgressFile();
+  if (!data || !data.steps) return;
+  if (data.steps[stepId]) {
+    data.steps[stepId].status = "running";
+    data.steps[stepId].detail = detail;
+    data.activeStep = stepId;
+    if (detail && !data.steps[stepId].log) {
+      data.steps[stepId].log = `\u25B6 ${detail}
+`;
+    }
+  }
+  writeProgressFile(data);
+}
+function appendStepLog(stepId, text) {
+  if (!_windowEnabled || !text) return;
+  queueStepLog(stepId, text);
+}
+function updateStep(stepId, status, reportOrDetail = "") {
+  if (!_windowEnabled) return;
+  flushStepLogs();
+  const data = readProgressFile();
+  if (!data || !data.steps) return;
+  if (data.steps[stepId]) {
+    data.steps[stepId].status = status;
+    const cleanReportOrDetail = stripAnsi(reportOrDetail);
+    if (stepId !== 8) {
+      data.steps[stepId].detail = cleanReportOrDetail;
+    }
+    if (cleanReportOrDetail && (!data.steps[stepId].log || !data.steps[stepId].log.includes(cleanReportOrDetail))) {
+      const prefix = status === "pass" ? "\u2714 " : status === "error" ? "\u2716 " : "\u2139 ";
+      data.steps[stepId].log = (data.steps[stepId].log || "") + `${prefix}${cleanReportOrDetail}
+`;
+    }
+  }
+  if (status === "error") {
+    data.hasError = true;
+  }
+  if (stepId === 8 && reportOrDetail) {
+    data.aiReport = stripAnsi(reportOrDetail);
+    if (data.steps[8] && !data.steps[8].log.includes(data.aiReport)) {
+      data.steps[8].log = (data.steps[8].log || "") + `
+${data.aiReport}
+`;
+    }
+  }
+  writeProgressFile(data);
+}
+function finalizeProgress(passed, finalReport = "", errorLog = "") {
+  if (!_windowEnabled) return;
+  flushStepLogs();
+  const data = readProgressFile();
+  if (!data) return;
+  data.done = true;
+  data.hasError = !passed;
+  data.activeStep = null;
+  if (finalReport) {
+    data.aiReport = stripAnsi(finalReport);
+    if (data.steps && data.steps[8] && !data.steps[8].log.includes(data.aiReport)) {
+      data.steps[8].log = (data.steps[8].log || "") + `
+${data.aiReport}
+`;
+    }
+  }
+  if (errorLog) {
+    data.errorLog = stripAnsi(errorLog);
+  }
+  writeProgressFile(data);
+}
+function getRequestedActionData() {
+  if (!_windowEnabled) return null;
+  try {
+    if (import_fs.default.existsSync(ACTION_FILE)) {
+      let raw = import_fs.default.readFileSync(ACTION_FILE, "utf8").trim();
+      if (raw.charCodeAt(0) === 65279) {
+        raw = raw.slice(1);
+      }
+      if (raw) {
+        return JSON.parse(raw);
+      }
+    }
+  } catch (_) {
+  }
+  return null;
+}
+function getRequestedAction() {
+  const data = getRequestedActionData();
+  return data?.action || null;
+}
+function isForceCommitRequested() {
+  return getRequestedAction() === "force_commit";
+}
+function isCloseRequested() {
+  return getRequestedAction() === "close";
+}
+function isSkipStepRequested(stepNum = null) {
+  const data = getRequestedActionData();
+  if (!data || data.action !== "skip_step") return false;
+  if (stepNum === null || stepNum === void 0) return true;
+  return !data.step || Number(data.step) === Number(stepNum);
+}
+function consumeSkipStepRequest(stepNum = null) {
+  if (isSkipStepRequested(stepNum)) {
+    try {
+      if (import_fs.default.existsSync(ACTION_FILE)) {
+        import_fs.default.unlinkSync(ACTION_FILE);
+      }
+    } catch (_) {
+    }
+    return true;
+  }
+  return false;
+}
+function clearStepError(stepId) {
+  if (!_windowEnabled) return;
+  flushStepLogs();
+  const data = readProgressFile();
+  if (!data || !data.steps) return;
+  if (data.steps[stepId]) {
+    data.steps[stepId].status = "skip";
+    data.steps[stepId].detail = "Skipped by developer";
+  }
+  const remainingErrors = Object.values(data.steps).some((s2) => s2.status === "error");
+  if (!remainingErrors) {
+    data.hasError = false;
+    data.done = false;
+    data.errorLog = "";
+  }
+  writeProgressFile(data);
+}
+function waitForUserDecisionOnFailure(pollIntervalMs = 100, timeoutMs = 6e5) {
+  if (!_windowEnabled) {
+    return Promise.resolve("close");
+  }
+  return new Promise((resolve) => {
+    const checkAction = () => {
+      const data = getRequestedActionData();
+      if (data?.action === "force_commit" || data?.action === "close") {
+        return data.action;
+      }
+      if (data?.action === "skip_step") {
+        return data;
+      }
+      return null;
+    };
+    const immediate = checkAction();
+    if (immediate) {
+      return resolve(immediate);
+    }
+    const startTime = Date.now();
+    const timer = setInterval(() => {
+      const action = checkAction();
+      if (action) {
+        clearInterval(timer);
+        return resolve(action);
+      }
+      if (Date.now() - startTime > timeoutMs) {
+        clearInterval(timer);
+        return resolve("close");
+      }
+    }, pollIntervalMs);
+  });
+}
+var import_fs, import_os, import_path, import_child_process2, import_dotenv, STEPS, PROGRESS_FILE, ACTION_FILE, PS_SCRIPT, VBS_SCRIPT, _windowEnabled, _stepLogBuffers, _flushTimer;
+var init_progress_window = __esm({
+  "src/ui/progress-window.js"() {
+    import_fs = __toESM(require("fs"), 1);
+    import_os = __toESM(require("os"), 1);
+    import_path = __toESM(require("path"), 1);
+    import_child_process2 = require("child_process");
+    import_dotenv = __toESM(require_main(), 1);
+    STEPS = getSteps();
+    PROGRESS_FILE = import_path.default.join(import_os.default.tmpdir(), "gk-progress.json");
+    ACTION_FILE = import_path.default.join(import_os.default.tmpdir(), "gk-action.json");
+    PS_SCRIPT = import_path.default.join(import_os.default.tmpdir(), "gk-progress-window.ps1");
+    VBS_SCRIPT = import_path.default.join(import_os.default.tmpdir(), "gk-progress-launcher.vbs");
+    _windowEnabled = false;
+    _stepLogBuffers = {};
+    _flushTimer = null;
+  }
+});
+
 // src/utils/exec.js
 function execStreaming(command, options = {}) {
   const {
     cwd = process.cwd(),
     env: env3 = process.env,
-    onData = null
+    onData = null,
+    stepNum = null
   } = options;
   return new Promise((resolve, reject) => {
-    const child = (0, import_child_process2.spawn)(command, {
+    const child = (0, import_child_process3.spawn)(command, {
       cwd,
       shell: true,
       env: {
@@ -973,7 +2318,61 @@ function execStreaming(command, options = {}) {
     let stdout = "";
     let stderr = "";
     let combined = "";
+    let hasTerminated = false;
+    let abortInterval = null;
+    const cleanup = () => {
+      if (abortInterval) {
+        clearInterval(abortInterval);
+        abortInterval = null;
+      }
+    };
+    const killChild = () => {
+      if (child.pid) {
+        if (process.platform === "win32") {
+          try {
+            (0, import_child_process3.execSync)(`taskkill /pid ${child.pid} /f /t`, { stdio: "ignore" });
+          } catch (_) {
+          }
+        } else {
+          try {
+            child.kill("SIGTERM");
+          } catch (_) {
+          }
+        }
+      }
+    };
+    if (stepNum || options.abortable) {
+      abortInterval = setInterval(() => {
+        if (stepNum && isSkipStepRequested(stepNum)) {
+          if (hasTerminated) return;
+          hasTerminated = true;
+          cleanup();
+          killChild();
+          const err = new Error(`Step ${stepNum} skipped by developer`);
+          err.isSkipped = true;
+          err.step = stepNum;
+          reject(err);
+        } else if (isForceCommitRequested()) {
+          if (hasTerminated) return;
+          hasTerminated = true;
+          cleanup();
+          killChild();
+          const err = new Error("Force commit requested by developer");
+          err.isForceCommit = true;
+          reject(err);
+        } else if (isCloseRequested()) {
+          if (hasTerminated) return;
+          hasTerminated = true;
+          cleanup();
+          killChild();
+          const err = new Error("Window closed by developer");
+          err.isClose = true;
+          reject(err);
+        }
+      }, 100);
+    }
     const handleChunk = (chunk, isStderr = false) => {
+      if (hasTerminated) return;
       const text = chunk.toString("utf8");
       if (isStderr) {
         stderr += text;
@@ -997,9 +2396,15 @@ function execStreaming(command, options = {}) {
       child.stderr.on("data", (chunk) => handleChunk(chunk, true));
     }
     child.on("error", (err) => {
+      if (hasTerminated) return;
+      hasTerminated = true;
+      cleanup();
       reject(err);
     });
     child.on("close", (code) => {
+      if (hasTerminated) return;
+      hasTerminated = true;
+      cleanup();
       if (code === 0) {
         resolve({ stdout, stderr, combined, code });
       } else {
@@ -1014,16 +2419,17 @@ function execStreaming(command, options = {}) {
     });
   });
 }
-var import_child_process2;
+var import_child_process3;
 var init_exec = __esm({
   "src/utils/exec.js"() {
-    import_child_process2 = require("child_process");
+    import_child_process3 = require("child_process");
+    init_progress_window();
   }
 });
 
 // src/rules/security-rules.js
 function scanProjectSourceFilesForSecrets(cwd = process.cwd()) {
-  if (!cwd || !import_fs.default.existsSync(cwd)) return [];
+  if (!cwd || !import_fs2.default.existsSync(cwd)) return [];
   const allowedExtensions = /* @__PURE__ */ new Set([".ts", ".js", ".mjs", ".html", ".json"]);
   const ignoredDirs = /* @__PURE__ */ new Set([
     "node_modules",
@@ -1054,10 +2460,10 @@ function scanProjectSourceFilesForSecrets(cwd = process.cwd()) {
   ]);
   const fileList = [];
   function walk(dir) {
-    if (!import_fs.default.existsSync(dir)) return;
+    if (!import_fs2.default.existsSync(dir)) return;
     let entries;
     try {
-      entries = import_fs.default.readdirSync(dir, { withFileTypes: true });
+      entries = import_fs2.default.readdirSync(dir, { withFileTypes: true });
     } catch (_) {
       return;
     }
@@ -1065,27 +2471,27 @@ function scanProjectSourceFilesForSecrets(cwd = process.cwd()) {
       const lowerName = entry.name.toLowerCase();
       if (entry.isDirectory()) {
         if (!ignoredDirs.has(lowerName) && !lowerName.startsWith(".")) {
-          walk(import_path.default.join(dir, entry.name));
+          walk(import_path2.default.join(dir, entry.name));
         }
       } else if (entry.isFile()) {
-        const ext = import_path.default.extname(entry.name).toLowerCase();
+        const ext = import_path2.default.extname(entry.name).toLowerCase();
         if (allowedExtensions.has(ext) && !ignoredFiles.has(lowerName)) {
-          fileList.push(import_path.default.join(dir, entry.name));
+          fileList.push(import_path2.default.join(dir, entry.name));
         }
       }
     }
   }
-  const srcDir = import_path.default.join(cwd, "src");
-  if (import_fs.default.existsSync(srcDir)) {
+  const srcDir = import_path2.default.join(cwd, "src");
+  if (import_fs2.default.existsSync(srcDir)) {
     walk(srcDir);
   } else {
     walk(cwd);
   }
   const violations = [];
   for (const filePath of fileList) {
-    const relPath = import_path.default.relative(cwd, filePath).replace(/\\/g, "/");
+    const relPath = import_path2.default.relative(cwd, filePath).replace(/\\/g, "/");
     try {
-      const content = import_fs.default.readFileSync(filePath, "utf8");
+      const content = import_fs2.default.readFileSync(filePath, "utf8");
       const lines = content.split("\n");
       for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
         const line = lines[lineIndex];
@@ -1137,7 +2543,7 @@ function scanSecurityRules(diffOutput = "", cwd = null) {
       }
     }
   }
-  if (cwd && import_fs.default.existsSync(cwd)) {
+  if (cwd && import_fs2.default.existsSync(cwd)) {
     const projectViolations = scanProjectSourceFilesForSecrets(cwd);
     violations.push(...projectViolations);
   }
@@ -1164,19 +2570,19 @@ ${violations.map((v) => `  \u2022 [${v.file || "staged"}] ${v.name}`).join("\n")
   return true;
 }
 function scanProjectFilesIntegrity(cwd = process.cwd()) {
-  if (!cwd || !import_fs.default.existsSync(cwd)) return;
-  const srcDir = import_path.default.join(cwd, "src");
-  if (!import_fs.default.existsSync(srcDir)) return;
+  if (!cwd || !import_fs2.default.existsSync(cwd)) return;
+  const srcDir = import_path2.default.join(cwd, "src");
+  if (!import_fs2.default.existsSync(srcDir)) return;
   const forbiddenFiles = [];
   function checkDir(dir) {
     let entries;
     try {
-      entries = import_fs.default.readdirSync(dir, { withFileTypes: true });
+      entries = import_fs2.default.readdirSync(dir, { withFileTypes: true });
     } catch (_) {
       return;
     }
     for (const entry of entries) {
-      const fullPath = import_path.default.join(dir, entry.name);
+      const fullPath = import_path2.default.join(dir, entry.name);
       if (entry.isDirectory()) {
         if (!["node_modules", "dist", ".git", ".angular", "build"].includes(entry.name.toLowerCase())) {
           checkDir(fullPath);
@@ -1184,7 +2590,7 @@ function scanProjectFilesIntegrity(cwd = process.cwd()) {
       } else if (entry.isFile()) {
         const base = entry.name.toLowerCase();
         if (base.startsWith(".env") && !base.endsWith(".example") && !base.endsWith(".template") || base.endsWith(".pem") || base.endsWith(".key") || base.endsWith(".pfx") || base.endsWith(".p12")) {
-          const relPath = import_path.default.relative(cwd, fullPath).replace(/\\/g, "/");
+          const relPath = import_path2.default.relative(cwd, fullPath).replace(/\\/g, "/");
           forbiddenFiles.push({ file: relPath, reason: "Sensitive environment/key file in project source tree" });
         }
       }
@@ -1206,13 +2612,13 @@ function scanStagedFileIntegrity(cwd = process.cwd(), stagedFilesOverride = null
     const files = stagedFilesOverride || getStagedFiles(cwd);
     const forbiddenFiles = [];
     for (const f3 of files) {
-      const base = import_path.default.basename(f3).toLowerCase();
+      const base = import_path2.default.basename(f3).toLowerCase();
       if (base.startsWith(".env") && !base.endsWith(".example") && !base.endsWith(".template") || base.endsWith(".pem") || base.endsWith(".key") || base.endsWith(".pfx") || base.endsWith(".p12") || base === "thumbs.db" || base === ".ds_store") {
         forbiddenFiles.push({ file: f3, reason: "Sensitive / Local OS environment file" });
       }
-      const fullPath = import_path.default.join(cwd, f3);
-      if (import_fs.default.existsSync(fullPath)) {
-        const stats = import_fs.default.statSync(fullPath);
+      const fullPath = import_path2.default.join(cwd, f3);
+      if (import_fs2.default.existsSync(fullPath)) {
+        const stats = import_fs2.default.statSync(fullPath);
         if (stats.size > 10 * 1024 * 1024) {
           forbiddenFiles.push({ file: f3, reason: `Oversized binary file (${(stats.size / (1024 * 1024)).toFixed(2)} MB exceeds 10MB limit)` });
         }
@@ -1234,17 +2640,20 @@ ${fileListStr}`);
 }
 async function scanDependencyVulnerabilities(cwd = process.cwd()) {
   logStep(3, "Dependency Vulnerability & Security Audit (npm audit)");
-  const pkgLockExists = import_fs.default.existsSync(import_path.default.join(cwd, "package-lock.json")) || import_fs.default.existsSync(import_path.default.join(cwd, "yarn.lock")) || import_fs.default.existsSync(import_path.default.join(cwd, "pnpm-lock.yaml"));
+  const pkgLockExists = import_fs2.default.existsSync(import_path2.default.join(cwd, "package-lock.json")) || import_fs2.default.existsSync(import_path2.default.join(cwd, "yarn.lock")) || import_fs2.default.existsSync(import_path2.default.join(cwd, "pnpm-lock.yaml"));
   if (!pkgLockExists) {
     logWarning("No package lockfile found (package-lock.json). Skipping dependency vulnerability audit.");
     return true;
   }
   console.log(source_default.blue("  Running dependency security audit (npm audit --audit-level=high)..."));
   try {
-    await execStreaming("npm audit --audit-level=high", { cwd });
+    await execStreaming("npm audit --audit-level=high", { cwd, stepNum: 3 });
     logSuccess("Dependency vulnerability audit passed: 0 High/Critical CVEs.");
     return true;
   } catch (err) {
+    if (err.isSkipped || err.isForceCommit || err.isClose) {
+      throw err;
+    }
     const output = (err.combined || err.stdout || err.stderr || err.message || "").trim();
     if (output.includes("vulnerabilities") || output.includes("severity")) {
       logError("CRITICAL: High or Critical security vulnerabilities detected in dependencies!");
@@ -1291,11 +2700,11 @@ function validateCommitMessage(message) {
     description: match2[3].trim()
   };
 }
-var import_fs, import_path, FORBIDDEN_SECURITY_PATTERNS;
+var import_fs2, import_path2, FORBIDDEN_SECURITY_PATTERNS;
 var init_security_rules = __esm({
   "src/rules/security-rules.js"() {
-    import_fs = __toESM(require("fs"), 1);
-    import_path = __toESM(require("path"), 1);
+    import_fs2 = __toESM(require("fs"), 1);
+    import_path2 = __toESM(require("path"), 1);
     init_source();
     init_logger();
     init_git();
@@ -1366,11 +2775,11 @@ __export(angular_best_practices_exports, {
   verifyStagedCleanroom: () => verifyStagedCleanroom
 });
 function getAllFiles(dirPath, arrayOfFiles = []) {
-  if (!import_fs2.default.existsSync(dirPath)) return [];
-  const files = import_fs2.default.readdirSync(dirPath);
+  if (!import_fs3.default.existsSync(dirPath)) return [];
+  const files = import_fs3.default.readdirSync(dirPath);
   files.forEach((file) => {
-    const fullPath = import_path2.default.join(dirPath, file);
-    if (import_fs2.default.statSync(fullPath).isDirectory()) {
+    const fullPath = import_path3.default.join(dirPath, file);
+    if (import_fs3.default.statSync(fullPath).isDirectory()) {
       getAllFiles(fullPath, arrayOfFiles);
     } else {
       arrayOfFiles.push(fullPath);
@@ -1379,28 +2788,28 @@ function getAllFiles(dirPath, arrayOfFiles = []) {
   return arrayOfFiles;
 }
 function findBuildOutputDir(distPath) {
-  if (!import_fs2.default.existsSync(distPath)) return null;
-  if (import_fs2.default.existsSync(import_path2.default.join(distPath, "index.html"))) {
+  if (!import_fs3.default.existsSync(distPath)) return null;
+  if (import_fs3.default.existsSync(import_path3.default.join(distPath, "index.html"))) {
     return distPath;
   }
   const allFiles = getAllFiles(distPath);
-  const indexHtmlFile = allFiles.find((f3) => import_path2.default.basename(f3).toLowerCase() === "index.html");
+  const indexHtmlFile = allFiles.find((f3) => import_path3.default.basename(f3).toLowerCase() === "index.html");
   if (indexHtmlFile) {
-    return import_path2.default.dirname(indexHtmlFile);
+    return import_path3.default.dirname(indexHtmlFile);
   }
   return distPath;
 }
 function checkAngularProject(cwd = process.cwd()) {
   logStep(1, "Angular Project Detection");
-  const angularJsonPath = import_path2.default.join(cwd, "angular.json");
-  const packageJsonPath = import_path2.default.join(cwd, "package.json");
+  const angularJsonPath = import_path3.default.join(cwd, "angular.json");
+  const packageJsonPath = import_path3.default.join(cwd, "package.json");
   let isAngular = false;
   let projectPkg = {};
-  if (import_fs2.default.existsSync(packageJsonPath)) {
+  if (import_fs3.default.existsSync(packageJsonPath)) {
     try {
-      projectPkg = JSON.parse(import_fs2.default.readFileSync(packageJsonPath, "utf8"));
+      projectPkg = JSON.parse(import_fs3.default.readFileSync(packageJsonPath, "utf8"));
       const deps = { ...projectPkg.dependencies || {}, ...projectPkg.devDependencies || {} };
-      if (deps["@angular/core"] || deps["@angular/cli"] || import_fs2.default.existsSync(angularJsonPath)) {
+      if (deps["@angular/core"] || deps["@angular/cli"] || import_fs3.default.existsSync(angularJsonPath)) {
         isAngular = true;
       }
     } catch (e2) {
@@ -1417,32 +2826,32 @@ function checkAngularProject(cwd = process.cwd()) {
 function checkCriticalArchitecture(cwd = process.cwd()) {
   logStep(2, "Critical Angular Architecture & Source Validation");
   const requiredItems = [
-    { name: "angular.json", path: import_path2.default.join(cwd, "angular.json"), type: "file" },
-    { name: "package.json", path: import_path2.default.join(cwd, "package.json"), type: "file" },
-    { name: "src/ directory", path: import_path2.default.join(cwd, "src"), type: "dir" },
-    { name: "src/app/ directory", path: import_path2.default.join(cwd, "src", "app"), type: "dir" }
+    { name: "angular.json", path: import_path3.default.join(cwd, "angular.json"), type: "file" },
+    { name: "package.json", path: import_path3.default.join(cwd, "package.json"), type: "file" },
+    { name: "src/ directory", path: import_path3.default.join(cwd, "src"), type: "dir" },
+    { name: "src/app/ directory", path: import_path3.default.join(cwd, "src", "app"), type: "dir" }
   ];
   let missingItems = [];
   for (const item of requiredItems) {
     if (item.type === "file") {
-      if (!import_fs2.default.existsSync(item.path)) {
+      if (!import_fs3.default.existsSync(item.path)) {
         missingItems.push(item.name);
       }
     } else if (item.type === "dir") {
-      if (!import_fs2.default.existsSync(item.path) || !import_fs2.default.statSync(item.path).isDirectory()) {
+      if (!import_fs3.default.existsSync(item.path) || !import_fs3.default.statSync(item.path).isDirectory()) {
         missingItems.push(item.name);
       }
     }
   }
-  const tsconfigExists = import_fs2.default.existsSync(import_path2.default.join(cwd, "tsconfig.json")) || import_fs2.default.existsSync(import_path2.default.join(cwd, "tsconfig.app.json"));
+  const tsconfigExists = import_fs3.default.existsSync(import_path3.default.join(cwd, "tsconfig.json")) || import_fs3.default.existsSync(import_path3.default.join(cwd, "tsconfig.app.json"));
   if (!tsconfigExists) {
     missingItems.push("tsconfig.json (or tsconfig.app.json)");
   }
-  const indexHtmlExists = import_fs2.default.existsSync(import_path2.default.join(cwd, "src", "index.html")) || import_fs2.default.existsSync(import_path2.default.join(cwd, "src", "index.csr.html")) || import_fs2.default.existsSync(import_path2.default.join(cwd, "index.html"));
+  const indexHtmlExists = import_fs3.default.existsSync(import_path3.default.join(cwd, "src", "index.html")) || import_fs3.default.existsSync(import_path3.default.join(cwd, "src", "index.csr.html")) || import_fs3.default.existsSync(import_path3.default.join(cwd, "index.html"));
   if (!indexHtmlExists) {
     missingItems.push("src/index.html (Application Main Entry Point)");
   }
-  const mainTsExists = import_fs2.default.existsSync(import_path2.default.join(cwd, "src", "main.ts"));
+  const mainTsExists = import_fs3.default.existsSync(import_path3.default.join(cwd, "src", "main.ts"));
   if (!mainTsExists) {
     missingItems.push("src/main.ts (Application Bootstrap Entry Point)");
   }
@@ -1455,8 +2864,8 @@ function checkCriticalArchitecture(cwd = process.cwd()) {
   const packageJsonStaged = stagedFiles.includes("package.json");
   const lockfileStaged = stagedFiles.includes("package-lock.json") || stagedFiles.includes("yarn.lock") || stagedFiles.includes("pnpm-lock.yaml");
   if (packageJsonStaged && !lockfileStaged) {
-    const lockfilePath = import_path2.default.join(cwd, "package-lock.json");
-    if (import_fs2.default.existsSync(lockfilePath)) {
+    const lockfilePath = import_path3.default.join(cwd, "package-lock.json");
+    if (import_fs3.default.existsSync(lockfilePath)) {
       logError("CI Integrity Violation: package.json is staged for commit, but package-lock.json is NOT staged!");
       console.log(source_default.red("\n  \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550"));
       console.log(source_default.red.bold("  \u274C COMMIT REJECTED: Lockfile out of sync!"));
@@ -1473,10 +2882,10 @@ function checkCriticalArchitecture(cwd = process.cwd()) {
   const circularRes = detectCircularDependencies(cwd);
   const templateRes = auditTemplateSecurity(cwd, stagedFiles);
   let commitCheck = null;
-  const commitMsgFile = import_path2.default.join(cwd, ".git", "COMMIT_EDITMSG");
-  if (import_fs2.default.existsSync(commitMsgFile)) {
+  const commitMsgFile = import_path3.default.join(cwd, ".git", "COMMIT_EDITMSG");
+  if (import_fs3.default.existsSync(commitMsgFile)) {
     try {
-      const msg = import_fs2.default.readFileSync(commitMsgFile, "utf8").trim();
+      const msg = import_fs3.default.readFileSync(commitMsgFile, "utf8").trim();
       const firstLine = msg.split("\n")[0].trim();
       if (firstLine && !firstLine.startsWith("#")) {
         commitCheck = validateCommitMessage(firstLine);
@@ -1502,9 +2911,9 @@ function checkCriticalArchitecture(cwd = process.cwd()) {
 }
 function checkNodeEngineCompatibility(cwd = process.cwd()) {
   try {
-    const pkgPath = import_path2.default.join(cwd, "package.json");
-    if (!import_fs2.default.existsSync(pkgPath)) return;
-    const pkg = JSON.parse(import_fs2.default.readFileSync(pkgPath, "utf8"));
+    const pkgPath = import_path3.default.join(cwd, "package.json");
+    if (!import_fs3.default.existsSync(pkgPath)) return;
+    const pkg = JSON.parse(import_fs3.default.readFileSync(pkgPath, "utf8"));
     const requiredNode = pkg.engines && pkg.engines.node;
     if (requiredNode) {
       const currentMajor = parseInt(process.versions.node.split(".")[0], 10);
@@ -1522,22 +2931,22 @@ function checkNodeEngineCompatibility(cwd = process.cwd()) {
   }
 }
 function validateCaseSensitiveImports(cwd = process.cwd(), stagedFiles = []) {
-  const tsFiles = stagedFiles.filter((f3) => f3.endsWith(".ts") && !f3.endsWith(".d.ts") && import_fs2.default.existsSync(import_path2.default.join(cwd, f3)));
+  const tsFiles = stagedFiles.filter((f3) => f3.endsWith(".ts") && !f3.endsWith(".d.ts") && import_fs3.default.existsSync(import_path3.default.join(cwd, f3)));
   if (tsFiles.length === 0) return;
   const importRegex = /(?:import|from)\s+['"](\.[^'"]+)['"]/g;
   const casingErrors = [];
   for (const relFile of tsFiles) {
-    const fullFilePath = import_path2.default.join(cwd, relFile);
-    const fileDir = import_path2.default.dirname(fullFilePath);
-    const content = import_fs2.default.readFileSync(fullFilePath, "utf8");
+    const fullFilePath = import_path3.default.join(cwd, relFile);
+    const fileDir = import_path3.default.dirname(fullFilePath);
+    const content = import_fs3.default.readFileSync(fullFilePath, "utf8");
     let match2;
     while ((match2 = importRegex.exec(content)) !== null) {
       const importPath = match2[1];
-      const targetBase = import_path2.default.resolve(fileDir, importPath);
-      const targetDir = import_path2.default.dirname(targetBase);
-      const targetFileName = import_path2.default.basename(targetBase);
-      if (import_fs2.default.existsSync(targetDir)) {
-        const actualDiskFiles = import_fs2.default.readdirSync(targetDir);
+      const targetBase = import_path3.default.resolve(fileDir, importPath);
+      const targetDir = import_path3.default.dirname(targetBase);
+      const targetFileName = import_path3.default.basename(targetBase);
+      if (import_fs3.default.existsSync(targetDir)) {
+        const actualDiskFiles = import_fs3.default.readdirSync(targetDir);
         const matchedExact = actualDiskFiles.find((f3) => {
           const noExt = f3.replace(/\.(ts|js|d\.ts)$/, "");
           return f3 === targetFileName || noExt === targetFileName;
@@ -1550,7 +2959,7 @@ function validateCaseSensitiveImports(cwd = process.cwd(), stagedFiles = []) {
           casingErrors.push({
             file: relFile,
             imported: importPath,
-            actual: import_path2.default.join(import_path2.default.dirname(importPath), matchedCaseInsensitive).replace(/\\/g, "/")
+            actual: import_path3.default.join(import_path3.default.dirname(importPath), matchedCaseInsensitive).replace(/\\/g, "/")
           });
         }
       }
@@ -1567,27 +2976,27 @@ function validateCaseSensitiveImports(cwd = process.cwd(), stagedFiles = []) {
   }
 }
 function detectSpaRewrite(cwd = process.cwd(), outputDir = null, distPath = null) {
-  if (outputDir && import_fs2.default.existsSync(outputDir)) {
+  if (outputDir && import_fs3.default.existsSync(outputDir)) {
     const outputFiles = getAllFiles(outputDir);
     const match2 = outputFiles.find((f3) => {
-      const b = import_path2.default.basename(f3).toLowerCase();
+      const b = import_path3.default.basename(f3).toLowerCase();
       return b === "web.config" || b === "nginx.conf" || b === "_redirects" || b === ".htaccess" || b === "htaccess";
     });
-    if (match2) return { hasSpaRewrite: true, file: import_path2.default.basename(match2), source: "dist" };
+    if (match2) return { hasSpaRewrite: true, file: import_path3.default.basename(match2), source: "dist" };
   }
-  if (distPath && import_fs2.default.existsSync(distPath) && distPath !== outputDir) {
+  if (distPath && import_fs3.default.existsSync(distPath) && distPath !== outputDir) {
     const distFiles = getAllFiles(distPath);
     const match2 = distFiles.find((f3) => {
-      const b = import_path2.default.basename(f3).toLowerCase();
+      const b = import_path3.default.basename(f3).toLowerCase();
       return b === "web.config" || b === "nginx.conf" || b === "_redirects" || b === ".htaccess" || b === "htaccess";
     });
-    if (match2) return { hasSpaRewrite: true, file: import_path2.default.basename(match2), source: "dist" };
+    if (match2) return { hasSpaRewrite: true, file: import_path3.default.basename(match2), source: "dist" };
   }
-  const srcDir = import_path2.default.join(cwd, "src");
-  if (import_fs2.default.existsSync(srcDir)) {
+  const srcDir = import_path3.default.join(cwd, "src");
+  if (import_fs3.default.existsSync(srcDir)) {
     const srcCandidates = ["web.config", "nginx.conf", "_redirects", ".htaccess"];
     for (const c of srcCandidates) {
-      if (import_fs2.default.existsSync(import_path2.default.join(srcDir, c))) {
+      if (import_fs3.default.existsSync(import_path3.default.join(srcDir, c))) {
         return { hasSpaRewrite: true, file: `src/${c}`, source: "src" };
       }
     }
@@ -1603,11 +3012,11 @@ function detectSpaRewrite(cwd = process.cwd(), outputDir = null, distPath = null
     "staticwebapp.config.json"
   ];
   for (const c of rootCandidates) {
-    const p = import_path2.default.join(cwd, c);
-    if (import_fs2.default.existsSync(p)) {
+    const p = import_path3.default.join(cwd, c);
+    if (import_fs3.default.existsSync(p)) {
       if (c === "firebase.json") {
         try {
-          const fb = JSON.parse(import_fs2.default.readFileSync(p, "utf8"));
+          const fb = JSON.parse(import_fs3.default.readFileSync(p, "utf8"));
           if (fb.hosting && (fb.hosting.rewrites || Array.isArray(fb.hosting) && fb.hosting.some((h2) => h2.rewrites))) {
             return { hasSpaRewrite: true, file: c, source: "root" };
           }
@@ -1615,7 +3024,7 @@ function detectSpaRewrite(cwd = process.cwd(), outputDir = null, distPath = null
         }
       } else if (c === "vercel.json") {
         try {
-          const vj = JSON.parse(import_fs2.default.readFileSync(p, "utf8"));
+          const vj = JSON.parse(import_fs3.default.readFileSync(p, "utf8"));
           if (vj.rewrites || vj.routes) {
             return { hasSpaRewrite: true, file: c, source: "root" };
           }
@@ -1626,10 +3035,10 @@ function detectSpaRewrite(cwd = process.cwd(), outputDir = null, distPath = null
       }
     }
   }
-  const angularJsonPath = import_path2.default.join(cwd, "angular.json");
-  if (import_fs2.default.existsSync(angularJsonPath)) {
+  const angularJsonPath = import_path3.default.join(cwd, "angular.json");
+  if (import_fs3.default.existsSync(angularJsonPath)) {
     try {
-      const content = import_fs2.default.readFileSync(angularJsonPath, "utf8");
+      const content = import_fs3.default.readFileSync(angularJsonPath, "utf8");
       if (content.includes("web.config") || content.includes("_redirects") || content.includes("nginx.conf")) {
         return { hasSpaRewrite: true, file: "angular.json (assets)", source: "angular.json" };
       }
@@ -1640,17 +3049,17 @@ function detectSpaRewrite(cwd = process.cwd(), outputDir = null, distPath = null
 }
 function validateCompiledArtifacts(cwd = process.cwd(), options = {}) {
   console.log(source_default.blue("\n  Validating Compiled Production Distribution Artifacts (CD Readiness)..."));
-  const distPath = import_path2.default.join(cwd, "dist");
+  const distPath = import_path3.default.join(cwd, "dist");
   const outputDir = findBuildOutputDir(distPath);
-  if (!outputDir || !import_fs2.default.existsSync(outputDir)) {
+  if (!outputDir || !import_fs3.default.existsSync(outputDir)) {
     logError("Build output directory (dist/) was not generated or is missing!");
     console.log(source_default.red("  Commit rejected: Ensure ng build produces valid output.\n"));
     throw new Error("Build output directory (dist/) was not generated or is missing!");
   }
   console.log(source_default.gray(`  Inspecting build distribution output at: ${outputDir}`));
-  const outputFiles = getAllFiles(outputDir).map((f3) => import_path2.default.relative(outputDir, f3).replace(/\\/g, "/"));
-  const indexHtmlPath = import_path2.default.join(outputDir, "index.html");
-  const hasIndexHtml = import_fs2.default.existsSync(indexHtmlPath) || outputFiles.some((f3) => import_path2.default.basename(f3).toLowerCase() === "index.html");
+  const outputFiles = getAllFiles(outputDir).map((f3) => import_path3.default.relative(outputDir, f3).replace(/\\/g, "/"));
+  const indexHtmlPath = import_path3.default.join(outputDir, "index.html");
+  const hasIndexHtml = import_fs3.default.existsSync(indexHtmlPath) || outputFiles.some((f3) => import_path3.default.basename(f3).toLowerCase() === "index.html");
   if (!hasIndexHtml) {
     logError("Critical build artifact missing: index.html was not generated in distribution output!");
     console.log(source_default.red("  Commit rejected: index.html is required for IIS/web servers to load the application.\n"));
@@ -1664,19 +3073,19 @@ function validateCompiledArtifacts(cwd = process.cwd(), options = {}) {
     throw new Error("Critical build artifact missing: No compiled JavaScript bundles found");
   }
   const cssFiles = outputFiles.filter((f3) => f3.endsWith(".css"));
-  const hasStylesCss = cssFiles.some((f3) => import_path2.default.basename(f3).toLowerCase().startsWith("styles") || cssFiles.length > 0);
+  const hasStylesCss = cssFiles.some((f3) => import_path3.default.basename(f3).toLowerCase().startsWith("styles") || cssFiles.length > 0);
   const spaAudit = detectSpaRewrite(cwd, outputDir, distPath);
   const hasSpaRewrite = spaAudit.hasSpaRewrite;
-  const envProdPath = import_path2.default.join(cwd, "src", "environments", "environment.prod.ts");
+  const envProdPath = import_path3.default.join(cwd, "src", "environments", "environment.prod.ts");
   const { hasLocalhostLeak, hasHttpApiLeak } = auditEnvironmentProd(envProdPath);
-  const dockerfilePath = import_path2.default.join(cwd, "Dockerfile");
+  const dockerfilePath = import_path3.default.join(cwd, "Dockerfile");
   const dockerAudit = auditDockerfile(dockerfilePath);
   const dockerValid = dockerAudit ? dockerAudit.valid : null;
   let totalBundleSizeBytes = 0;
   for (const jsFile of jsBundles) {
-    const fullJsPath = import_path2.default.join(outputDir, jsFile);
-    if (import_fs2.default.existsSync(fullJsPath)) {
-      totalBundleSizeBytes += import_fs2.default.statSync(fullJsPath).size;
+    const fullJsPath = import_path3.default.join(outputDir, jsFile);
+    if (import_fs3.default.existsSync(fullJsPath)) {
+      totalBundleSizeBytes += import_fs3.default.statSync(fullJsPath).size;
     }
   }
   const totalBundleSizeMb = (totalBundleSizeBytes / (1024 * 1024)).toFixed(2);
@@ -1689,7 +3098,7 @@ function validateCompiledArtifacts(cwd = process.cwd(), options = {}) {
   console.log(`    ${source_default.green("\u2714")} index.html (Main SPA Entry Point${hasBaseHref ? ", <base href> verified" : ""})`);
   console.log(`    ${source_default.green("\u2714")} Compiled JavaScript Bundles (${jsBundles.length} files: ${totalBundleSizeMb} MB total | Gzip: ${gzipMetrics.totalGzipSizeKb} KB)`);
   if (hasStylesCss) {
-    console.log(`    ${source_default.green("\u2714")} Global Production Styles (${cssFiles.map((f3) => import_path2.default.basename(f3)).join(", ")})`);
+    console.log(`    ${source_default.green("\u2714")} Global Production Styles (${cssFiles.map((f3) => import_path3.default.basename(f3)).join(", ")})`);
   }
   if (hasSpaRewrite) {
     console.log(`    ${source_default.green("\u2714")} Web Server SPA Rewrite Config (${spaAudit.file || "web.config / nginx / _redirects"})`);
@@ -1702,7 +3111,7 @@ function validateCompiledArtifacts(cwd = process.cwd(), options = {}) {
       iisAudit.isValidXml ? "XML: \u2714" : "XML: \u2716 Error",
       iisAudit.isSyncedInAngularJson ? "Assets Sync: \u2714" : "Assets Sync: \u26A0 Missing"
     ].join(" | ");
-    console.log(`    ${source_default.green("\u2714")} IIS Server Config (${import_path2.default.basename(iisAudit.filePath)} [${iisStatusStr}])`);
+    console.log(`    ${source_default.green("\u2714")} IIS Server Config (${import_path3.default.basename(iisAudit.filePath)} [${iisStatusStr}])`);
     iisAudit.warnings.forEach((w) => logWarning(`IIS Notice: ${w}`));
   }
   if (assetAudit.valid) {
@@ -1738,12 +3147,12 @@ function validateCompiledArtifacts(cwd = process.cwd(), options = {}) {
   }
   let releaseManifestCreated = false;
   try {
-    const manifestPath = import_path2.default.join(outputDir, "release-manifest.json");
+    const manifestPath = import_path3.default.join(outputDir, "release-manifest.json");
     const artifactManifest = [];
     for (const f3 of jsBundles) {
-      const fullPath = import_path2.default.join(outputDir, f3);
-      if (import_fs2.default.existsSync(fullPath)) {
-        const fileBuf = import_fs2.default.readFileSync(fullPath);
+      const fullPath = import_path3.default.join(outputDir, f3);
+      if (import_fs3.default.existsSync(fullPath)) {
+        const fileBuf = import_fs3.default.readFileSync(fullPath);
         const hash = import_crypto.default.createHash("sha256").update(fileBuf).digest("hex");
         artifactManifest.push({
           file: f3,
@@ -1767,9 +3176,9 @@ function validateCompiledArtifacts(cwd = process.cwd(), options = {}) {
       dockerValid,
       artifacts: artifactManifest
     };
-    import_fs2.default.writeFileSync(manifestPath, JSON.stringify(manifestData, null, 2), "utf8");
-    if (outputDir !== distPath && import_fs2.default.existsSync(distPath)) {
-      import_fs2.default.writeFileSync(import_path2.default.join(distPath, "release-manifest.json"), JSON.stringify(manifestData, null, 2), "utf8");
+    import_fs3.default.writeFileSync(manifestPath, JSON.stringify(manifestData, null, 2), "utf8");
+    if (outputDir !== distPath && import_fs3.default.existsSync(distPath)) {
+      import_fs3.default.writeFileSync(import_path3.default.join(distPath, "release-manifest.json"), JSON.stringify(manifestData, null, 2), "utf8");
     }
     releaseManifestCreated = true;
     console.log(`    ${source_default.green("\u2714")} CD Release Manifest & SHA256 Checksums Generated (dist/release-manifest.json)`);
@@ -1795,8 +3204,8 @@ function validateCompiledArtifacts(cwd = process.cwd(), options = {}) {
   };
 }
 function checkBaseHref(indexHtmlPath) {
-  if (!import_fs2.default.existsSync(indexHtmlPath)) return { hasBaseHref: false, baseHrefValue: null };
-  const content = import_fs2.default.readFileSync(indexHtmlPath, "utf8");
+  if (!import_fs3.default.existsSync(indexHtmlPath)) return { hasBaseHref: false, baseHrefValue: null };
+  const content = import_fs3.default.readFileSync(indexHtmlPath, "utf8");
   const match2 = content.match(/<base\s+href=["']([^"']+)["']/i);
   return {
     hasBaseHref: !!match2,
@@ -1804,10 +3213,10 @@ function checkBaseHref(indexHtmlPath) {
   };
 }
 function auditEnvironmentProd(envProdPath) {
-  if (!import_fs2.default.existsSync(envProdPath)) {
+  if (!import_fs3.default.existsSync(envProdPath)) {
     return { hasLocalhostLeak: false, hasHttpApiLeak: false, issues: [] };
   }
-  const content = import_fs2.default.readFileSync(envProdPath, "utf8");
+  const content = import_fs3.default.readFileSync(envProdPath, "utf8");
   const issues = [];
   const hasLocalhostLeak = /(?:http:\/\/localhost|http:\/\/127\.0\.0\.1|http:\/\/0\.0\.0\.0)/i.test(content);
   if (hasLocalhostLeak) {
@@ -1827,8 +3236,8 @@ function auditEnvironmentProd(envProdPath) {
   return { hasLocalhostLeak, hasHttpApiLeak, issues };
 }
 function auditDockerfile(dockerfilePath) {
-  if (!import_fs2.default.existsSync(dockerfilePath)) return null;
-  const content = import_fs2.default.readFileSync(dockerfilePath, "utf8");
+  if (!import_fs3.default.existsSync(dockerfilePath)) return null;
+  const content = import_fs3.default.readFileSync(dockerfilePath, "utf8");
   const lines = content.split("\n").map((l) => l.trim()).filter((l) => l && !l.startsWith("#"));
   const hasFrom = lines.some((l) => l.startsWith("FROM "));
   const hasCopyOrAdd = lines.some((l) => l.startsWith("COPY ") || l.startsWith("ADD "));
@@ -1845,9 +3254,9 @@ function auditDockerfile(dockerfilePath) {
 }
 function updateBuildMetadata(cwd = process.cwd(), projectPkg = {}) {
   console.log(source_default.blue("  Automated Angular Build Versioning & Conventional Commit SemVer..."));
-  const srcDir = import_path2.default.join(cwd, "src");
-  if (import_fs2.default.existsSync(srcDir) && import_fs2.default.statSync(srcDir).isDirectory()) {
-    const buildMetaPath = import_path2.default.join(srcDir, "build-metadata.json");
+  const srcDir = import_path3.default.join(cwd, "src");
+  if (import_fs3.default.existsSync(srcDir) && import_fs3.default.statSync(srcDir).isDirectory()) {
+    const buildMetaPath = import_path3.default.join(srcDir, "build-metadata.json");
     const semverInfo = calculateSemVerBump(cwd, projectPkg.version || "1.0.0");
     let buildData = {
       buildNumber: 0,
@@ -1859,9 +3268,9 @@ function updateBuildMetadata(cwd = process.cwd(), projectPkg = {}) {
       commitHash: "working-tree",
       builtAt: (/* @__PURE__ */ new Date()).toISOString()
     };
-    if (import_fs2.default.existsSync(buildMetaPath)) {
+    if (import_fs3.default.existsSync(buildMetaPath)) {
       try {
-        buildData = { ...buildData, ...JSON.parse(import_fs2.default.readFileSync(buildMetaPath, "utf8")) };
+        buildData = { ...buildData, ...JSON.parse(import_fs3.default.readFileSync(buildMetaPath, "utf8")) };
       } catch (e2) {
       }
     }
@@ -1873,7 +3282,7 @@ function updateBuildMetadata(cwd = process.cwd(), projectPkg = {}) {
     buildData.branch = runGit("git rev-parse --abbrev-ref HEAD", true, cwd) || "main";
     buildData.commitHash = runGit("git rev-parse --short HEAD", true, cwd) || "uncommitted";
     buildData.builtAt = (/* @__PURE__ */ new Date()).toISOString();
-    import_fs2.default.writeFileSync(buildMetaPath, JSON.stringify(buildData, null, 2), "utf8");
+    import_fs3.default.writeFileSync(buildMetaPath, JSON.stringify(buildData, null, 2), "utf8");
     try {
       runGit("git add src/build-metadata.json", true, cwd);
       logSuccess(`Build metadata updated & staged: Build #${buildData.buildNumber} (${buildData.commitHash}) on "${buildData.branch}" [SemVer: v${buildData.nextSemVer} (${buildData.releaseType})]`);
@@ -1952,14 +3361,14 @@ function verifyAngularBootstrapIntegrity(cwd = process.cwd(), outputDir = null) 
   let hasBootstrapCall = false;
   let selector = "app-root";
   const candidateIndexPaths = [
-    outputDir ? import_path2.default.join(outputDir, "index.html") : null,
-    import_path2.default.join(cwd, "src", "index.html"),
-    import_path2.default.join(cwd, "src", "index.csr.html"),
-    import_path2.default.join(cwd, "index.html")
+    outputDir ? import_path3.default.join(outputDir, "index.html") : null,
+    import_path3.default.join(cwd, "src", "index.html"),
+    import_path3.default.join(cwd, "src", "index.csr.html"),
+    import_path3.default.join(cwd, "index.html")
   ].filter(Boolean);
   for (const p of candidateIndexPaths) {
-    if (import_fs2.default.existsSync(p)) {
-      const content = import_fs2.default.readFileSync(p, "utf8");
+    if (import_fs3.default.existsSync(p)) {
+      const content = import_fs3.default.readFileSync(p, "utf8");
       const rootMatch = content.match(/<([a-zA-Z0-9_-]+)[^>]*>\s*<\/\1>/) || content.match(/<app-root[^>]*>/i);
       if (rootMatch) {
         hasRootElement = true;
@@ -1968,15 +3377,15 @@ function verifyAngularBootstrapIntegrity(cwd = process.cwd(), outputDir = null) 
       }
     }
   }
-  const mainTsPath = import_path2.default.join(cwd, "src", "main.ts");
-  if (import_fs2.default.existsSync(mainTsPath)) {
-    const mainContent = import_fs2.default.readFileSync(mainTsPath, "utf8");
+  const mainTsPath = import_path3.default.join(cwd, "src", "main.ts");
+  if (import_fs3.default.existsSync(mainTsPath)) {
+    const mainContent = import_fs3.default.readFileSync(mainTsPath, "utf8");
     if (mainContent.includes("bootstrapApplication") || mainContent.includes("bootstrapModule") || mainContent.includes("platformBrowserDynamic") || mainContent.includes("platformBrowser")) {
       hasBootstrapCall = true;
     }
-  } else if (outputDir && import_fs2.default.existsSync(outputDir)) {
+  } else if (outputDir && import_fs3.default.existsSync(outputDir)) {
     const files = getAllFiles(outputDir);
-    if (files.some((f3) => import_path2.default.basename(f3).startsWith("main") && f3.endsWith(".js"))) {
+    if (files.some((f3) => import_path3.default.basename(f3).startsWith("main") && f3.endsWith(".js"))) {
       hasBootstrapCall = true;
     }
   }
@@ -2049,8 +3458,8 @@ async function verifyLiveDeployment(targetUrl) {
   }
 }
 function detectCircularDependencies(cwd = process.cwd()) {
-  const srcDir = import_path2.default.join(cwd, "src");
-  if (!import_fs2.default.existsSync(srcDir)) return { hasCycles: false, cycles: [] };
+  const srcDir = import_path3.default.join(cwd, "src");
+  if (!import_fs3.default.existsSync(srcDir)) return { hasCycles: false, cycles: [] };
   const allFiles = getAllFiles(srcDir);
   const tsFiles = allFiles.filter(
     (f3) => (f3.endsWith(".ts") || f3.endsWith(".js")) && !f3.endsWith(".spec.ts") && !f3.endsWith(".test.ts") && !f3.endsWith(".spec.js") && !f3.endsWith(".test.js") && !f3.endsWith(".d.ts") && !f3.includes("node_modules")
@@ -2059,10 +3468,10 @@ function detectCircularDependencies(cwd = process.cwd()) {
   const graph = /* @__PURE__ */ new Map();
   const importRegex = /(?:import|from|require\()\s*['"](\.[^'"]+)['"]/g;
   for (const file of tsFiles) {
-    const fileDir = import_path2.default.dirname(file);
+    const fileDir = import_path3.default.dirname(file);
     let content = "";
     try {
-      content = import_fs2.default.readFileSync(file, "utf8");
+      content = import_fs3.default.readFileSync(file, "utf8");
     } catch (_) {
       continue;
     }
@@ -2070,25 +3479,25 @@ function detectCircularDependencies(cwd = process.cwd()) {
     let match2;
     while ((match2 = importRegex.exec(content)) !== null) {
       const relPath = match2[1];
-      const targetBase = import_path2.default.resolve(fileDir, relPath);
+      const targetBase = import_path3.default.resolve(fileDir, relPath);
       const candidates = [
         targetBase,
         targetBase + ".ts",
         targetBase + ".js",
-        import_path2.default.join(targetBase, "index.ts"),
-        import_path2.default.join(targetBase, "index.js")
+        import_path3.default.join(targetBase, "index.ts"),
+        import_path3.default.join(targetBase, "index.js")
       ];
       for (const cand of candidates) {
-        if (import_fs2.default.existsSync(cand) && !import_fs2.default.statSync(cand).isDirectory()) {
-          const norm = import_path2.default.normalize(cand);
-          if (norm !== import_path2.default.normalize(file)) {
+        if (import_fs3.default.existsSync(cand) && !import_fs3.default.statSync(cand).isDirectory()) {
+          const norm = import_path3.default.normalize(cand);
+          if (norm !== import_path3.default.normalize(file)) {
             imports.add(norm);
           }
           break;
         }
       }
     }
-    graph.set(import_path2.default.normalize(file), imports);
+    graph.set(import_path3.default.normalize(file), imports);
   }
   const cycles = [];
   const visited = /* @__PURE__ */ new Set();
@@ -2106,7 +3515,7 @@ function detectCircularDependencies(cwd = process.cwd()) {
         const cycleStartIndex = currentPath.indexOf(neighbor);
         if (cycleStartIndex !== -1) {
           const cyclePath = currentPath.slice(cycleStartIndex).concat(neighbor);
-          const relCycle = cyclePath.map((p) => import_path2.default.relative(cwd, p).replace(/\\/g, "/"));
+          const relCycle = cyclePath.map((p) => import_path3.default.relative(cwd, p).replace(/\\/g, "/"));
           const cycleKey = relCycle.slice(0, -1).sort().join("->");
           if (!cycles.some((c) => c.key === cycleKey)) {
             cycles.push({ key: cycleKey, path: relCycle });
@@ -2132,17 +3541,17 @@ function detectCircularDependencies(cwd = process.cwd()) {
   return { hasCycles: cycles.length > 0, cycles };
 }
 function auditTemplateSecurity(cwd = process.cwd(), stagedFiles = []) {
-  const targetFiles = stagedFiles.length > 0 ? stagedFiles.map((f3) => import_path2.default.join(cwd, f3)).filter((p) => import_fs2.default.existsSync(p)) : import_fs2.default.existsSync(import_path2.default.join(cwd, "src")) ? getAllFiles(import_path2.default.join(cwd, "src")).filter((f3) => !f3.includes("node_modules") && !f3.includes("dist")) : [];
+  const targetFiles = stagedFiles.length > 0 ? stagedFiles.map((f3) => import_path3.default.join(cwd, f3)).filter((p) => import_fs3.default.existsSync(p)) : import_fs3.default.existsSync(import_path3.default.join(cwd, "src")) ? getAllFiles(import_path3.default.join(cwd, "src")).filter((f3) => !f3.includes("node_modules") && !f3.includes("dist")) : [];
   const inspectFiles = targetFiles.filter((f3) => f3.endsWith(".html") || f3.endsWith(".ts") && !f3.endsWith(".spec.ts"));
   const violations = [];
   for (const file of inspectFiles) {
     let content = "";
     try {
-      content = import_fs2.default.readFileSync(file, "utf8");
+      content = import_fs3.default.readFileSync(file, "utf8");
     } catch (_) {
       continue;
     }
-    const relPath = import_path2.default.relative(cwd, file).replace(/\\/g, "/");
+    const relPath = import_path3.default.relative(cwd, file).replace(/\\/g, "/");
     const lines = content.split("\n");
     lines.forEach((line, idx) => {
       const lineNum = idx + 1;
@@ -2189,13 +3598,13 @@ function auditTemplateSecurity(cwd = process.cwd(), stagedFiles = []) {
   };
 }
 function auditDistributionAssetIntegrity(outputDir) {
-  if (!outputDir || !import_fs2.default.existsSync(outputDir)) {
+  if (!outputDir || !import_fs3.default.existsSync(outputDir)) {
     return { valid: true, brokenAssets: [] };
   }
   const brokenAssets = [];
-  const indexHtmlPath = import_path2.default.join(outputDir, "index.html");
-  if (import_fs2.default.existsSync(indexHtmlPath)) {
-    const htmlContent = import_fs2.default.readFileSync(indexHtmlPath, "utf8");
+  const indexHtmlPath = import_path3.default.join(outputDir, "index.html");
+  if (import_fs3.default.existsSync(indexHtmlPath)) {
+    const htmlContent = import_fs3.default.readFileSync(indexHtmlPath, "utf8");
     const tagRegex = /<(?:link|script|img)\s+[^>]*(?:href|src)=["']([^"']+)["'][^>]*>/gi;
     let match2;
     while ((match2 = tagRegex.exec(htmlContent)) !== null) {
@@ -2203,8 +3612,8 @@ function auditDistributionAssetIntegrity(outputDir) {
       if (/^(?:https?:|\/\/|data:|#|mailto:)/i.test(assetUrl)) continue;
       const cleanAsset = assetUrl.split("?")[0].split("#")[0].replace(/^\//, "");
       if (cleanAsset) {
-        const targetDiskPath = import_path2.default.join(outputDir, cleanAsset);
-        if (!import_fs2.default.existsSync(targetDiskPath)) {
+        const targetDiskPath = import_path3.default.join(outputDir, cleanAsset);
+        if (!import_fs3.default.existsSync(targetDiskPath)) {
           brokenAssets.push({
             sourceFile: "index.html",
             assetPath: assetUrl
@@ -2219,20 +3628,20 @@ function auditDistributionAssetIntegrity(outputDir) {
   for (const cssFile of cssFiles) {
     let cssContent = "";
     try {
-      cssContent = import_fs2.default.readFileSync(cssFile, "utf8");
+      cssContent = import_fs3.default.readFileSync(cssFile, "utf8");
     } catch (_) {
       continue;
     }
-    const cssDir = import_path2.default.dirname(cssFile);
+    const cssDir = import_path3.default.dirname(cssFile);
     let match2;
     while ((match2 = urlRegex.exec(cssContent)) !== null) {
       const ref = match2[1];
       if (/^(?:https?:|\/\/|data:|#)/i.test(ref)) continue;
       const cleanRef = ref.split("?")[0].split("#")[0];
-      const targetDiskPath = cleanRef.startsWith("/") ? import_path2.default.join(outputDir, cleanRef.replace(/^\//, "")) : import_path2.default.resolve(cssDir, cleanRef);
-      if (!import_fs2.default.existsSync(targetDiskPath)) {
+      const targetDiskPath = cleanRef.startsWith("/") ? import_path3.default.join(outputDir, cleanRef.replace(/^\//, "")) : import_path3.default.resolve(cssDir, cleanRef);
+      if (!import_fs3.default.existsSync(targetDiskPath)) {
         brokenAssets.push({
-          sourceFile: import_path2.default.relative(outputDir, cssFile).replace(/\\/g, "/"),
+          sourceFile: import_path3.default.relative(outputDir, cssFile).replace(/\\/g, "/"),
           assetPath: ref
         });
       }
@@ -2244,16 +3653,16 @@ function auditDistributionAssetIntegrity(outputDir) {
   };
 }
 function calculateGzipBudgets(outputDir, jsBundles = []) {
-  if (!outputDir || !import_fs2.default.existsSync(outputDir) || jsBundles.length === 0) {
+  if (!outputDir || !import_fs3.default.existsSync(outputDir) || jsBundles.length === 0) {
     return { totalGzipBytes: 0, totalGzipSizeKb: "0.00", bundleMetrics: [], budgetExceeded: false };
   }
   let totalGzipBytes = 0;
   const bundleMetrics = [];
   for (const file of jsBundles) {
-    const fullPath = import_path2.default.join(outputDir, file);
-    if (import_fs2.default.existsSync(fullPath)) {
+    const fullPath = import_path3.default.join(outputDir, file);
+    if (import_fs3.default.existsSync(fullPath)) {
       try {
-        const rawBuf = import_fs2.default.readFileSync(fullPath);
+        const rawBuf = import_fs3.default.readFileSync(fullPath);
         const gzipped = import_zlib.default.gzipSync(rawBuf);
         totalGzipBytes += gzipped.length;
         bundleMetrics.push({
@@ -2285,35 +3694,35 @@ function calculateGzipBudgets(outputDir, jsBundles = []) {
 function auditCloudDeploymentConfigs(cwd = process.cwd()) {
   const targets = [];
   const details = {};
-  const azurePath = import_path2.default.join(cwd, "staticwebapp.config.json");
-  if (import_fs2.default.existsSync(azurePath)) {
+  const azurePath = import_path3.default.join(cwd, "staticwebapp.config.json");
+  if (import_fs3.default.existsSync(azurePath)) {
     targets.push("Azure Static Web Apps");
     details.azure = true;
   }
-  const vercelPath = import_path2.default.join(cwd, "vercel.json");
-  if (import_fs2.default.existsSync(vercelPath)) {
+  const vercelPath = import_path3.default.join(cwd, "vercel.json");
+  if (import_fs3.default.existsSync(vercelPath)) {
     targets.push("Vercel");
     details.vercel = true;
   }
-  const netlifyPath = import_path2.default.join(cwd, "netlify.toml");
-  const redirectsPath = import_path2.default.join(cwd, "_redirects");
-  if (import_fs2.default.existsSync(netlifyPath) || import_fs2.default.existsSync(redirectsPath)) {
+  const netlifyPath = import_path3.default.join(cwd, "netlify.toml");
+  const redirectsPath = import_path3.default.join(cwd, "_redirects");
+  if (import_fs3.default.existsSync(netlifyPath) || import_fs3.default.existsSync(redirectsPath)) {
     targets.push("Netlify");
     details.netlify = true;
   }
-  const fbPath = import_path2.default.join(cwd, "firebase.json");
-  if (import_fs2.default.existsSync(fbPath)) {
+  const fbPath = import_path3.default.join(cwd, "firebase.json");
+  if (import_fs3.default.existsSync(fbPath)) {
     targets.push("Firebase Hosting");
     details.firebase = true;
   }
-  const dockerPath = import_path2.default.join(cwd, "Dockerfile");
-  if (import_fs2.default.existsSync(dockerPath)) {
+  const dockerPath = import_path3.default.join(cwd, "Dockerfile");
+  if (import_fs3.default.existsSync(dockerPath)) {
     targets.push("Docker / Container");
     details.docker = true;
   }
-  const iisPath = import_path2.default.join(cwd, "web.config");
-  const srcIisPath = import_path2.default.join(cwd, "src", "web.config");
-  if (import_fs2.default.existsSync(iisPath) || import_fs2.default.existsSync(srcIisPath)) {
+  const iisPath = import_path3.default.join(cwd, "web.config");
+  const srcIisPath = import_path3.default.join(cwd, "src", "web.config");
+  if (import_fs3.default.existsSync(iisPath) || import_fs3.default.existsSync(srcIisPath)) {
     targets.push("IIS (Internet Information Services)");
     details.iis = true;
   }
@@ -2325,13 +3734,13 @@ function auditCloudDeploymentConfigs(cwd = process.cwd()) {
 }
 function auditIisDeploymentConfig(cwd = process.cwd(), outputDir = null) {
   const candidates = [
-    outputDir ? import_path2.default.join(outputDir, "web.config") : null,
-    import_path2.default.join(cwd, "src", "web.config"),
-    import_path2.default.join(cwd, "web.config")
+    outputDir ? import_path3.default.join(outputDir, "web.config") : null,
+    import_path3.default.join(cwd, "src", "web.config"),
+    import_path3.default.join(cwd, "web.config")
   ].filter(Boolean);
   let targetWebConfig = null;
   for (const c of candidates) {
-    if (import_fs2.default.existsSync(c)) {
+    if (import_fs3.default.existsSync(c)) {
       targetWebConfig = c;
       break;
     }
@@ -2352,7 +3761,7 @@ function auditIisDeploymentConfig(cwd = process.cwd(), outputDir = null) {
   const warnings = [];
   let content = "";
   try {
-    content = import_fs2.default.readFileSync(targetWebConfig, "utf8");
+    content = import_fs3.default.readFileSync(targetWebConfig, "utf8");
   } catch (readErr) {
     return {
       isIisConfigured: true,
@@ -2403,10 +3812,10 @@ function auditIisDeploymentConfig(cwd = process.cwd(), outputDir = null) {
     warnings.push("MIME type for .woff2 fonts not declared in web.config <staticContent> (IIS HTTP 404.3 risk).");
   }
   let isSyncedInAngularJson = true;
-  const angularJsonPath = import_path2.default.join(cwd, "angular.json");
-  if (import_fs2.default.existsSync(angularJsonPath) && targetWebConfig.includes("src")) {
+  const angularJsonPath = import_path3.default.join(cwd, "angular.json");
+  if (import_fs3.default.existsSync(angularJsonPath) && targetWebConfig.includes("src")) {
     try {
-      const aj = import_fs2.default.readFileSync(angularJsonPath, "utf8");
+      const aj = import_fs3.default.readFileSync(angularJsonPath, "utf8");
       if (!aj.includes("web.config")) {
         isSyncedInAngularJson = false;
         warnings.push('src/web.config is not registered in angular.json "assets" array. It will NOT be copied to dist/ during build!');
@@ -2416,7 +3825,7 @@ function auditIisDeploymentConfig(cwd = process.cwd(), outputDir = null) {
   }
   return {
     isIisConfigured: true,
-    filePath: import_path2.default.relative(cwd, targetWebConfig).replace(/\\/g, "/"),
+    filePath: import_path3.default.relative(cwd, targetWebConfig).replace(/\\/g, "/"),
     isValidXml,
     hasRewriteRule,
     hasMimeTypes,
@@ -2425,11 +3834,11 @@ function auditIisDeploymentConfig(cwd = process.cwd(), outputDir = null) {
     warnings
   };
 }
-var import_fs2, import_path2, import_crypto, import_zlib;
+var import_fs3, import_path3, import_crypto, import_zlib;
 var init_angular_best_practices = __esm({
   "src/rules/angular-best-practices.js"() {
-    import_fs2 = __toESM(require("fs"), 1);
-    import_path2 = __toESM(require("path"), 1);
+    import_fs3 = __toESM(require("fs"), 1);
+    import_path3 = __toESM(require("path"), 1);
     import_crypto = __toESM(require("crypto"), 1);
     import_zlib = __toESM(require("zlib"), 1);
     init_source();
@@ -29981,8 +31390,8 @@ function renderScorecard(scoreResult) {
 init_angular_best_practices();
 
 // src/rules/typescript-validator.js
-var import_fs3 = __toESM(require("fs"), 1);
-var import_path3 = __toESM(require("path"), 1);
+var import_fs4 = __toESM(require("fs"), 1);
+var import_path4 = __toESM(require("path"), 1);
 init_source();
 init_logger();
 init_angular_best_practices();
@@ -29994,9 +31403,12 @@ async function runTypeScriptAndLintChecks(cwd = process.cwd(), projectPkg = {}) 
   if (scripts["lint"]) {
     console.log(source_default.blue("  Running Angular Linter (npm run lint)..."));
     try {
-      await execStreaming("npm run lint", { cwd });
+      await execStreaming("npm run lint", { cwd, stepNum: 4 });
       logSuccess("Angular linter passed with zero errors.");
     } catch (err) {
+      if (err.isSkipped || err.isForceCommit || err.isClose) {
+        throw err;
+      }
       logError("Angular linter reported errors!");
       console.log(source_default.red("\n  Fix the linting issues before committing code.\n"));
       const failErr = new Error("Angular linting failed");
@@ -30008,9 +31420,12 @@ async function runTypeScriptAndLintChecks(cwd = process.cwd(), projectPkg = {}) 
     const typeScript = scripts["type-check"] ? "type-check" : "typecheck";
     console.log(source_default.blue(`  Running TypeScript Check (npm run ${typeScript})...`));
     try {
-      await execStreaming(`npm run ${typeScript}`, { cwd });
+      await execStreaming(`npm run ${typeScript}`, { cwd, stepNum: 4 });
       logSuccess("TypeScript checks passed.");
     } catch (err) {
+      if (err.isSkipped || err.isForceCommit || err.isClose) {
+        throw err;
+      }
       logError("TypeScript type checking failed!");
       console.log(source_default.red("\n  Fix the TypeScript errors before committing code.\n"));
       const failErr = new Error("TypeScript type checking failed");
@@ -30020,9 +31435,12 @@ async function runTypeScriptAndLintChecks(cwd = process.cwd(), projectPkg = {}) 
   } else {
     console.log(source_default.blue("  Running Type Safety Check (npx tsc --noEmit)..."));
     try {
-      await execStreaming("npx tsc --noEmit --skipLibCheck", { cwd });
+      await execStreaming("npx tsc --noEmit --skipLibCheck", { cwd, stepNum: 4 });
       logSuccess("TypeScript compilation verification passed with zero type errors.");
     } catch (err) {
+      if (err.isSkipped || err.isForceCommit || err.isClose) {
+        throw err;
+      }
       logError("TypeScript type checking failed!");
       const failErr = new Error("TypeScript compilation failed");
       failErr.stepOutput = err.combined || err.stepOutput || err.message;
@@ -30033,22 +31451,22 @@ async function runTypeScriptAndLintChecks(cwd = process.cwd(), projectPkg = {}) 
 async function runAutomatedUnitTests(cwd = process.cwd(), projectPkg = {}) {
   let capturedTestOutput = "";
   logStep(5, "Automated Unit Tests & Regression Verification");
-  const pkgPath = import_path3.default.join(cwd, "package.json");
+  const pkgPath = import_path4.default.join(cwd, "package.json");
   const scripts = projectPkg.scripts || {};
   const deps = { ...projectPkg.dependencies || {}, ...projectPkg.devDependencies || {} };
-  const isVitest = !!(deps["vitest"] || deps["@analogjs/vite-plugin-angular"] || import_fs3.default.existsSync(import_path3.default.join(cwd, "vite.config.ts")) || import_fs3.default.existsSync(import_path3.default.join(cwd, "vite.config.js")) || import_fs3.default.existsSync(import_path3.default.join(cwd, "vite.config.mjs")) || import_fs3.default.existsSync(import_path3.default.join(cwd, "vitest.config.ts")) || import_fs3.default.existsSync(import_path3.default.join(cwd, "vitest.config.js")) || import_fs3.default.existsSync(import_path3.default.join(cwd, "vitest.config.mjs")) || (scripts["test:ci"] || "").includes("vitest") || (scripts["test-ci"] || "").includes("vitest") || (scripts["test"] || "").includes("vitest"));
-  const isJest = !!(deps["jest"] || import_fs3.default.existsSync(import_path3.default.join(cwd, "jest.config.js")) || import_fs3.default.existsSync(import_path3.default.join(cwd, "jest.config.ts")) || import_fs3.default.existsSync(import_path3.default.join(cwd, "jest.config.mjs")) || (scripts["test:ci"] || "").includes("jest") || (scripts["test-ci"] || "").includes("jest") || (scripts["test"] || "").includes("jest"));
-  const srcDir = import_path3.default.join(cwd, "src");
-  const checkDir = import_fs3.default.existsSync(srcDir) ? srcDir : cwd;
+  const isVitest = !!(deps["vitest"] || deps["@analogjs/vite-plugin-angular"] || import_fs4.default.existsSync(import_path4.default.join(cwd, "vite.config.ts")) || import_fs4.default.existsSync(import_path4.default.join(cwd, "vite.config.js")) || import_fs4.default.existsSync(import_path4.default.join(cwd, "vite.config.mjs")) || import_fs4.default.existsSync(import_path4.default.join(cwd, "vitest.config.ts")) || import_fs4.default.existsSync(import_path4.default.join(cwd, "vitest.config.js")) || import_fs4.default.existsSync(import_path4.default.join(cwd, "vitest.config.mjs")) || (scripts["test:ci"] || "").includes("vitest") || (scripts["test-ci"] || "").includes("vitest") || (scripts["test"] || "").includes("vitest"));
+  const isJest = !!(deps["jest"] || import_fs4.default.existsSync(import_path4.default.join(cwd, "jest.config.js")) || import_fs4.default.existsSync(import_path4.default.join(cwd, "jest.config.ts")) || import_fs4.default.existsSync(import_path4.default.join(cwd, "jest.config.mjs")) || (scripts["test:ci"] || "").includes("jest") || (scripts["test-ci"] || "").includes("jest") || (scripts["test"] || "").includes("jest"));
+  const srcDir = import_path4.default.join(cwd, "src");
+  const checkDir = import_fs4.default.existsSync(srcDir) ? srcDir : cwd;
   const allProjectFiles = getAllFiles(checkDir);
   let specFiles = allProjectFiles.filter((f3) => {
-    const base = import_path3.default.basename(f3).toLowerCase();
+    const base = import_path4.default.basename(f3).toLowerCase();
     return (base.endsWith(".spec.ts") || base.endsWith(".test.ts") || base.endsWith(".spec.js") || base.endsWith(".test.js")) && !f3.includes("node_modules") && !f3.includes("dist");
   });
   let tempSpecPath = null;
   if (specFiles.length === 0) {
-    const targetSmokeDir = import_fs3.default.existsSync(import_path3.default.join(cwd, "src", "app")) ? import_path3.default.join(cwd, "src", "app") : import_fs3.default.existsSync(srcDir) ? srcDir : cwd;
-    tempSpecPath = import_path3.default.join(targetSmokeDir, "gatekeeper-smoke.spec.ts");
+    const targetSmokeDir = import_fs4.default.existsSync(import_path4.default.join(cwd, "src", "app")) ? import_path4.default.join(cwd, "src", "app") : import_fs4.default.existsSync(srcDir) ? srcDir : cwd;
+    tempSpecPath = import_path4.default.join(targetSmokeDir, "gatekeeper-smoke.spec.ts");
     const smokeSpecContent = isVitest ? `// Auto-generated by Angular Gatekeeper (CI Smoke Test)
 // @ts-nocheck
 import { describe, it, expect } from 'vitest';
@@ -30067,7 +31485,7 @@ describe('Angular CI Pipeline Verification', () => {
 });
 `;
     try {
-      import_fs3.default.writeFileSync(tempSpecPath, smokeSpecContent, "utf8");
+      import_fs4.default.writeFileSync(tempSpecPath, smokeSpecContent, "utf8");
       console.log(source_default.blue("  Auto-generating temporary smoke test spec (gatekeeper-smoke.spec.ts)..."));
     } catch (_) {
       tempSpecPath = null;
@@ -30078,9 +31496,9 @@ describe('Angular CI Pipeline Verification', () => {
   let testCommand = "";
   let tempInjected = false;
   let originalPkgRaw = null;
-  if (import_fs3.default.existsSync(pkgPath)) {
+  if (import_fs4.default.existsSync(pkgPath)) {
     try {
-      originalPkgRaw = import_fs3.default.readFileSync(pkgPath, "utf8");
+      originalPkgRaw = import_fs4.default.readFileSync(pkgPath, "utf8");
     } catch (_) {
     }
   }
@@ -30104,15 +31522,15 @@ describe('Angular CI Pipeline Verification', () => {
       } else {
         testCommand = testScript.includes("--watch=false") || testScript.includes("--no-watch") ? "npm test" : "npm test -- --watch=false";
       }
-    } else if (import_fs3.default.existsSync(pkgPath)) {
+    } else if (import_fs4.default.existsSync(pkgPath)) {
       if (!originalPkgRaw) {
-        originalPkgRaw = import_fs3.default.readFileSync(pkgPath, "utf8");
+        originalPkgRaw = import_fs4.default.readFileSync(pkgPath, "utf8");
       }
       const parsedPkg = JSON.parse(originalPkgRaw);
       parsedPkg.scripts = parsedPkg.scripts || {};
       console.log(source_default.blue("  Auto-configuring headless test runner for validation..."));
       parsedPkg.scripts["test:ci"] = "ng test --watch=false";
-      import_fs3.default.writeFileSync(pkgPath, JSON.stringify(parsedPkg, null, 2), "utf8");
+      import_fs4.default.writeFileSync(pkgPath, JSON.stringify(parsedPkg, null, 2), "utf8");
       tempInjected = true;
       testCommand = "npm run test:ci";
     } else {
@@ -30121,9 +31539,12 @@ describe('Angular CI Pipeline Verification', () => {
     console.log(source_default.blue(`  Executing Automated Unit Tests (${testCommand})...`));
     let _output = "";
     try {
-      const res = await execStreaming(testCommand, { cwd });
+      const res = await execStreaming(testCommand, { cwd, stepNum: 5 });
       _output = res.combined;
     } catch (testExecErr) {
+      if (testExecErr.isSkipped || testExecErr.isForceCommit || testExecErr.isClose) {
+        throw testExecErr;
+      }
       const combined = (testExecErr.combined || testExecErr.stdout || testExecErr.stderr || testExecErr.message || "").trim();
       if (tempSpecPath && (combined.includes("ReferenceError: describe is not defined") || combined.includes("ReferenceError: it is not defined") || combined.includes("describe is not defined"))) {
         try {
@@ -30137,11 +31558,14 @@ describe('Angular CI Pipeline Verification', () => {
   });
 });
 `;
-          import_fs3.default.writeFileSync(tempSpecPath, vitestSmokeSpec, "utf8");
+          import_fs4.default.writeFileSync(tempSpecPath, vitestSmokeSpec, "utf8");
           console.log(source_default.yellow("  \u26A0 Smoke spec missing test runner globals. Retrying with explicit Vitest imports..."));
-          const retryRes = await execStreaming(testCommand, { cwd });
+          const retryRes = await execStreaming(testCommand, { cwd, stepNum: 5 });
           _output = retryRes.combined;
         } catch (vitestRetryErr) {
+          if (vitestRetryErr.isSkipped || vitestRetryErr.isForceCommit || vitestRetryErr.isClose) {
+            throw vitestRetryErr;
+          }
           const vCombined = (vitestRetryErr.combined || vitestRetryErr.stdout || vitestRetryErr.stderr || vitestRetryErr.message || "").trim();
           capturedTestOutput = vCombined;
           vitestRetryErr.testOutput = vCombined;
@@ -30155,9 +31579,9 @@ describe('Angular CI Pipeline Verification', () => {
         fallbackCommand = fallbackCommand.replace("--passWithNoTests", "").replace(/\s+/g, " ").trim();
         fallbackCommand = fallbackCommand.replace(/--\s*$/, "").trim();
         let scriptCleaned = false;
-        if (originalPkgRaw && import_fs3.default.existsSync(pkgPath)) {
+        if (originalPkgRaw && import_fs4.default.existsSync(pkgPath)) {
           try {
-            const currentPkg = JSON.parse(import_fs3.default.readFileSync(pkgPath, "utf8"));
+            const currentPkg = JSON.parse(import_fs4.default.readFileSync(pkgPath, "utf8"));
             for (const key of ["test:ci", "test-ci", "test"]) {
               if (currentPkg.scripts && currentPkg.scripts[key] && currentPkg.scripts[key].includes(badFlag)) {
                 currentPkg.scripts[key] = currentPkg.scripts[key].replace(new RegExp(`--?${badFlag}(=[^\\s]+)?`, "g"), "").replace(/\s+/g, " ").trim();
@@ -30165,7 +31589,7 @@ describe('Angular CI Pipeline Verification', () => {
               }
             }
             if (scriptCleaned) {
-              import_fs3.default.writeFileSync(pkgPath, JSON.stringify(currentPkg, null, 2), "utf8");
+              import_fs4.default.writeFileSync(pkgPath, JSON.stringify(currentPkg, null, 2), "utf8");
               tempInjected = true;
             }
           } catch (_) {
@@ -30174,10 +31598,13 @@ describe('Angular CI Pipeline Verification', () => {
         if ((fallbackCommand !== testCommand || scriptCleaned) && fallbackCommand.length > 0) {
           console.log(source_default.yellow(`  \u26A0 Test runner rejected argument. Retrying without unsupported flag: (${fallbackCommand})...`));
           try {
-            const fbRes = await execStreaming(fallbackCommand, { cwd });
+            const fbRes = await execStreaming(fallbackCommand, { cwd, stepNum: 5 });
             _output = fbRes.combined;
             testCommand = fallbackCommand;
           } catch (retryErr) {
+            if (retryErr.isSkipped || retryErr.isForceCommit || retryErr.isClose) {
+              throw retryErr;
+            }
             const rCombined = (retryErr.combined || retryErr.stdout || retryErr.stderr || retryErr.message || "").trim();
             capturedTestOutput = rCombined;
             retryErr.testOutput = rCombined;
@@ -30220,16 +31647,16 @@ ${errOutput}`;
     failErr.stepOutput = failErr.testOutput;
     throw failErr;
   } finally {
-    if (tempSpecPath && import_fs3.default.existsSync(tempSpecPath)) {
+    if (tempSpecPath && import_fs4.default.existsSync(tempSpecPath)) {
       try {
-        import_fs3.default.unlinkSync(tempSpecPath);
+        import_fs4.default.unlinkSync(tempSpecPath);
         console.log(source_default.gray("  Cleaned up temporary smoke test spec file."));
       } catch (_) {
       }
     }
-    if (tempInjected && originalPkgRaw && import_fs3.default.existsSync(pkgPath)) {
+    if (tempInjected && originalPkgRaw && import_fs4.default.existsSync(pkgPath)) {
       try {
-        import_fs3.default.writeFileSync(pkgPath, originalPkgRaw, "utf8");
+        import_fs4.default.writeFileSync(pkgPath, originalPkgRaw, "utf8");
         console.log(source_default.gray("  Cleaned up temporary test runner configuration from package.json."));
       } catch (cleanErr) {
       }
@@ -30246,9 +31673,12 @@ async function runAngularProductionBuild(cwd = process.cwd(), projectPkg = {}) {
   }
   console.log(source_default.gray(`  Executing: ${buildCommand}`));
   try {
-    await execStreaming(buildCommand, { cwd });
+    await execStreaming(buildCommand, { cwd, stepNum: 6 });
     logSuccess("Angular compilation & build completed successfully with ZERO errors.");
   } catch (buildErr) {
+    if (buildErr.isSkipped || buildErr.isForceCommit || buildErr.isClose) {
+      throw buildErr;
+    }
     logError("Angular Build FAILED! Compilation or TypeScript errors detected.");
     const combined = (buildErr.combined || buildErr.stdout || buildErr.stderr || buildErr.message || "").trim();
     console.log(source_default.red("\n  \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550"));
@@ -30266,16 +31696,16 @@ async function runAngularProductionBuild(cwd = process.cwd(), projectPkg = {}) {
 init_security_rules();
 
 // src/rules/ai-prompt.js
-var import_fs5 = __toESM(require("fs"), 1);
-var import_path4 = __toESM(require("path"), 1);
+var import_fs6 = __toESM(require("fs"), 1);
+var import_path5 = __toESM(require("path"), 1);
 var import_http = __toESM(require("http"), 1);
 init_source();
 
 // node_modules/@google/genai/dist/node/index.mjs
 var import_p_retry = __toESM(require_p_retry(), 1);
 var import_google_auth_library = __toESM(require_src5(), 1);
-var import_fs4 = require("fs");
-var fs5 = __toESM(require("fs/promises"), 1);
+var import_fs5 = require("fs");
+var fs6 = __toESM(require("fs/promises"), 1);
 var import_promises = require("fs/promises");
 var import_node_stream3 = require("node:stream");
 var import_promises2 = require("node:stream/promises");
@@ -30291,7 +31721,7 @@ var import_websocket = __toESM(require_websocket(), 1);
 var import_websocket_server = __toESM(require_websocket_server(), 1);
 
 // node_modules/@google/genai/dist/node/index.mjs
-var path4 = __toESM(require("path"), 1);
+var path5 = __toESM(require("path"), 1);
 var _defaultBaseGeminiUrl = void 0;
 var _defaultBaseVertexUrl = void 0;
 function getDefaultBaseUrls() {
@@ -50325,7 +51755,7 @@ var NodeDownloader = class {
     if (params.downloadPath) {
       const response = await downloadFile(params, apiClient);
       if (response instanceof HttpResponse) {
-        const writer = (0, import_fs4.createWriteStream)(params.downloadPath);
+        const writer = (0, import_fs5.createWriteStream)(params.downloadPath);
         const body = import_node_stream3.Readable.fromWeb(response.responseInternal.body);
         body.pipe(writer);
         await (0, import_promises2.finished)(writer);
@@ -52223,7 +53653,7 @@ var NodeUploader = class {
   async stat(file) {
     const fileStat = { size: 0, type: void 0 };
     if (typeof file === "string") {
-      const originalStat = await fs5.stat(file);
+      const originalStat = await fs6.stat(file);
       fileStat.size = originalStat.size;
       fileStat.type = this.inferMimeType(file);
       return fileStat;
@@ -52369,9 +53799,9 @@ var NodeUploader = class {
     let response = new HttpResponse(new Response());
     let uploadCommand = "upload";
     let fileHandle;
-    const fileName = path4.basename(file);
+    const fileName = path5.basename(file);
     try {
-      fileHandle = await fs5.open(file, "r");
+      fileHandle = await fs6.open(file, "r");
       if (!fileHandle) {
         throw new Error(`Failed to open file`);
       }
@@ -52661,10 +54091,10 @@ function getProjectSourceSnapshot(cwd = process.cwd(), maxChars = 35e4) {
   ]);
   const fileList = [];
   function walk(dir) {
-    if (!import_fs5.default.existsSync(dir)) return;
+    if (!import_fs6.default.existsSync(dir)) return;
     let entries;
     try {
-      entries = import_fs5.default.readdirSync(dir, { withFileTypes: true });
+      entries = import_fs6.default.readdirSync(dir, { withFileTypes: true });
     } catch (_) {
       return;
     }
@@ -52672,22 +54102,22 @@ function getProjectSourceSnapshot(cwd = process.cwd(), maxChars = 35e4) {
       const lowerName = entry.name.toLowerCase();
       if (entry.isDirectory()) {
         if (!ignoredDirs.has(lowerName) && !lowerName.startsWith(".")) {
-          walk(import_path4.default.join(dir, entry.name));
+          walk(import_path5.default.join(dir, entry.name));
         }
       } else if (entry.isFile()) {
-        const ext = import_path4.default.extname(entry.name).toLowerCase();
+        const ext = import_path5.default.extname(entry.name).toLowerCase();
         if (allowedExtensions.has(ext) && !ignoredFiles.has(lowerName)) {
-          fileList.push(import_path4.default.join(dir, entry.name));
+          fileList.push(import_path5.default.join(dir, entry.name));
         }
       }
     }
   }
-  const srcDir = import_path4.default.join(cwd, "src");
-  if (import_fs5.default.existsSync(srcDir)) {
+  const srcDir = import_path5.default.join(cwd, "src");
+  if (import_fs6.default.existsSync(srcDir)) {
     walk(srcDir);
     ["angular.json", "tsconfig.json", "package.json"].forEach((cfg) => {
-      const cfgPath = import_path4.default.join(cwd, cfg);
-      if (import_fs5.default.existsSync(cfgPath) && !fileList.includes(cfgPath)) {
+      const cfgPath = import_path5.default.join(cwd, cfg);
+      if (import_fs6.default.existsSync(cfgPath) && !fileList.includes(cfgPath)) {
         fileList.push(cfgPath);
       }
     });
@@ -52698,9 +54128,9 @@ function getProjectSourceSnapshot(cwd = process.cwd(), maxChars = 35e4) {
   let snapshot = "";
   const MAX_PER_FILE_CHARS = 4e4;
   for (const filePath of fileList) {
-    const relPath = import_path4.default.relative(cwd, filePath).replace(/\\/g, "/");
+    const relPath = import_path5.default.relative(cwd, filePath).replace(/\\/g, "/");
     try {
-      let content = import_fs5.default.readFileSync(filePath, "utf8");
+      let content = import_fs6.default.readFileSync(filePath, "utf8");
       if (content.length > MAX_PER_FILE_CHARS) {
         content = content.slice(0, MAX_PER_FILE_CHARS) + "\n... [truncated file: exceeds 40KB]";
       }
@@ -52765,14 +54195,21 @@ ${projectTree.slice(0, 8e3)}
    - Clean standalone/module architecture, DI token usage, and strict type safety.
    - Any project-specific bug avoidance guidelines documented in resolved_issues.md.
 5. If ANY file in the project (or in incoming git changes) reintroduces a previously documented bug, breaks architecture rules, or violates security standards:
-   - Output: "VERDICT: FAILED"
-   - Provide a concise explanation specifying the offending file path(s), relevant code snippet(s), and which documented issue from resolved_issues.md was violated.
+   - Start your response immediately with:
+     **VERDICT: FAILED**
+   - Provide a comprehensive, structured breakdown of ALL identified violations across the project.
+   - For each violation, specify:
+     * **File:** Exact file path
+     * **Violation:** Clear explanation of what rule or resolved_issues.md standard is broken
+     * **Remediation:** Actionable instructions on how to fix it
+   - Do NOT stop prematurely after listing just one file or partial thought. Audit and enumerate ALL violations across the codebase and finish with a conclusive summary.
    - (REMINDER: Never cite "incomplete resolved_issues.md documentation" as a failure reason or action item).
 6. If all source files across the project adhere to the documented guidelines:
-   - Output: "VERDICT: PASSED"
+   - Start your response immediately with:
+     **VERDICT: PASSED**
    - Provide a concise summary and constructive architectural insights.
 7. FORMATTING: Use clean, standard Markdown for headings and bullets. Never use LaTeX notation (e.g., do NOT output $\rightarrow$ or \rightarrow; use "\u2192" or "->" instead). Never wrap heading lines in double asterisks.
-8. COMPLETION: Ensure your response is fully complete. Finish all sentences, recommendations, and bullet points cleanly without cutting off mid-thought.
+8. COMPLETION MANDATE: You MUST complete your entire response. Finish all sections, sentences, recommendations, and bullet points cleanly without cutting off mid-thought. Always conclude with a final summary.
 
 Ensure your response clearly includes either "VERDICT: PASSED" or "VERDICT: FAILED" in capital letters.
 `;
@@ -52790,8 +54227,8 @@ async function runAiKnowledgeBaseAudit(config = {}, cwd = process.cwd()) {
   };
   const providerName = providerTitles[provider] || provider;
   logStep(8, `Angular AI Knowledge Base Regression Audit (${providerName})`);
-  const resolvedIssuesPath = import_path4.default.join(cwd, "resolved_issues.md");
-  if (!import_fs5.default.existsSync(resolvedIssuesPath)) {
+  const resolvedIssuesPath = import_path5.default.join(cwd, "resolved_issues.md");
+  if (!import_fs6.default.existsSync(resolvedIssuesPath)) {
     console.log(source_default.gray("  No resolved_issues.md found at repository root. AI audit skipped."));
     return { passed: true, skipped: true, report: "No resolved_issues.md found at repository root. AI audit skipped." };
   }
@@ -52799,7 +54236,7 @@ async function runAiKnowledgeBaseAudit(config = {}, cwd = process.cwd()) {
     console.log(source_default.gray("  AI Audit provider set to none / skipped in configuration."));
     return { passed: true, skipped: true, report: "AI Audit disabled in configuration. Step skipped." };
   }
-  const knowledgeBase = import_fs5.default.readFileSync(resolvedIssuesPath, "utf8");
+  const knowledgeBase = import_fs6.default.readFileSync(resolvedIssuesPath, "utf8");
   console.log(source_default.blue("  Scanning full project source files & git diff for AI Knowledge Base audit..."));
   const diffOutput = getDiff(cwd, true);
   const projectTree = getProjectStructureTree(cwd);
@@ -52848,7 +54285,7 @@ async function runAiKnowledgeBaseAudit(config = {}, cwd = process.cwd()) {
           model,
           messages: [{ role: "user", content: prompt }],
           temperature: 0.2,
-          max_tokens: 4096
+          max_tokens: 8192
         })
       });
       if (!res.ok) {
@@ -52881,7 +54318,7 @@ async function runAiKnowledgeBaseAudit(config = {}, cwd = process.cwd()) {
         },
         body: JSON.stringify({
           model,
-          max_tokens: 4096,
+          max_tokens: 8192,
           messages: [{ role: "user", content: prompt }],
           temperature: 0.2
         })
@@ -52917,7 +54354,7 @@ async function runAiKnowledgeBaseAudit(config = {}, cwd = process.cwd()) {
           model,
           messages: [{ role: "user", content: prompt }],
           temperature: 0.2,
-          max_tokens: 4096
+          max_tokens: 8192
         })
       });
       if (!res.ok) {
@@ -52951,7 +54388,7 @@ async function runAiKnowledgeBaseAudit(config = {}, cwd = process.cwd()) {
           model,
           messages: [{ role: "user", content: prompt }],
           temperature: 0.2,
-          max_tokens: 4096
+          max_tokens: 8192
         })
       });
       if (!res.ok) {
@@ -52987,7 +54424,7 @@ async function runAiKnowledgeBaseAudit(config = {}, cwd = process.cwd()) {
           model,
           messages: [{ role: "user", content: prompt }],
           temperature: 0.2,
-          max_tokens: 4096
+          max_tokens: 8192
         })
       });
       if (!res.ok) {
@@ -53009,11 +54446,12 @@ async function runAiKnowledgeBaseAudit(config = {}, cwd = process.cwd()) {
     return { passed: true, skipped: true, report: "GEMINI_API_KEY not configured. AI audit skipped." };
   }
   console.log(source_default.cyan("  Consulting Gemini AI to audit Angular code against known issues..."));
-  const candidateModels = [
-    "gemini-3.8-flash",
-    "gemini-3.7-flash",
+  const envGeminiModel = config.GEMINI_MODEL || process.env.GEMINI_MODEL;
+  const candidateModels = envGeminiModel ? [envGeminiModel, "gemini-3.6-flash", "gemini-3.5-flash", "gemini-3.8-flash", "gemini-3.7-flash", "gemini-flash-lite-latest"] : [
     "gemini-3.6-flash",
     "gemini-3.5-flash",
+    "gemini-3.8-flash",
+    "gemini-3.7-flash",
     "gemini-3.5-flash-lite",
     "gemini-flash-lite-latest"
   ];
@@ -53025,7 +54463,7 @@ async function runAiKnowledgeBaseAudit(config = {}, cwd = process.cwd()) {
         model: modelName,
         contents: prompt,
         config: {
-          maxOutputTokens: 4096,
+          maxOutputTokens: 16384,
           temperature: 0.2
         }
       });
@@ -53054,8 +54492,8 @@ function callOllamaViaHttp(url, model, prompt) {
         stream: false,
         options: {
           temperature: 0.2,
-          num_predict: 4096,
-          num_ctx: 8192
+          num_predict: 8192,
+          num_ctx: 16384
         }
       });
       const options = {
@@ -53139,14 +54577,14 @@ function evaluateAiResult(resultText, modelIdentifier) {
 }
 
 // src/daemon/branch-watcher.js
-var import_fs6 = __toESM(require("fs"), 1);
-var import_path5 = __toESM(require("path"), 1);
-var import_child_process3 = require("child_process");
+var import_fs7 = __toESM(require("fs"), 1);
+var import_path6 = __toESM(require("path"), 1);
+var import_child_process4 = require("child_process");
 init_source();
 var import_prompts = __toESM(require_prompts3(), 1);
 function runGit2(command, cwd = process.cwd(), allowFail = false) {
   try {
-    return (0, import_child_process3.execSync)(command, {
+    return (0, import_child_process4.execSync)(command, {
       cwd,
       encoding: "utf8",
       stdio: ["pipe", "pipe", "pipe"],
@@ -53160,23 +54598,23 @@ function runGit2(command, cwd = process.cwd(), allowFail = false) {
   }
 }
 function getWatcherConfigPath(cwd = process.cwd()) {
-  const gitDir = import_path5.default.join(cwd, ".git");
-  if (!import_fs6.default.existsSync(gitDir)) return null;
-  return import_path5.default.join(gitDir, "gatekeeper-branch-watcher.json");
+  const gitDir = import_path6.default.join(cwd, ".git");
+  if (!import_fs7.default.existsSync(gitDir)) return null;
+  return import_path6.default.join(gitDir, "gatekeeper-branch-watcher.json");
 }
 function getAlertLogPath(cwd = process.cwd()) {
-  const gitDir = import_path5.default.join(cwd, ".git");
-  if (!import_fs6.default.existsSync(gitDir)) return null;
-  return import_path5.default.join(gitDir, "gatekeeper-conflict-alert.log");
+  const gitDir = import_path6.default.join(cwd, ".git");
+  if (!import_fs7.default.existsSync(gitDir)) return null;
+  return import_path6.default.join(gitDir, "gatekeeper-conflict-alert.log");
 }
 function getEngineBinaryPath() {
-  const installed = process.env.APPDATA ? import_path5.default.join(process.env.APPDATA, "FrontendGatekeeper", "engine.exe") : null;
-  if (installed && import_fs6.default.existsSync(installed)) return installed;
+  const installed = process.env.APPDATA ? import_path6.default.join(process.env.APPDATA, "FrontendGatekeeper", "engine.exe") : null;
+  if (installed && import_fs7.default.existsSync(installed)) return installed;
   return process.execPath;
 }
 function setupVSCodeAutoRestart(cwd) {
-  const vscodDir = import_path5.default.join(cwd, ".vscode");
-  const tasksFile = import_path5.default.join(vscodDir, "tasks.json");
+  const vscodDir = import_path6.default.join(cwd, ".vscode");
+  const tasksFile = import_path6.default.join(vscodDir, "tasks.json");
   const engineBin = getEngineBinaryPath();
   const newTask = {
     label: "Angular Gatekeeper: Auto-Restart Branch Watcher",
@@ -53194,62 +54632,62 @@ function setupVSCodeAutoRestart(cwd) {
     problemMatcher: []
   };
   try {
-    import_fs6.default.mkdirSync(vscodDir, { recursive: true });
+    import_fs7.default.mkdirSync(vscodDir, { recursive: true });
     let existingTasks = { version: "2.0.0", tasks: [] };
-    if (import_fs6.default.existsSync(tasksFile)) {
+    if (import_fs7.default.existsSync(tasksFile)) {
       try {
-        existingTasks = JSON.parse(import_fs6.default.readFileSync(tasksFile, "utf8"));
+        existingTasks = JSON.parse(import_fs7.default.readFileSync(tasksFile, "utf8"));
         if (!Array.isArray(existingTasks.tasks)) existingTasks.tasks = [];
       } catch (_) {
       }
     }
     existingTasks.tasks = existingTasks.tasks.filter((t2) => t2.label !== newTask.label);
     existingTasks.tasks.push(newTask);
-    import_fs6.default.writeFileSync(tasksFile, JSON.stringify(existingTasks, null, 2), "utf8");
-    const settingsFile = import_path5.default.join(vscodDir, "settings.json");
+    import_fs7.default.writeFileSync(tasksFile, JSON.stringify(existingTasks, null, 2), "utf8");
+    const settingsFile = import_path6.default.join(vscodDir, "settings.json");
     let existingSettings = {};
-    if (import_fs6.default.existsSync(settingsFile)) {
+    if (import_fs7.default.existsSync(settingsFile)) {
       try {
-        existingSettings = JSON.parse(import_fs6.default.readFileSync(settingsFile, "utf8"));
+        existingSettings = JSON.parse(import_fs7.default.readFileSync(settingsFile, "utf8"));
       } catch (_) {
       }
     }
     existingSettings["task.allowAutomaticTasks"] = "on";
-    import_fs6.default.writeFileSync(settingsFile, JSON.stringify(existingSettings, null, 2), "utf8");
+    import_fs7.default.writeFileSync(settingsFile, JSON.stringify(existingSettings, null, 2), "utf8");
   } catch (err) {
   }
 }
 function removeVSCodeAutoRestart(cwd) {
-  const vscodDir = import_path5.default.join(cwd, ".vscode");
-  const tasksFile = import_path5.default.join(vscodDir, "tasks.json");
-  if (import_fs6.default.existsSync(tasksFile)) {
+  const vscodDir = import_path6.default.join(cwd, ".vscode");
+  const tasksFile = import_path6.default.join(vscodDir, "tasks.json");
+  if (import_fs7.default.existsSync(tasksFile)) {
     try {
-      const existing = JSON.parse(import_fs6.default.readFileSync(tasksFile, "utf8"));
+      const existing = JSON.parse(import_fs7.default.readFileSync(tasksFile, "utf8"));
       if (Array.isArray(existing.tasks)) {
         existing.tasks = existing.tasks.filter(
           (t2) => t2.label !== "Angular Gatekeeper: Auto-Restart Branch Watcher"
         );
-        import_fs6.default.writeFileSync(tasksFile, JSON.stringify(existing, null, 2), "utf8");
+        import_fs7.default.writeFileSync(tasksFile, JSON.stringify(existing, null, 2), "utf8");
       }
     } catch (_) {
     }
   }
-  const settingsFile = import_path5.default.join(vscodDir, "settings.json");
-  if (import_fs6.default.existsSync(settingsFile)) {
+  const settingsFile = import_path6.default.join(vscodDir, "settings.json");
+  if (import_fs7.default.existsSync(settingsFile)) {
     try {
-      const settings = JSON.parse(import_fs6.default.readFileSync(settingsFile, "utf8"));
+      const settings = JSON.parse(import_fs7.default.readFileSync(settingsFile, "utf8"));
       delete settings["task.allowAutomaticTasks"];
-      import_fs6.default.writeFileSync(settingsFile, JSON.stringify(settings, null, 2), "utf8");
+      import_fs7.default.writeFileSync(settingsFile, JSON.stringify(settings, null, 2), "utf8");
     } catch (_) {
     }
   }
 }
 async function autoRestartIfEnabled(cwd = process.cwd()) {
   const configPath = getWatcherConfigPath(cwd);
-  if (!configPath || !import_fs6.default.existsSync(configPath)) return;
+  if (!configPath || !import_fs7.default.existsSync(configPath)) return;
   let config = {};
   try {
-    config = JSON.parse(import_fs6.default.readFileSync(configPath, "utf8"));
+    config = JSON.parse(import_fs7.default.readFileSync(configPath, "utf8"));
   } catch (_) {
     return;
   }
@@ -53260,14 +54698,14 @@ async function autoRestartIfEnabled(cwd = process.cwd()) {
   const engineBin = getEngineBinaryPath();
   let execBinary = engineBin;
   let execArgs = [];
-  if (import_path5.default.basename(execBinary).toLowerCase().startsWith("node")) {
+  if (import_path6.default.basename(execBinary).toLowerCase().startsWith("node")) {
     execArgs = [process.argv[1]];
   }
-  const gitDir = import_path5.default.join(cwd, ".git");
-  const daemonLogPath = import_path5.default.join(gitDir, "gatekeeper-daemon.log");
-  const outLog = import_fs6.default.openSync(daemonLogPath, "a");
-  const errLog = import_fs6.default.openSync(daemonLogPath, "a");
-  const child = (0, import_child_process3.spawn)(execBinary, execArgs, {
+  const gitDir = import_path6.default.join(cwd, ".git");
+  const daemonLogPath = import_path6.default.join(gitDir, "gatekeeper-daemon.log");
+  const outLog = import_fs7.default.openSync(daemonLogPath, "a");
+  const errLog = import_fs7.default.openSync(daemonLogPath, "a");
+  const child = (0, import_child_process4.spawn)(execBinary, execArgs, {
     detached: true,
     stdio: ["ignore", outLog, errLog],
     cwd,
@@ -53284,7 +54722,7 @@ async function autoRestartIfEnabled(cwd = process.cwd()) {
   try {
     config.pid = child.pid;
     config.startedAt = (/* @__PURE__ */ new Date()).toISOString();
-    import_fs6.default.writeFileSync(configPath, JSON.stringify(config, null, 2), "utf8");
+    import_fs7.default.writeFileSync(configPath, JSON.stringify(config, null, 2), "utf8");
   } catch (_) {
   }
 }
@@ -53293,10 +54731,10 @@ function sendWindowsNotification(title, message, cwd = process.cwd()) {
   const safeTitle = title.replace(/'/g, "''").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   const safeMessage = message.replace(/'/g, "''").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   const _safeCwd = cwd.replace(/\\/g, "\\\\");
-  const gitDir = import_path5.default.join(cwd, ".git");
-  const launcherPath = import_path5.default.join(gitDir, "gatekeeper-show-details.cmd");
+  const gitDir = import_path6.default.join(cwd, ".git");
+  const launcherPath = import_path6.default.join(gitDir, "gatekeeper-show-details.cmd");
   try {
-    import_fs6.default.writeFileSync(
+    import_fs7.default.writeFileSync(
       launcherPath,
       `@echo off
 title Angular Gatekeeper - Conflict Details
@@ -53365,14 +54803,14 @@ try {
 `;
   const b64 = Buffer.from(psScript, "utf16le").toString("base64");
   try {
-    (0, import_child_process3.execSync)(`powershell.exe -NoProfile -ExecutionPolicy Bypass -EncodedCommand ${b64}`, {
+    (0, import_child_process4.execSync)(`powershell.exe -NoProfile -ExecutionPolicy Bypass -EncodedCommand ${b64}`, {
       stdio: "ignore",
       timeout: 8e3,
       windowsHide: true
     });
   } catch (err) {
     try {
-      (0, import_child_process3.execSync)(`powershell.exe -Command "[console]::beep(800, 300)"`, { stdio: "ignore", windowsHide: true });
+      (0, import_child_process4.execSync)(`powershell.exe -Command "[console]::beep(800, 300)"`, { stdio: "ignore", windowsHide: true });
     } catch (e2) {
     }
   }
@@ -53406,7 +54844,7 @@ function checkBranchConflicts(cwd = process.cwd(), targetBranch = "main") {
   let conflictingFiles = [];
   let mergeTreeOutput = "";
   try {
-    const res = (0, import_child_process3.execSync)(`git merge-tree --write-tree ${uncommittedStateRef} origin/${targetBranch}`, {
+    const res = (0, import_child_process4.execSync)(`git merge-tree --write-tree ${uncommittedStateRef} origin/${targetBranch}`, {
       cwd,
       encoding: "utf8",
       stdio: ["pipe", "pipe", "pipe"],
@@ -53490,8 +54928,8 @@ async function enableBranchWatcher(cwd = process.cwd()) {
   console.log("\n" + source_default.cyan.bold("\u2554\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2557"));
   console.log(source_default.cyan.bold("\u2551       \u{1F33F} AUTOMATIC BRANCH CONFLICT WATCHER SETUP           \u2551"));
   console.log(source_default.cyan.bold("\u255A\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u255D\n"));
-  const gitDir = import_path5.default.join(cwd, ".git");
-  if (!import_fs6.default.existsSync(gitDir)) {
+  const gitDir = import_path6.default.join(cwd, ".git");
+  if (!import_fs7.default.existsSync(gitDir)) {
     console.log(source_default.red("\u2716 Error: Current directory is not a Git repository."));
     process.exit(1);
   }
@@ -53561,14 +54999,14 @@ async function enableBranchWatcher(cwd = process.cwd()) {
 >>> Launching background ${intervalMinutes}-minute sync monitor daemon...`));
   let execBinary = getEngineBinaryPath();
   let execArgs = [];
-  if (import_path5.default.basename(execBinary).toLowerCase().startsWith("node")) {
+  if (import_path6.default.basename(execBinary).toLowerCase().startsWith("node")) {
     const scriptPath = process.argv[1];
     execArgs = [scriptPath];
   }
-  const daemonLogPath = import_path5.default.join(gitDir, "gatekeeper-daemon.log");
-  const outLog = import_fs6.default.openSync(daemonLogPath, "a");
-  const errLog = import_fs6.default.openSync(daemonLogPath, "a");
-  const child = (0, import_child_process3.spawn)(execBinary, execArgs, {
+  const daemonLogPath = import_path6.default.join(gitDir, "gatekeeper-daemon.log");
+  const outLog = import_fs7.default.openSync(daemonLogPath, "a");
+  const errLog = import_fs7.default.openSync(daemonLogPath, "a");
+  const child = (0, import_child_process4.spawn)(execBinary, execArgs, {
     detached: true,
     stdio: ["ignore", outLog, errLog],
     cwd,
@@ -53597,7 +55035,7 @@ async function enableBranchWatcher(cwd = process.cwd()) {
     behindCount: checkResult.behindCount
   };
   if (configPath) {
-    import_fs6.default.writeFileSync(configPath, JSON.stringify(configData, null, 2), "utf8");
+    import_fs7.default.writeFileSync(configPath, JSON.stringify(configData, null, 2), "utf8");
   }
   setupVSCodeAutoRestart(cwd);
   console.log(source_default.gray("  [Auto-Restart] .vscode/tasks.json configured \u2014 watcher will auto-restart when this project is opened in VS Code / Cursor."));
@@ -53617,7 +55055,7 @@ async function enableBranchWatcher(cwd = process.cwd()) {
 function isPidAlive(pid) {
   if (!pid) return false;
   try {
-    const out = (0, import_child_process3.execSync)(`powershell -NoProfile -Command "Get-Process -Id ${pid} -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Id"`, {
+    const out = (0, import_child_process4.execSync)(`powershell -NoProfile -Command "Get-Process -Id ${pid} -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Id"`, {
       encoding: "utf8",
       stdio: ["pipe", "pipe", "pipe"],
       windowsHide: true
@@ -53629,26 +55067,26 @@ function isPidAlive(pid) {
 }
 async function disableBranchWatcher(cwd = process.cwd(), silent = false) {
   const configPath = getWatcherConfigPath(cwd);
-  if (!configPath || !import_fs6.default.existsSync(configPath)) {
+  if (!configPath || !import_fs7.default.existsSync(configPath)) {
     if (!silent) {
       console.log(source_default.yellow("\u26A0 No active branch conflict watcher found for this repository."));
     }
     return;
   }
   try {
-    const config = JSON.parse(import_fs6.default.readFileSync(configPath, "utf8"));
+    const config = JSON.parse(import_fs7.default.readFileSync(configPath, "utf8"));
     config.enabled = false;
-    import_fs6.default.writeFileSync(configPath, JSON.stringify(config, null, 2), "utf8");
+    import_fs7.default.writeFileSync(configPath, JSON.stringify(config, null, 2), "utf8");
     if (config.pid) {
       try {
         process.kill(config.pid);
       } catch (e2) {
       }
     }
-    import_fs6.default.unlinkSync(configPath);
+    import_fs7.default.unlinkSync(configPath);
     const alertLog = getAlertLogPath(cwd);
-    if (alertLog && import_fs6.default.existsSync(alertLog)) {
-      import_fs6.default.unlinkSync(alertLog);
+    if (alertLog && import_fs7.default.existsSync(alertLog)) {
+      import_fs7.default.unlinkSync(alertLog);
     }
     removeVSCodeAutoRestart(cwd);
     if (!silent) {
@@ -53663,14 +55101,14 @@ async function disableBranchWatcher(cwd = process.cwd(), silent = false) {
 }
 async function statusBranchWatcher(cwd = process.cwd()) {
   const configPath = getWatcherConfigPath(cwd);
-  if (!configPath || !import_fs6.default.existsSync(configPath)) {
+  if (!configPath || !import_fs7.default.existsSync(configPath)) {
     console.log(source_default.yellow("\n\u26A0 Branch conflict watcher is currently DISABLED for this repository."));
     console.log(source_default.gray("  To enable, run: a-gatekeeper branch check --enable\n"));
     return;
   }
   let config = {};
   try {
-    config = JSON.parse(import_fs6.default.readFileSync(configPath, "utf8"));
+    config = JSON.parse(import_fs7.default.readFileSync(configPath, "utf8"));
   } catch (e2) {
     console.log(source_default.yellow("\u26A0 Invalid watcher configuration."));
     return;
@@ -53682,7 +55120,7 @@ async function statusBranchWatcher(cwd = process.cwd()) {
   config.conflictingFiles = liveResult.conflictingFiles;
   config.behindCount = liveResult.behindCount;
   try {
-    import_fs6.default.writeFileSync(configPath, JSON.stringify(config, null, 2), "utf8");
+    import_fs7.default.writeFileSync(configPath, JSON.stringify(config, null, 2), "utf8");
   } catch (_) {
   }
   console.log("\n" + source_default.cyan.bold("\u250C\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510"));
@@ -53710,10 +55148,10 @@ async function statusBranchWatcher(cwd = process.cwd()) {
 async function runDaemonLoop(cwd, targetBranch, intervalMinutes = 15) {
   const safeMinutes = parseInt(intervalMinutes, 10) || 15;
   const INTERVAL_MS = safeMinutes * 60 * 1e3;
-  const daemonLogPath = import_path5.default.join(cwd, ".git", "gatekeeper-daemon.log");
+  const daemonLogPath = import_path6.default.join(cwd, ".git", "gatekeeper-daemon.log");
   function appendDaemonLog(msg) {
     try {
-      import_fs6.default.appendFileSync(daemonLogPath, `[${(/* @__PURE__ */ new Date()).toLocaleString()}] ${msg}
+      import_fs7.default.appendFileSync(daemonLogPath, `[${(/* @__PURE__ */ new Date()).toLocaleString()}] ${msg}
 `, "utf8");
     } catch (e2) {
     }
@@ -53724,15 +55162,15 @@ async function runDaemonLoop(cwd, targetBranch, intervalMinutes = 15) {
       appendDaemonLog(`Executing conflict check cycle against origin/${targetBranch}...`);
       const result = checkBranchConflicts(cwd, targetBranch);
       const configPath = getWatcherConfigPath(cwd);
-      if (configPath && import_fs6.default.existsSync(configPath)) {
+      if (configPath && import_fs7.default.existsSync(configPath)) {
         try {
-          const config = JSON.parse(import_fs6.default.readFileSync(configPath, "utf8"));
+          const config = JSON.parse(import_fs7.default.readFileSync(configPath, "utf8"));
           config.lastCheckedAt = result.checkedAt;
           config.hasConflict = result.hasConflict;
           config.conflictingFiles = result.conflictingFiles;
           config.behindCount = result.behindCount;
           config.intervalMinutes = safeMinutes;
-          import_fs6.default.writeFileSync(configPath, JSON.stringify(config, null, 2), "utf8");
+          import_fs7.default.writeFileSync(configPath, JSON.stringify(config, null, 2), "utf8");
         } catch (e2) {
         }
       }
@@ -53758,7 +55196,7 @@ Collision / Conflicting Files:
 Please pull or rebase origin/${targetBranch} to resolve.
 
 `;
-          import_fs6.default.appendFileSync(alertLogPath, logContent, "utf8");
+          import_fs7.default.appendFileSync(alertLogPath, logContent, "utf8");
         }
       } else {
         appendDaemonLog(`Check cycle clean: No conflicts with origin/${targetBranch}.`);
@@ -53771,1187 +55209,8 @@ Please pull or rebase origin/${targetBranch} to resolve.
   setInterval(checkCycle, INTERVAL_MS);
 }
 
-// src/ui/progress-window.js
-var import_fs7 = __toESM(require("fs"), 1);
-var import_os = __toESM(require("os"), 1);
-var import_path6 = __toESM(require("path"), 1);
-var import_child_process4 = require("child_process");
-var import_dotenv = __toESM(require_main(), 1);
-function stripAnsi(str) {
-  if (!str) return "";
-  return str.replace(/[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g, "").replace(/\[[0-9;]+m/g, "");
-}
-function getAiStepLabel() {
-  if (!process.env.AI_PROVIDER && !process.env.GEMINI_API_KEY) {
-    try {
-      const appDataDir2 = process.env.APPDATA ? import_path6.default.join(process.env.APPDATA, "FrontendGatekeeper") : import_path6.default.join(process.env.HOME || process.env.USERPROFILE || ".", ".frontend-gatekeeper");
-      const envPath2 = import_path6.default.join(appDataDir2, ".env");
-      if (import_fs7.default.existsSync(envPath2)) {
-        import_dotenv.default.config({ path: envPath2, quiet: true });
-      }
-      import_dotenv.default.config({ quiet: true });
-    } catch (_) {
-    }
-  }
-  const provider = (process.env.AI_PROVIDER || (process.env.GEMINI_API_KEY ? "gemini" : "none")).toLowerCase();
-  switch (provider) {
-    case "ollama":
-      return "8. AI Knowledge Base Audit (Ollama)";
-    case "openai":
-      return "8. AI Knowledge Base Audit (OpenAI)";
-    case "anthropic":
-      return "8. AI Knowledge Base Audit (Anthropic Claude)";
-    case "deepseek":
-      return "8. AI Knowledge Base Audit (DeepSeek)";
-    case "groq":
-      return "8. AI Knowledge Base Audit (Groq)";
-    case "openrouter":
-      return "8. AI Knowledge Base Audit (OpenRouter)";
-    case "gemini":
-      return "8. AI Knowledge Base Audit (Google Gemini)";
-    case "none":
-      return "8. AI Knowledge Base Audit (Disabled)";
-    default: {
-      const capitalized = provider.charAt(0).toUpperCase() + provider.slice(1);
-      return `8. AI Knowledge Base Audit (${capitalized})`;
-    }
-  }
-}
-function getSteps() {
-  return [
-    { id: 1, label: "1. Angular Project Detection" },
-    { id: 2, label: "2. Critical Architecture & Entry Points" },
-    { id: 3, label: "3. Dependency Vulnerability Audit (npm audit)" },
-    { id: 4, label: "4. TypeScript & Linter Verification" },
-    { id: 5, label: "5. Automated Unit Tests (test:ci) + Coverage Gate" },
-    { id: 6, label: "6. Production Build & CD Deployment Verification" },
-    { id: 7, label: "7. Security & Secret Leak Scanning" },
-    { id: 8, label: getAiStepLabel() }
-  ];
-}
-var STEPS = getSteps();
-var PROGRESS_FILE = import_path6.default.join(import_os.default.tmpdir(), "gk-progress.json");
-var ACTION_FILE = import_path6.default.join(import_os.default.tmpdir(), "gk-action.json");
-var PS_SCRIPT = import_path6.default.join(import_os.default.tmpdir(), "gk-progress-window.ps1");
-var VBS_SCRIPT = import_path6.default.join(import_os.default.tmpdir(), "gk-progress-launcher.vbs");
-var _windowEnabled = false;
-var _stepLogBuffers = {};
-var _flushTimer = null;
-function queueStepLog(stepId, text) {
-  if (!_windowEnabled || !text) return;
-  _stepLogBuffers[stepId] = (_stepLogBuffers[stepId] || "") + stripAnsi(text);
-  if (!_flushTimer) {
-    _flushTimer = setTimeout(() => {
-      flushStepLogs();
-    }, 40);
-  }
-}
-function flushStepLogs() {
-  if (_flushTimer) {
-    clearTimeout(_flushTimer);
-    _flushTimer = null;
-  }
-  const stepIds = Object.keys(_stepLogBuffers);
-  if (stepIds.length === 0) return;
-  const data = readProgressFile();
-  if (!data || !data.steps) return;
-  let changed = false;
-  for (const id of stepIds) {
-    const chunk = _stepLogBuffers[id];
-    if (chunk && data.steps[id]) {
-      data.steps[id].log = (data.steps[id].log || "") + chunk;
-      if (data.steps[id].log.length > 5e4) {
-        data.steps[id].log = data.steps[id].log.slice(-5e4);
-      }
-      changed = true;
-    }
-  }
-  _stepLogBuffers = {};
-  if (changed) {
-    writeProgressFile(data);
-  }
-}
-function writeProgressFile(data) {
-  try {
-    const jsonStr = JSON.stringify(data, null, 2);
-    import_fs7.default.writeFileSync(PROGRESS_FILE, "\uFEFF" + jsonStr, "utf8");
-  } catch (_) {
-  }
-}
-function readProgressFile() {
-  try {
-    if (import_fs7.default.existsSync(PROGRESS_FILE)) {
-      let raw = import_fs7.default.readFileSync(PROGRESS_FILE, "utf8");
-      if (raw.charCodeAt(0) === 65279) {
-        raw = raw.slice(1);
-      }
-      return JSON.parse(raw);
-    }
-  } catch (_) {
-  }
-  return null;
-}
-function generatePsScript() {
-  return `
-Add-Type -AssemblyName PresentationFramework, PresentationCore, WindowsBase, System.Windows.Forms
-
-# \u2500\u2500 Detect Dark/Light Theme \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
-$isDark = $false
-try {
-    $regVal = Get-ItemPropertyValue -Path 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize' -Name 'AppsUseLightTheme' -ErrorAction SilentlyContinue
-    $isDark = ($regVal -eq 0)
-} catch {}
-
-$bg                 = if ($isDark) { '#181825' } else { '#F8FAFC' }
-$fg                 = if ($isDark) { '#CDD6F4' } else { '#1E293B' }
-$hdrBg              = if ($isDark) { '#11111B' } else { '#FFFFFF' }
-$cardBg             = if ($isDark) { '#1E1E2E' } else { '#FFFFFF' }
-$border             = if ($isDark) { '#313244' } else { '#CBD5E1' }
-$aiBoxBg            = if ($isDark) { '#181825' } else { '#F8FAFC' }
-$aiBoxBdr           = if ($isDark) { '#313244' } else { '#CBD5E1' }
-
-$consoleBg          = if ($isDark) { '#11111B' } else { '#0F172A' }
-$consoleBdr         = if ($isDark) { '#26283B' } else { '#334155' }
-$consoleFg          = if ($isDark) { '#A6ADC8' } else { '#E2E8F0' }
-$hoverBg            = if ($isDark) { '#282A3E' } else { '#F1F5F9' }
-
-$passBg             = if ($isDark) { '#132A1C' } else { '#F0FDF4' }
-$errBg              = if ($isDark) { '#2D1515' } else { '#FEF2F2' }
-
-$brushConverter     = [System.Windows.Media.BrushConverter]::new()
-$passBrush          = $brushConverter.ConvertFrom($passBg)
-$errBrush           = $brushConverter.ConvertFrom($errBg)
-$cardBrush          = $brushConverter.ConvertFrom($cardBg)
-$borderBrush        = $brushConverter.ConvertFrom($border)
-$hoverBrush         = $brushConverter.ConvertFrom($hoverBg)
-$consoleBgBrush     = $brushConverter.ConvertFrom($consoleBg)
-$consoleBdrBrush    = $brushConverter.ConvertFrom($consoleBdr)
-$consoleFgBrush     = $brushConverter.ConvertFrom($consoleFg)
-$greenBadgeBg       = $brushConverter.ConvertFrom('#15803D')
-$redBadgeBg         = $brushConverter.ConvertFrom('#B91C1C')
-$grayBadgeBg        = $brushConverter.ConvertFrom('#64748B')
-$blueBadgeBg        = $brushConverter.ConvertFrom('#0284C7')
-$runningBdrBrush    = $brushConverter.ConvertFrom('#38BDF8')
-$greenFg            = $brushConverter.ConvertFrom('#22C55E')
-$redFg              = $brushConverter.ConvertFrom('#EF4444')
-$blueFg             = $brushConverter.ConvertFrom('#38BDF8')
-$grayFg             = $brushConverter.ConvertFrom('#94A3B8')
-$mainFg             = $brushConverter.ConvertFrom($fg)
-$cyanFg             = $brushConverter.ConvertFrom('#38BDF8')
-$amberFg            = $brushConverter.ConvertFrom('#FBBF24')
-$boldFg             = if ($isDark) { $brushConverter.ConvertFrom('#FFFFFF') } else { $brushConverter.ConvertFrom('#0F172A') }
-$bulletColor        = $brushConverter.ConvertFrom('#60A5FA')
-
-$PROGRESS_FILE = "$env:TEMP\\gk-progress.json"
-
-[xml]$xaml = @"
-<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Angular Gatekeeper \u2014 Live CI/CD Commit Validation"
-        Width="620" Height="740"
-        MinWidth="560" MinHeight="620"
-        WindowStartupLocation="CenterScreen"
-        Topmost="True"
-        ResizeMode="CanResize"
-        ShowInTaskbar="True"
-        Background="$bg">
-  <Window.Resources>
-    <!-- Modern Sleek Themed ScrollBar Style -->
-    <Style TargetType="{x:Type ScrollBar}">
-      <Setter Property="Stylus.IsPressAndHoldEnabled" Value="false"/>
-      <Setter Property="Stylus.IsFlicksEnabled" Value="false"/>
-      <Setter Property="Width" Value="6"/>
-      <Setter Property="MinWidth" Value="6"/>
-      <Setter Property="Template">
-        <Setter.Value>
-          <ControlTemplate TargetType="{x:Type ScrollBar}">
-            <Grid x:Name="Bg" SnapsToDevicePixels="true" Background="Transparent">
-              <Track x:Name="PART_Track" IsDirectionReversed="true" IsEnabled="{TemplateBinding IsMouseOver}">
-                <Track.Thumb>
-                  <Thumb>
-                    <Thumb.Template>
-                      <ControlTemplate TargetType="{x:Type Thumb}">
-                        <Border Background="$border" CornerRadius="3" Opacity="0.75"/>
-                      </ControlTemplate>
-                    </Thumb.Template>
-                  </Thumb>
-                </Track.Thumb>
-              </Track>
-            </Grid>
-          </ControlTemplate>
-        </Setter.Value>
-      </Setter>
-    </Style>
-  </Window.Resources>
-  <Grid>
-    <Grid.RowDefinitions>
-      <RowDefinition Height="Auto"/>
-      <RowDefinition Height="*"/>
-      <RowDefinition Height="Auto"/>
-      <RowDefinition Height="Auto"/>
-    </Grid.RowDefinitions>
-
-    <!-- Header -->
-    <Border Grid.Row="0" Background="$hdrBg" Padding="18,14" BorderBrush="$border" BorderThickness="0,0,0,1">
-      <StackPanel>
-        <TextBlock Text="Angular Gatekeeper \u2014 Shift-Left Pre-Commit CI/CD Quality Engine" FontSize="16" FontWeight="Bold" Foreground="$fg"/>
-        <TextBlock Text="Enforcing strict CI standards, CD deployment readiness &amp; AI regressions in real-time..." FontSize="11" Foreground="#94A3B8" Margin="0,3,0,0"/>
-      </StackPanel>
-    </Border>
-
-    <!-- Steps List -->
-    <ScrollViewer Grid.Row="1" Margin="14,8" VerticalScrollBarVisibility="Auto">
-      <StackPanel x:Name="StepsPanel"/>
-    </ScrollViewer>
-
-    <!-- AI Architect / Error Report Card (Dynamically shown) -->
-    <Border Grid.Row="2" x:Name="AiReportBorder" Margin="14,0,14,8" Padding="12" Background="$aiBoxBg" BorderBrush="$aiBoxBdr" BorderThickness="1" CornerRadius="6" Visibility="Collapsed">
-      <StackPanel>
-        <Grid Margin="0,0,0,8">
-          <TextBlock x:Name="ReportTitleText" Text="AI Knowledge Base Audit &amp; Insights:" FontWeight="Bold" FontSize="12" Foreground="$blueFg" VerticalAlignment="Center"/>
-          <Button x:Name="CopyBtn" Content="Copy Error Log" HorizontalAlignment="Right" Width="110" Height="24" Cursor="Hand" Background="#334155" Foreground="White" BorderThickness="0" FontSize="11">
-            <Button.Resources>
-              <Style TargetType="Border">
-                <Setter Property="CornerRadius" Value="4"/>
-              </Style>
-            </Button.Resources>
-          </Button>
-        </Grid>
-        <ScrollViewer MaxHeight="180" VerticalScrollBarVisibility="Auto">
-          <RichTextBox x:Name="AiReportRtb" IsReadOnly="True" IsDocumentEnabled="True" Background="Transparent" BorderThickness="0" Foreground="$fg" FontSize="11" FontFamily="Segoe UI, Consolas"/>
-        </ScrollViewer>
-      </StackPanel>
-    </Border>
-
-    <!-- Footer -->
-    <Border Grid.Row="3" Background="$hdrBg" Padding="16,12" BorderBrush="$border" BorderThickness="0,1,0,0">
-      <Grid>
-        <TextBlock x:Name="StatusText" Text="Running pre-commit validations..." FontSize="12" FontWeight="SemiBold" Foreground="$fg" VerticalAlignment="Center" Margin="0,0,220,0" TextTrimming="CharacterEllipsis"/>
-        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
-          <Button x:Name="ForceCommitBtn" Content="\u26A1 Force Commit" Width="112" Height="28" Cursor="Hand" Background="#F59E0B" Foreground="White" BorderThickness="0" FontWeight="SemiBold" FontSize="11" Margin="0,0,8,0">
-            <Button.Resources>
-              <Style TargetType="Border">
-                <Setter Property="CornerRadius" Value="4"/>
-              </Style>
-            </Button.Resources>
-          </Button>
-          <Button x:Name="CloseBtn" Content="Close" Width="80" Height="28" Cursor="Hand" Background="#3B82F6" Foreground="White" BorderThickness="0">
-            <Button.Resources>
-              <Style TargetType="Border">
-                <Setter Property="CornerRadius" Value="4"/>
-              </Style>
-            </Button.Resources>
-          </Button>
-        </StackPanel>
-      </Grid>
-    </Border>
-  </Grid>
-</Window>
-"@
-
-$reader = [System.Xml.XmlNodeReader]::new($xaml)
-$window = [System.Windows.Markup.XamlReader]::Load($reader)
-
-$panel          = $window.FindName('StepsPanel')
-$statusTb       = $window.FindName('StatusText')
-$closeBtn       = $window.FindName('CloseBtn')
-$forceCommitBtn = $window.FindName('ForceCommitBtn')
-$aiReportBorder = $window.FindName('AiReportBorder')
-$reportTitleTb  = $window.FindName('ReportTitleText')
-$copyBtn        = $window.FindName('CopyBtn')
-$aiReportRtb    = $window.FindName('AiReportRtb')
-
-$ACTION_FILE = "$env:TEMP\\gk-action.json"
-
-if ($forceCommitBtn) {
-    $forceCommitBtn.Add_Click({
-        try {
-            [System.IO.File]::WriteAllText($ACTION_FILE, '{"action":"force_commit"}', [System.Text.Encoding]::UTF8)
-        } catch {}
-        $statusTb.Text = '\u26A1 Force Commit requested! Committing...'
-        $statusTb.Foreground = $amberFg
-        $forceCommitBtn.IsEnabled = $false
-        $closeBtn.IsEnabled = $false
-        $window.Close()
-    })
-}
-
-$closeBtn.Add_Click({
-    try {
-        if (-not (Test-Path $ACTION_FILE)) {
-            [System.IO.File]::WriteAllText($ACTION_FILE, '{"action":"close"}', [System.Text.Encoding]::UTF8)
-        }
-    } catch {}
-    $window.Close()
-})
-
-$window.Add_Closed({
-    try {
-        if (-not (Test-Path $ACTION_FILE)) {
-            [System.IO.File]::WriteAllText($ACTION_FILE, '{"action":"close"}', [System.Text.Encoding]::UTF8)
-        }
-    } catch {}
-})
-
-$script:rawErrorText = ''
-if ($copyBtn) {
-    $copyBtn.Add_Click({
-        try {
-            if ($script:rawErrorText -and $script:rawErrorText.Trim() -ne '') {
-                $cleanClipboard = $script:rawErrorText -replace '\x1B[[0-9;]*[a-zA-Z]', '' -replace '[[0-9;]+m', ''
-                [System.Windows.Forms.Clipboard]::SetText($cleanClipboard)
-                $copyBtn.Content = "Copied!"
-                $resetTimer = New-Object System.Windows.Threading.DispatcherTimer
-                $resetTimer.Interval = [TimeSpan]::FromMilliseconds(1500)
-                $resetTimer.Add_Tick({
-                    $copyBtn.Content = "Copy Error Log"
-                    $resetTimer.Stop()
-                })
-                $resetTimer.Start()
-            }
-        } catch {}
-    })
-}
-
-function Convert-MarkdownToFlowDocument {
-    param(
-        [string]$text,
-        [System.Windows.Media.Brush]$normalBrush,
-        [System.Windows.Media.Brush]$boldBrush,
-        [System.Windows.Media.Brush]$h1Brush,
-        [System.Windows.Media.Brush]$h2Brush,
-        [System.Windows.Media.Brush]$bulletBrush
-    )
-
-    $doc = New-Object System.Windows.Documents.FlowDocument
-    $doc.PagePadding = New-Object System.Windows.Thickness(2, 2, 2, 2)
-
-    if ([string]::IsNullOrWhiteSpace($text)) {
-        return $doc
-    }
-
-    # Strip ANSI escape codes
-    $cleanText = $text -replace '\x1B[[0-9;]*[a-zA-Z]', ''
-
-    # If this is a compiler / test runner error log (starts with [Step ...)
-    if ($cleanText.StartsWith('[Step ') -or $cleanText -match '^[Step d+:') {
-        $lines = $cleanText.Split([char]10)
-        foreach ($rawLine in $lines) {
-            $line = $rawLine.TrimEnd([char]13)
-            if ($line.Trim() -eq '') {
-                $p = New-Object System.Windows.Documents.Paragraph
-                $p.Margin = New-Object System.Windows.Thickness(0, 1, 0, 1)
-                $doc.Blocks.Add($p)
-                continue
-            }
-
-            if ($line.StartsWith('[Step ')) {
-                $p = New-Object System.Windows.Documents.Paragraph
-                $p.Margin = New-Object System.Windows.Thickness(0, 4, 0, 4)
-                $run = New-Object System.Windows.Documents.Run($line)
-                $run.FontWeight = [System.Windows.FontWeights]::Bold
-                $run.FontSize = 12.5
-                $run.Foreground = $h1Brush
-                $p.Inlines.Add($run)
-                $doc.Blocks.Add($p)
-                continue
-            }
-
-            $p = New-Object System.Windows.Documents.Paragraph
-            $p.Margin = New-Object System.Windows.Thickness(0, 1, 0, 1)
-            $p.FontFamily = New-Object System.Windows.Media.FontFamily('Consolas')
-            $p.FontSize = 10.5
-            
-            # Preserve indentation so caret pointers (^ ) align accurately
-            $presLine = $line.Replace(' ', [char]0x00A0)
-            $run = New-Object System.Windows.Documents.Run($presLine)
-            $run.Foreground = $normalBrush
-            $p.Inlines.Add($run)
-            $doc.Blocks.Add($p)
-        }
-        return $doc
-    }
-
-    # Clean arrow notations
-    $arrow = " " + [char]0x2192 + " "
-    $text = $text.Replace('\\rightarrow', $arrow).Replace('$\\rightarrow$', $arrow).Replace('->', $arrow).Replace('\\to', $arrow)
-
-    function Add-InlinesToParagraph($p, [string]$lineContent, $baseFontSize) {
-        $escStar = [System.Text.RegularExpressions.Regex]::Escape('**')
-        $tick = [char]0x60
-        $pattern = '(' + $escStar + '[^*]+?' + $escStar + '|' + $tick + '[^' + $tick + ']+?' + $tick + ')'
-        $parts = [System.Text.RegularExpressions.Regex]::Split($lineContent, $pattern)
-
-        foreach ($part in $parts) {
-            if ([string]::IsNullOrEmpty($part)) { continue }
-
-            if ($part.StartsWith('**') -and $part.EndsWith('**') -and $part.Length -ge 4) {
-                $boldText = $part.Substring(2, $part.Length - 4)
-                $run = New-Object System.Windows.Documents.Run($boldText)
-                $run.FontWeight = [System.Windows.FontWeights]::Bold
-                $run.Foreground = $boldBrush
-                $run.FontSize = $baseFontSize
-                $p.Inlines.Add($run)
-            } elseif ($part.StartsWith($tick) -and $part.EndsWith($tick) -and $part.Length -ge 2) {
-                $codeText = $part.Substring(1, $part.Length - 2)
-                $run = New-Object System.Windows.Documents.Run($codeText)
-                $run.FontFamily = New-Object System.Windows.Media.FontFamily('Consolas')
-                $run.Foreground = $h1Brush
-                $run.FontSize = $baseFontSize
-                $p.Inlines.Add($run)
-            } else {
-                $run = New-Object System.Windows.Documents.Run($part)
-                $run.Foreground = $normalBrush
-                $run.FontSize = $baseFontSize
-                $p.Inlines.Add($run)
-            }
-        }
-    }
-
-    $lines = $text.Split([char]10)
-
-    foreach ($rawLine in $lines) {
-        $trimmed = $rawLine.Trim()
-        if ($trimmed -eq '' -or $trimmed -eq '---' -or $trimmed -eq '***') {
-            continue
-        }
-
-        # Level 4 Heading (####)
-        if ($trimmed.StartsWith('#### ')) {
-            $hText = $trimmed.Substring(5).Trim().TrimStart('*').TrimEnd('*').Trim()
-            $p = New-Object System.Windows.Documents.Paragraph
-            $p.Margin = New-Object System.Windows.Thickness(0, 6, 0, 2)
-            $run = New-Object System.Windows.Documents.Run($hText)
-            $run.FontSize = 12
-            $run.FontWeight = [System.Windows.FontWeights]::SemiBold
-            $run.Foreground = $h2Brush
-            $p.Inlines.Add($run)
-            $doc.Blocks.Add($p)
-            continue
-        }
-
-        # Level 3 Heading (###)
-        if ($trimmed.StartsWith('### ')) {
-            $hText = $trimmed.Substring(4).Trim().TrimStart('*').TrimEnd('*').Trim()
-            $p = New-Object System.Windows.Documents.Paragraph
-            $p.Margin = New-Object System.Windows.Thickness(0, 8, 0, 3)
-            $run = New-Object System.Windows.Documents.Run($hText)
-            $run.FontSize = 13.5
-            $run.FontWeight = [System.Windows.FontWeights]::Bold
-            $run.Foreground = $h1Brush
-            $p.Inlines.Add($run)
-            $doc.Blocks.Add($p)
-            continue
-        }
-
-        # Level 1 or 2 Heading (# or ##)
-        if ($trimmed.StartsWith('# ') -or $trimmed.StartsWith('## ')) {
-            $hText = $trimmed.TrimStart('#').Trim().TrimStart('*').TrimEnd('*').Trim()
-            $p = New-Object System.Windows.Documents.Paragraph
-            $p.Margin = New-Object System.Windows.Thickness(0, 10, 0, 4)
-            $run = New-Object System.Windows.Documents.Run($hText)
-            $run.FontSize = 14.5
-            $run.FontWeight = [System.Windows.FontWeights]::Bold
-            $run.Foreground = $h1Brush
-            $p.Inlines.Add($run)
-            $doc.Blocks.Add($p)
-            continue
-        }
-
-        # Standalone bold header line (e.g. **Remediation Steps:**)
-        if ($trimmed.StartsWith('**') -and ($trimmed.EndsWith('**') -or $trimmed.EndsWith('**:'))) {
-            $hText = $trimmed.Trim(':').Trim('*').Trim()
-            $p = New-Object System.Windows.Documents.Paragraph
-            $p.Margin = New-Object System.Windows.Thickness(0, 8, 0, 3)
-            $run = New-Object System.Windows.Documents.Run($hText)
-            $run.FontSize = 13
-            $run.FontWeight = [System.Windows.FontWeights]::Bold
-            $run.Foreground = $h1Brush
-            $p.Inlines.Add($run)
-            $doc.Blocks.Add($p)
-            continue
-        }
-
-        # Numbered list item (e.g. "1. Directory Convention Mismatches:")
-        if ($rawLine -match '^([ \\t]*)(\\d+\\.)\\s+(.*)$') {
-            $indentSpaces = $matches[1].Length
-            $numLabel = $matches[2]
-            $content = $matches[3]
-            $itemLeft = if ($indentSpaces -ge 2) { 20 } else { 4 }
-
-            $p = New-Object System.Windows.Documents.Paragraph
-            $p.Margin = New-Object System.Windows.Thickness($itemLeft, 3, 0, 2)
-
-            $nRun = New-Object System.Windows.Documents.Run("$numLabel ")
-            $nRun.FontWeight = [System.Windows.FontWeights]::Bold
-            $nRun.Foreground = $bulletBrush
-            $nRun.FontSize = 11.5
-            $p.Inlines.Add($nRun)
-
-            Add-InlinesToParagraph $p $content 11
-            $doc.Blocks.Add($p)
-            continue
-        }
-
-        # Bullet point (* or -)
-        if ($rawLine -match '^([ \\t]*)([*+-])\\s+(.*)$') {
-            $indentSpaces = $matches[1].Length
-            $bulletChar = if ($indentSpaces -ge 2) { [char]0x25E6 } else { [char]0x2022 }
-            $bulletLeft = if ($indentSpaces -ge 2) { 22 } else { 8 }
-            $content = $matches[3]
-
-            $p = New-Object System.Windows.Documents.Paragraph
-            $p.Margin = New-Object System.Windows.Thickness($bulletLeft, 2, 0, 2)
-
-            $bRun = New-Object System.Windows.Documents.Run("$bulletChar  ")
-            $bRun.FontWeight = [System.Windows.FontWeights]::Bold
-            $bRun.Foreground = $bulletBrush
-            $bRun.FontSize = 11
-            $p.Inlines.Add($bRun)
-
-            Add-InlinesToParagraph $p $content 11
-            $doc.Blocks.Add($p)
-            continue
-        }
-
-        # Standard paragraph line
-        $p = New-Object System.Windows.Documents.Paragraph
-        $p.Margin = New-Object System.Windows.Thickness(0, 2, 0, 2)
-        Add-InlinesToParagraph $p $trimmed 11
-        $doc.Blocks.Add($p)
-    }
-
-    return $doc
-}
-
-$stepLabels = @(
-  '1. Angular Project Detection',
-  '2. Critical Architecture & Entry Points',
-  '3. Dependency Security & Vulnerability Audit (npm audit)',
-  '4. Strict TypeScript Compilation & Linter Verification',
-  '5. Automated Unit Tests & CI Regression Suite (test:ci)',
-  '6. Production Build & CD Deployment Readiness Verification',
-  '7. Security & Secret Leak Scanning',
-  '${getAiStepLabel().replace(/'/g, "''")}'
-);
-
-$stepCards     = @{}
-$stepHeaders   = @{}
-$stepChevrons  = @{}
-$stepIcons     = @{}
-$stepTexts     = @{}
-$stepSubs      = @{}
-$stepBadges    = @{}
-$stepBodies    = @{}
-$stepTextBoxes = @{}
-$stepLastLogs  = @{}
-
-for ($i = 0; $i -lt $stepLabels.Count; $i++) {
-    $stepNum = $i + 1
-
-    # Outer Card Container (Accordion Item)
-    $card = New-Object System.Windows.Controls.Border
-    $card.CornerRadius    = New-Object System.Windows.CornerRadius(6)
-    $card.Margin          = New-Object System.Windows.Thickness(0, 2, 0, 3)
-    $card.Background      = $cardBrush
-    $card.BorderBrush     = $borderBrush
-    $card.BorderThickness = New-Object System.Windows.Thickness(1)
-
-    $stack = New-Object System.Windows.Controls.StackPanel
-    $card.Child = $stack
-
-    # Clickable Header Row
-    $header = New-Object System.Windows.Controls.Border
-    $header.Background   = [System.Windows.Media.Brushes]::Transparent
-    $header.Padding      = New-Object System.Windows.Thickness(10, 8, 10, 8)
-    $header.Cursor       = [System.Windows.Input.Cursors]::Hand
-    $header.CornerRadius = New-Object System.Windows.CornerRadius(5)
-    $header.Tag          = $stepNum
-
-    $grid = New-Object System.Windows.Controls.Grid
-    $col0 = New-Object System.Windows.Controls.ColumnDefinition; $col0.Width = New-Object System.Windows.GridLength(18) # Chevron
-    $col1 = New-Object System.Windows.Controls.ColumnDefinition; $col1.Width = New-Object System.Windows.GridLength(28) # Icon
-    $col2 = New-Object System.Windows.Controls.ColumnDefinition; $col2.Width = New-Object System.Windows.GridLength(1, [System.Windows.GridUnitType]::Star) # Text
-    $col3 = New-Object System.Windows.Controls.ColumnDefinition; $col3.Width = New-Object System.Windows.GridLength(0, [System.Windows.GridUnitType]::Auto) # Badge
-    $grid.ColumnDefinitions.Add($col0)
-    $grid.ColumnDefinitions.Add($col1)
-    $grid.ColumnDefinitions.Add($col2)
-    $grid.ColumnDefinitions.Add($col3)
-
-    # Column 0: Chevron arrow (\u25B6 / \u25BC)
-    $chev = New-Object System.Windows.Controls.TextBlock
-    $chev.Text              = [char]0x25B6 # \u25B6 (collapsed)
-    $chev.FontSize          = 9.5
-    $chev.Foreground        = $grayFg
-    $chev.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
-    [System.Windows.Controls.Grid]::SetColumn($chev, 0)
-
-    # Column 1: Status Icon
-    $icon = New-Object System.Windows.Controls.TextBlock
-    $icon.Text              = '[ ]'
-    $icon.FontSize          = 11
-    $icon.FontWeight        = [System.Windows.FontWeights]::Bold
-    $icon.Foreground        = $grayFg
-    $icon.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
-    [System.Windows.Controls.Grid]::SetColumn($icon, 1)
-
-    # Column 2: Labels
-    $lbl = New-Object System.Windows.Controls.TextBlock
-    $lbl.Text              = $stepLabels[$i]
-    $lbl.FontSize          = 12
-    $lbl.FontWeight        = [System.Windows.FontWeights]::SemiBold
-    $lbl.Foreground        = $grayFg
-    $lbl.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
-
-    $subLbl = New-Object System.Windows.Controls.TextBlock
-    $subLbl.FontSize       = 10
-    $subLbl.Foreground     = $blueFg
-    $subLbl.Visibility     = [System.Windows.Visibility]::Collapsed
-    $subLbl.Margin         = New-Object System.Windows.Thickness(0, 2, 0, 0)
-    $subLbl.TextTrimming   = [System.Windows.TextTrimming]::CharacterEllipsis
-
-    $textStack = New-Object System.Windows.Controls.StackPanel
-    $textStack.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
-    $textStack.Children.Add($lbl)    | Out-Null
-    $textStack.Children.Add($subLbl) | Out-Null
-    [System.Windows.Controls.Grid]::SetColumn($textStack, 2)
-
-    # Column 3: Badge
-    $badge = New-Object System.Windows.Controls.Border
-    $badge.CornerRadius        = New-Object System.Windows.CornerRadius(4)
-    $badge.Padding             = New-Object System.Windows.Thickness(8, 2, 8, 2)
-    $badge.MinWidth            = 62
-    $badge.VerticalAlignment   = [System.Windows.VerticalAlignment]::Center
-    $badge.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Right
-    $badge.Visibility          = [System.Windows.Visibility]::Collapsed
-
-    $badgeTb = New-Object System.Windows.Controls.TextBlock
-    $badgeTb.FontSize            = 9.5
-    $badgeTb.FontWeight          = [System.Windows.FontWeights]::Bold
-    $badgeTb.Foreground          = [System.Windows.Media.Brushes]::White
-    $badgeTb.TextAlignment       = [System.Windows.TextAlignment]::Center
-    $badgeTb.VerticalAlignment   = [System.Windows.VerticalAlignment]::Center
-    $badgeTb.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Center
-    $badge.Child = $badgeTb
-    [System.Windows.Controls.Grid]::SetColumn($badge, 3)
-
-    $grid.Children.Add($chev)      | Out-Null
-    $grid.Children.Add($icon)      | Out-Null
-    $grid.Children.Add($textStack) | Out-Null
-    $grid.Children.Add($badge)     | Out-Null
-    $header.Child = $grid
-
-    # Accordion Body (Collapsible Log Box)
-    $body = New-Object System.Windows.Controls.Border
-    $body.Visibility      = [System.Windows.Visibility]::Collapsed
-    $body.Margin          = New-Object System.Windows.Thickness(8, 0, 8, 8)
-    $body.Padding         = New-Object System.Windows.Thickness(8)
-    $body.CornerRadius    = New-Object System.Windows.CornerRadius(4)
-    $body.Background      = $consoleBgBrush
-    $body.BorderBrush     = $consoleBdrBrush
-    $body.BorderThickness = New-Object System.Windows.Thickness(1)
-
-    $bGrid = New-Object System.Windows.Controls.Grid
-    $bRow0 = New-Object System.Windows.Controls.RowDefinition; $bRow0.Height = New-Object System.Windows.GridLength(0, [System.Windows.GridUnitType]::Auto)
-    $bRow1 = New-Object System.Windows.Controls.RowDefinition; $bRow1.Height = New-Object System.Windows.GridLength(1, [System.Windows.GridUnitType]::Star)
-    $bGrid.RowDefinitions.Add($bRow0)
-    $bGrid.RowDefinitions.Add($bRow1)
-
-    # Accordion Toolbar
-    $tbGrid = New-Object System.Windows.Controls.Grid
-    $tbGrid.Margin = New-Object System.Windows.Thickness(0, 0, 0, 6)
-
-    $tbTitle = New-Object System.Windows.Controls.TextBlock
-    $tbTitle.Text              = "LIVE PROCESS OUTPUT"
-    $tbTitle.FontSize          = 9.5
-    $tbTitle.FontWeight        = [System.Windows.FontWeights]::Bold
-    $tbTitle.Foreground        = $cyanFg
-    $tbTitle.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
-
-    $copyStepBtn = New-Object System.Windows.Controls.Button
-    $copyStepBtn.Content             = "Copy"
-    $copyStepBtn.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Right
-    $copyStepBtn.Width               = 46
-    $copyStepBtn.Height              = 20
-    $copyStepBtn.FontSize            = 9.5
-    $copyStepBtn.Cursor              = [System.Windows.Input.Cursors]::Hand
-    $copyStepBtn.Background          = [System.Windows.Media.BrushConverter]::new().ConvertFrom('#334155')
-    $copyStepBtn.Foreground          = [System.Windows.Media.Brushes]::White
-    $copyStepBtn.BorderThickness     = New-Object System.Windows.Thickness(0)
-    $copyStepBtn.Tag                 = $stepNum
-
-    $copyStepBtn.Resources.Add([System.Windows.Controls.Border], $(
-        $bdrStyle = New-Object System.Windows.Style([System.Windows.Controls.Border])
-        $bdrStyle.Setters.Add((New-Object System.Windows.Setter([System.Windows.Controls.Border]::CornerRadiusProperty, (New-Object System.Windows.CornerRadius(3)))))
-        $bdrStyle
-    ))
-
-    $tbGrid.Children.Add($tbTitle)     | Out-Null
-    $tbGrid.Children.Add($copyStepBtn) | Out-Null
-    [System.Windows.Controls.Grid]::SetRow($tbGrid, 0)
-    $bGrid.Children.Add($tbGrid) | Out-Null
-
-    # Log TextBox directly with scrolling & auto-scroll support
-    $logTb = New-Object System.Windows.Controls.TextBox
-    $logTb.IsReadOnly                        = $true
-    $logTb.AcceptsReturn                     = $true
-    $logTb.TextWrapping                      = [System.Windows.TextWrapping]::NoWrap
-    $logTb.Background                        = [System.Windows.Media.Brushes]::Transparent
-    $logTb.BorderThickness                   = New-Object System.Windows.Thickness(0)
-    $logTb.Foreground                        = $consoleFgBrush
-    $logTb.FontFamily                        = New-Object System.Windows.Media.FontFamily('Consolas, Courier New, monospace')
-    $logTb.FontSize                          = 10
-    $logTb.MaxHeight                         = 190
-    $logTb.VerticalScrollBarVisibility       = [System.Windows.Controls.ScrollBarVisibility]::Auto
-    $logTb.HorizontalScrollBarVisibility     = [System.Windows.Controls.ScrollBarVisibility]::Auto
-    $logTb.Text                              = "Waiting for step execution to start..."
-
-    [System.Windows.Controls.Grid]::SetRow($logTb, 1)
-    $bGrid.Children.Add($logTb) | Out-Null
-
-    $body.Child = $bGrid
-
-    $stack.Children.Add($header) | Out-Null
-    $stack.Children.Add($body)   | Out-Null
-    $panel.Children.Add($card)   | Out-Null
-
-    $stepCards[$stepNum]     = $card
-    $stepHeaders[$stepNum]   = $header
-    $stepChevrons[$stepNum]  = $chev
-    $stepIcons[$stepNum]     = $icon
-    $stepTexts[$stepNum]     = $lbl
-    $stepSubs[$stepNum]      = $subLbl
-    $stepBadges[$stepNum]    = @{ border = $badge; text = $badgeTb }
-    $stepBodies[$stepNum]    = $body
-    $stepTextBoxes[$stepNum] = $logTb
-    $stepLastLogs[$stepNum]  = ''
-
-    # Interactive Accordion Click Handler
-    $header.Add_MouseLeftButtonDown({
-        param($sender, $e)
-        $sIdx = [int]$sender.Tag
-        $b = $stepBodies[$sIdx]
-        $c = $stepChevrons[$sIdx]
-        if ($b.Visibility -eq [System.Windows.Visibility]::Visible) {
-            $b.Visibility = [System.Windows.Visibility]::Collapsed
-            $c.Text = [char]0x25B6 # \u25B6
-        } else {
-            $b.Visibility = [System.Windows.Visibility]::Visible
-            $c.Text = [char]0x25BC # \u25BC
-            $stepTextBoxes[$sIdx].ScrollToEnd()
-        }
-    })
-
-    # Header Hover Effect
-    $header.Add_MouseEnter({
-        param($sender, $e)
-        $sender.Background = $hoverBrush
-    })
-    $header.Add_MouseLeave({
-        param($sender, $e)
-        $sender.Background = [System.Windows.Media.Brushes]::Transparent
-    })
-
-    # Copy Step Log Handler
-    $copyStepBtn.Add_Click({
-        param($sender, $e)
-        try {
-            $sIdx = [int]$sender.Tag
-            $t = $stepTextBoxes[$sIdx].Text
-            if ($t -and $t.Trim() -ne '') {
-                [System.Windows.Forms.Clipboard]::SetText($t)
-                $sender.Content = "Copied!"
-                $rst = New-Object System.Windows.Threading.DispatcherTimer
-                $rst.Interval = [TimeSpan]::FromMilliseconds(1500)
-                $rst.Add_Tick({
-                    $sender.Content = "Copy"
-                    $rst.Stop()
-                })
-                $rst.Start()
-            }
-        } catch {}
-    })
-}
-
-$timer = New-Object System.Windows.Threading.DispatcherTimer
-$timer.Interval = [TimeSpan]::FromMilliseconds(100)
-$script:lastRunningStep = 0
-$script:lastRenderedLog = ''
-
-$timer.Add_Tick({
-    if (-not (Test-Path $PROGRESS_FILE)) { return }
-    try {
-        $fileStream = [System.IO.File]::Open($PROGRESS_FILE, [System.IO.FileMode]::Open, [System.IO.FileAccess]::Read, [System.IO.FileShare]::ReadWrite)
-        $sr = New-Object System.IO.StreamReader($fileStream, [System.Text.Encoding]::UTF8)
-        $raw = $sr.ReadToEnd()
-        $sr.Close()
-        $fileStream.Close()
-        if ([string]::IsNullOrWhiteSpace($raw)) { return }
-        $json = $raw | ConvertFrom-Json
-    } catch { return }
-
-    $steps = $json.steps
-    $done  = $json.done
-    $hasError = $false
-
-    # Find the current active/running step
-    $activeRunningStep = 0
-    if ($json.activeStep) {
-        $activeRunningStep = [int]$json.activeStep
-    } else {
-        foreach ($s in $steps.PSObject.Properties) {
-            if ($s.Value.status -eq 'running') {
-                $activeRunningStep = [int]$s.Name
-                break
-            }
-        }
-    }
-
-    # Auto-transition accordions as steps progress
-    if ($activeRunningStep -gt 0 -and $activeRunningStep -ne $script:lastRunningStep) {
-        # Auto-collapse previous step if it did not fail
-        if ($script:lastRunningStep -gt 0 -and $stepBodies.ContainsKey($script:lastRunningStep)) {
-            $prevProp = $steps.PSObject.Properties[$script:lastRunningStep.ToString()]
-            $prevStatus = if ($prevProp) { $prevProp.Value.status } else { '' }
-            if ($prevStatus -ne 'error') {
-                $stepBodies[$script:lastRunningStep].Visibility = [System.Windows.Visibility]::Collapsed
-                $stepChevrons[$script:lastRunningStep].Text = [char]0x25B6 # \u25B6
-            }
-        }
-        # Auto-expand the newly active step
-        if ($stepBodies.ContainsKey($activeRunningStep)) {
-            $stepBodies[$activeRunningStep].Visibility = [System.Windows.Visibility]::Visible
-            $stepChevrons[$activeRunningStep].Text = [char]0x25BC # \u25BC
-            $stepCards[$activeRunningStep].BringIntoView()
-        }
-        $script:lastRunningStep = $activeRunningStep
-    }
-
-    foreach ($s in $steps.PSObject.Properties) {
-        $num   = [int]$s.Name
-        $state = $s.Value
-        if (-not $stepIcons.ContainsKey($num)) { continue }
-
-        $icon  = $stepIcons[$num]
-        $lbl   = $stepTexts[$num]
-        $sub   = $stepSubs[$num]
-        $card  = $stepCards[$num]
-        $badge = $stepBadges[$num]
-        $tb    = $stepTextBoxes[$num]
-        $body  = $stepBodies[$num]
-        $chev  = $stepChevrons[$num]
-
-        if ($state.label -and $state.label.Trim() -ne '') {
-            $lbl.Text = $state.label
-        }
-
-        if ($state.detail -and $state.detail.Trim() -ne '') {
-            $sub.Text = $state.detail
-            $sub.Visibility = [System.Windows.Visibility]::Visible
-        } else {
-            $sub.Visibility = [System.Windows.Visibility]::Collapsed
-        }
-
-        # Update step's live log output
-        $logContent = if ($state.log) { $state.log } else { '' }
-        if ($logContent -and $logContent -ne $stepLastLogs[$num]) {
-            $stepLastLogs[$num] = $logContent
-            $tb.Text = $logContent
-            if ($body.Visibility -eq [System.Windows.Visibility]::Visible) {
-                $tb.CaretIndex = $tb.Text.Length
-                $tb.ScrollToEnd()
-            }
-        }
-
-        switch ($state.status) {
-            'pending' {
-                $icon.Text       = '[ ]'
-                $icon.Foreground = $grayFg
-                $lbl.Foreground  = $grayFg
-                $badge.border.Visibility = [System.Windows.Visibility]::Collapsed
-                $card.Background = $cardBrush
-                $card.BorderBrush = $borderBrush
-            }
-            'running' {
-                $icon.Text       = '>>'
-                $icon.Foreground = $blueFg
-                $lbl.Foreground  = $mainFg
-                $badge.border.Background = $blueBadgeBg
-                $badge.text.Text = 'RUNNING'
-                $badge.border.Visibility = [System.Windows.Visibility]::Visible
-                $card.Background = $cardBrush
-                $card.BorderBrush = $runningBdrBrush
-            }
-            'pass' {
-                $icon.Text       = 'OK'
-                $icon.Foreground = $greenFg
-                $lbl.Foreground  = $mainFg
-                $badge.border.Background = $greenBadgeBg
-                $badge.text.Text = 'PASS'
-                $badge.border.Visibility = [System.Windows.Visibility]::Visible
-                $card.Background = $passBrush
-                $card.BorderBrush = $borderBrush
-            }
-            'error' {
-                $icon.Text       = 'ERR'
-                $icon.Foreground = $redFg
-                $lbl.Foreground  = $redFg
-                $badge.border.Background = $redBadgeBg
-                $badge.text.Text = 'FAILED'
-                $badge.border.Visibility = [System.Windows.Visibility]::Visible
-                $card.Background = $errBrush
-                $card.BorderBrush = $redFg
-                $hasError = $true
-
-                # Always keep failed step accordion open so developer sees why it failed
-                if ($body.Visibility -ne [System.Windows.Visibility]::Visible) {
-                    $body.Visibility = [System.Windows.Visibility]::Visible
-                    $chev.Text = [char]0x25BC # \u25BC
-                    $card.BringIntoView()
-                }
-            }
-            'skip' {
-                $icon.Text       = '--'
-                $icon.Foreground = $grayFg
-                $lbl.Foreground  = $grayFg
-                $badge.border.Background = $grayBadgeBg
-                $badge.text.Text = 'SKIP'
-                $badge.border.Visibility = [System.Windows.Visibility]::Visible
-                $card.Background = $cardBrush
-                $card.BorderBrush = $borderBrush
-            }
-        }
-    }
-
-    # Dynamically show Error Log or AI Report in the rich box
-    $displayLog = ''
-    $isFail = $false
-
-    if ($json.errorLog -and $json.errorLog.Trim() -ne '') {
-        $displayLog = $json.errorLog
-        $isFail = $true
-    } elseif ($json.aiReport -and $json.aiReport.Trim() -ne '') {
-        $displayLog = $json.aiReport
-        $isFail = ($hasError -or $json.hasError)
-    } elseif ($hasError) {
-        $msgList = @()
-        for ($k = 1; $k -le 9; $k++) {
-            $st = $json.steps["$k"]
-            if ($st -and $st.status -eq 'error' -and $st.detail) {
-                $msgList += "[$($st.label)] Error: $($st.detail)"
-            }
-        }
-        if ($msgList.Count -gt 0) {
-            $displayLog = $msgList -join [Environment]::NewLine
-            $isFail = $true
-        }
-    }
-
-    if ($displayLog -and $displayLog.Trim() -ne '') {
-        $displayLog = $displayLog -replace '\x1B[[0-9;]*[a-zA-Z]', '' -replace '[[0-9;]+m', ''
-        $script:rawErrorText = $displayLog
-
-        if ($script:lastRenderedLog -ne $displayLog) {
-            $script:lastRenderedLog = $displayLog
-            $doc = Convert-MarkdownToFlowDocument -text $displayLog -normalBrush $mainFg -boldBrush $boldFg -h1Brush $cyanFg -h2Brush $amberFg -bulletBrush $bulletColor
-            $aiReportRtb.Document = $doc
-            $aiReportBorder.Visibility = [System.Windows.Visibility]::Visible
-        }
-
-        if ($isFail) {
-            if ($reportTitleTb) {
-                $reportTitleTb.Text = 'Validation Failure Details (Select & Copy):'
-                $reportTitleTb.Foreground = $redFg
-            }
-            $aiReportBorder.BorderBrush = $errBrush
-        } else {
-            if ($reportTitleTb) {
-                $reportTitleTb.Text = 'AI Knowledge Base Audit & Insights:'
-                $reportTitleTb.Foreground = $blueFg
-            }
-            $aiReportBorder.BorderBrush = $cardBrush
-        }
-    }
-
-    if ($done -eq $true) {
-        $timer.Stop()
-        if ($hasError) {
-            $statusTb.Text = 'Validation failed! Commit rejected. Click Close or \u26A1 Force Commit.'
-            $statusTb.Foreground = $redFg
-            $closeBtn.Background = $redFg
-            if ($forceCommitBtn) {
-                $forceCommitBtn.Visibility = [System.Windows.Visibility]::Visible
-            }
-        } else {
-            $statusTb.Text = 'All validations passed! Click Close to dismiss.'
-            $statusTb.Foreground = $greenFg
-            $closeBtn.Background = $greenFg
-            if ($forceCommitBtn) {
-                $forceCommitBtn.Visibility = [System.Windows.Visibility]::Collapsed
-            }
-        }
-    }
-})
-
-$timer.Start()
-$window.ShowDialog() | Out-Null
-`;
-}
-function launchWindowProcess() {
-  try {
-    const psContent = "\uFEFF" + generatePsScript();
-    import_fs7.default.writeFileSync(PS_SCRIPT, psContent, "utf8");
-    const vbsContent = `
-Set WshShell = CreateObject("WScript.Shell")
-WshShell.Run "powershell.exe -NoProfile -ExecutionPolicy Bypass -File """ & "${PS_SCRIPT.replace(/\\/g, "\\\\")}" & """", 0, False
-`;
-    import_fs7.default.writeFileSync(VBS_SCRIPT, vbsContent, "utf8");
-    (0, import_child_process4.spawn)("wscript.exe", [VBS_SCRIPT], { detached: true, stdio: "ignore" }).unref();
-  } catch (_) {
-  }
-}
-function initProgressWindow() {
-  _windowEnabled = process.env.SHOW_PROGRESS === "true";
-  try {
-    if (import_fs7.default.existsSync(ACTION_FILE)) {
-      import_fs7.default.unlinkSync(ACTION_FILE);
-    }
-  } catch (_) {
-  }
-  if (!_windowEnabled) return;
-  const data = {
-    done: false,
-    hasError: false,
-    aiReport: "",
-    errorLog: "",
-    activeStep: null,
-    steps: {}
-  };
-  for (const s2 of getSteps()) {
-    data.steps[s2.id] = { status: "pending", label: s2.label, detail: "", log: "" };
-  }
-  writeProgressFile(data);
-  launchWindowProcess();
-}
-function startStep(stepId, detail = "") {
-  if (!_windowEnabled) return;
-  flushStepLogs();
-  const data = readProgressFile();
-  if (!data || !data.steps) return;
-  if (data.steps[stepId]) {
-    data.steps[stepId].status = "running";
-    data.steps[stepId].detail = detail;
-    data.activeStep = stepId;
-    if (detail && !data.steps[stepId].log) {
-      data.steps[stepId].log = `\u25B6 ${detail}
-`;
-    }
-  }
-  writeProgressFile(data);
-}
-function appendStepLog(stepId, text) {
-  if (!_windowEnabled || !text) return;
-  queueStepLog(stepId, text);
-}
-function updateStep(stepId, status, reportOrDetail = "") {
-  if (!_windowEnabled) return;
-  flushStepLogs();
-  const data = readProgressFile();
-  if (!data || !data.steps) return;
-  if (data.steps[stepId]) {
-    data.steps[stepId].status = status;
-    const cleanReportOrDetail = stripAnsi(reportOrDetail);
-    if (stepId !== 8) {
-      data.steps[stepId].detail = cleanReportOrDetail;
-    }
-    if (cleanReportOrDetail && (!data.steps[stepId].log || !data.steps[stepId].log.includes(cleanReportOrDetail))) {
-      const prefix = status === "pass" ? "\u2714 " : status === "error" ? "\u2716 " : "\u2139 ";
-      data.steps[stepId].log = (data.steps[stepId].log || "") + `${prefix}${cleanReportOrDetail}
-`;
-    }
-  }
-  if (status === "error") {
-    data.hasError = true;
-  }
-  if (stepId === 8 && reportOrDetail) {
-    data.aiReport = stripAnsi(reportOrDetail);
-    if (data.steps[8] && !data.steps[8].log.includes(data.aiReport)) {
-      data.steps[8].log = (data.steps[8].log || "") + `
-${data.aiReport}
-`;
-    }
-  }
-  writeProgressFile(data);
-}
-function finalizeProgress(passed, finalReport = "", errorLog = "") {
-  if (!_windowEnabled) return;
-  flushStepLogs();
-  const data = readProgressFile();
-  if (!data) return;
-  data.done = true;
-  data.hasError = !passed;
-  data.activeStep = null;
-  if (finalReport) {
-    data.aiReport = stripAnsi(finalReport);
-    if (data.steps && data.steps[8] && !data.steps[8].log.includes(data.aiReport)) {
-      data.steps[8].log = (data.steps[8].log || "") + `
-${data.aiReport}
-`;
-    }
-  }
-  if (errorLog) {
-    data.errorLog = stripAnsi(errorLog);
-  }
-  writeProgressFile(data);
-}
-function getRequestedAction() {
-  if (!_windowEnabled) return null;
-  try {
-    if (import_fs7.default.existsSync(ACTION_FILE)) {
-      let raw = import_fs7.default.readFileSync(ACTION_FILE, "utf8").trim();
-      if (raw.charCodeAt(0) === 65279) {
-        raw = raw.slice(1);
-      }
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        return parsed.action || null;
-      }
-    }
-  } catch (_) {
-  }
-  return null;
-}
-function isForceCommitRequested() {
-  return getRequestedAction() === "force_commit";
-}
-function isCloseRequested() {
-  return getRequestedAction() === "close";
-}
-function waitForUserDecisionOnFailure(pollIntervalMs = 100, timeoutMs = 6e5) {
-  if (!_windowEnabled) {
-    return Promise.resolve("close");
-  }
-  return new Promise((resolve) => {
-    const immediateAction = getRequestedAction();
-    if (immediateAction === "force_commit" || immediateAction === "close") {
-      return resolve(immediateAction);
-    }
-    const startTime = Date.now();
-    const timer = setInterval(() => {
-      const action = getRequestedAction();
-      if (action === "force_commit" || action === "close") {
-        clearInterval(timer);
-        return resolve(action);
-      }
-      if (Date.now() - startTime > timeoutMs) {
-        clearInterval(timer);
-        return resolve("close");
-      }
-    }, pollIntervalMs);
-  });
-}
-
 // src/engine.js
+init_progress_window();
 function stripAnsi2(str) {
   if (!str) return "";
   return str.replace(/[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g, "").replace(/\[[0-9;]+m/g, "");
@@ -55007,7 +55266,31 @@ function handleForceCommit(stepNum = null) {
   }
   process.exit(0);
 }
+function handleStepSkip(stepNum) {
+  const stepInfo = stepNum ? ` (Step ${stepNum})` : "";
+  console.log("\n" + source_default.yellow.bold("\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550"));
+  console.log(source_default.yellow.bold(` \u23ED STEP ${stepNum} SKIPPED BY DEVELOPER${stepInfo.toUpperCase()}`));
+  console.log(source_default.yellow(`   Bypassing Step ${stepNum} checks and proceeding to next validation...`));
+  console.log(source_default.yellow.bold("\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\n"));
+  try {
+    clearStepError(stepNum);
+    updateStep(stepNum, "skip", "Skipped by developer");
+  } catch (_) {
+  }
+}
 async function handleStepFailure(stepNum, err, defaultTitle, defaultDetail) {
+  if (err?.isSkipped || consumeSkipStepRequest(stepNum)) {
+    handleStepSkip(stepNum);
+    return;
+  }
+  if (err?.isForceCommit || isForceCommitRequested()) {
+    handleForceCommit(stepNum);
+    return;
+  }
+  if (err?.isClose || isCloseRequested()) {
+    console.log(source_default.red("\n\u2716 Pre-commit validation cancelled by user closing window.\n"));
+    process.exit(1);
+  }
   const errorMsg = err?.stepOutput || err?.auditOutput || err?.testOutput || err?.buildOutput || err?.stdout?.toString() || err?.stderr?.toString() || err?.message || defaultDetail;
   appendStepLog(stepNum, `
 \u2716 [Error] ${errorMsg}
@@ -55019,9 +55302,18 @@ async function handleStepFailure(stepNum, err, defaultTitle, defaultDetail) {
     handleForceCommit(stepNum);
     return;
   }
+  if (consumeSkipStepRequest(stepNum)) {
+    handleStepSkip(stepNum);
+    return;
+  }
   const decision = await waitForUserDecisionOnFailure();
   if (decision === "force_commit") {
     handleForceCommit(stepNum);
+    return;
+  }
+  if (decision?.action === "skip_step" || decision === "skip_step" || isSkipStepRequested(stepNum)) {
+    consumeSkipStepRequest(stepNum);
+    handleStepSkip(stepNum);
     return;
   }
   throw err;
@@ -55060,18 +55352,22 @@ async function runGatekeeper() {
     console.log(source_default.red("\n\u2716 Pre-commit validation cancelled by user closing window.\n"));
     process.exit(1);
   }
-  _activeStepNum = 2;
-  startStep(2, "Validating tsconfig, angular.json & entry points...");
-  appendStepLog(2, `[Gatekeeper] Checking critical architecture files & entry points in ${cwd}...
-`);
   let archRes = {};
-  try {
-    archRes = checkCriticalArchitecture(cwd);
-    appendStepLog(2, `\u2714 Entry points, tsconfig, angular.json & lockfile sync verified
+  if (consumeSkipStepRequest(2)) {
+    handleStepSkip(2);
+  } else {
+    _activeStepNum = 2;
+    startStep(2, "Validating tsconfig, angular.json & entry points...");
+    appendStepLog(2, `[Gatekeeper] Checking critical architecture files & entry points in ${cwd}...
 `);
-    updateStep(2, "pass", "Entry points, lockfile sync & Linux case-sensitivity verified");
-  } catch (err) {
-    await handleStepFailure(2, err, "Step 2: Architecture Integrity Error", err.message || "Missing critical architecture files");
+    try {
+      archRes = checkCriticalArchitecture(cwd);
+      appendStepLog(2, `\u2714 Entry points, tsconfig, angular.json & lockfile sync verified
+`);
+      updateStep(2, "pass", "Entry points, lockfile sync & Linux case-sensitivity verified");
+    } catch (err) {
+      await handleStepFailure(2, err, "Step 2: Architecture Integrity Error", err.message || "Missing critical architecture files");
+    }
   }
   if (isForceCommitRequested()) {
     handleForceCommit(2);
@@ -55081,17 +55377,21 @@ async function runGatekeeper() {
     console.log(source_default.red("\n\u2716 Pre-commit validation cancelled by user closing window.\n"));
     process.exit(1);
   }
-  _activeStepNum = 3;
-  startStep(3, "Auditing package dependencies (npm audit)...");
-  appendStepLog(3, `[Gatekeeper] Running dependency vulnerability scan (npm audit)...
+  if (consumeSkipStepRequest(3)) {
+    handleStepSkip(3);
+  } else {
+    _activeStepNum = 3;
+    startStep(3, "Auditing package dependencies (npm audit)...");
+    appendStepLog(3, `[Gatekeeper] Running dependency vulnerability scan (npm audit)...
 `);
-  try {
-    await scanDependencyVulnerabilities(cwd);
-    appendStepLog(3, `\u2714 0 High/Critical CVE vulnerabilities found in dependencies
+    try {
+      await scanDependencyVulnerabilities(cwd);
+      appendStepLog(3, `\u2714 0 High/Critical CVE vulnerabilities found in dependencies
 `);
-    updateStep(3, "pass", "0 High/Critical CVE vulnerabilities found in dependencies");
-  } catch (err) {
-    await handleStepFailure(3, err, "Step 3: Dependency Security Audit", "High/Critical CVEs detected in package dependencies");
+      updateStep(3, "pass", "0 High/Critical CVE vulnerabilities found in dependencies");
+    } catch (err) {
+      await handleStepFailure(3, err, "Step 3: Dependency Security Audit", "High/Critical CVEs detected in package dependencies");
+    }
   }
   if (isForceCommitRequested()) {
     handleForceCommit(3);
@@ -55101,17 +55401,21 @@ async function runGatekeeper() {
     console.log(source_default.red("\n\u2716 Pre-commit validation cancelled by user closing window.\n"));
     process.exit(1);
   }
-  _activeStepNum = 4;
-  startStep(4, "Executing TypeScript compilation & lint check...");
-  appendStepLog(4, `[Gatekeeper] Executing TypeScript compilation & Angular lint check...
+  if (consumeSkipStepRequest(4)) {
+    handleStepSkip(4);
+  } else {
+    _activeStepNum = 4;
+    startStep(4, "Executing TypeScript compilation & lint check...");
+    appendStepLog(4, `[Gatekeeper] Executing TypeScript compilation & Angular lint check...
 `);
-  try {
-    await runTypeScriptAndLintChecks(cwd, projectPkg);
-    appendStepLog(4, `\u2714 TypeScript compilation & lint passed with 0 errors
+    try {
+      await runTypeScriptAndLintChecks(cwd, projectPkg);
+      appendStepLog(4, `\u2714 TypeScript compilation & lint passed with 0 errors
 `);
-    updateStep(4, "pass", "TypeScript compilation passed with 0 type errors");
-  } catch (err) {
-    await handleStepFailure(4, err, "Step 4: TypeScript / Lint Error", "TypeScript type-check or linter failed");
+      updateStep(4, "pass", "TypeScript compilation passed with 0 type errors");
+    } catch (err) {
+      await handleStepFailure(4, err, "Step 4: TypeScript / Lint Error", "TypeScript type-check or linter failed");
+    }
   }
   if (isForceCommitRequested()) {
     handleForceCommit(4);
@@ -55121,26 +55425,30 @@ async function runGatekeeper() {
     console.log(source_default.red("\n\u2716 Pre-commit validation cancelled by user closing window.\n"));
     process.exit(1);
   }
-  _activeStepNum = 5;
-  startStep(5, "Running headless test runner...");
-  appendStepLog(5, `[Gatekeeper] Running automated unit test suite...
-`);
   let testRes = {};
-  try {
-    testRes = await runAutomatedUnitTests(cwd, projectPkg);
-    let detailText = "Unit tests passed (0 failures)";
-    if (testRes && testRes.autoInjected) {
-      detailText = "Auto-injected smoke spec verified & safely cleaned up (0 failures)";
-    } else if (testRes && testRes.specCount > 0) {
-      detailText = `Verified ${testRes.specCount} project test spec file(s) with 0 failures`;
-    } else if (testRes && testRes.skipped) {
-      detailText = "Skipped: missing testing browser provider";
-    }
-    appendStepLog(5, `\u2714 ${detailText}
+  if (consumeSkipStepRequest(5)) {
+    handleStepSkip(5);
+  } else {
+    _activeStepNum = 5;
+    startStep(5, "Running headless test runner...");
+    appendStepLog(5, `[Gatekeeper] Running automated unit test suite...
 `);
-    updateStep(5, "pass", detailText);
-  } catch (err) {
-    await handleStepFailure(5, err, "Step 5: Automated Unit Tests Failure", "Unit test specs reported failure");
+    try {
+      testRes = await runAutomatedUnitTests(cwd, projectPkg);
+      let detailText = "Unit tests passed (0 failures)";
+      if (testRes && testRes.autoInjected) {
+        detailText = "Auto-injected smoke spec verified & safely cleaned up (0 failures)";
+      } else if (testRes && testRes.specCount > 0) {
+        detailText = `Verified ${testRes.specCount} project test spec file(s) with 0 failures`;
+      } else if (testRes && testRes.skipped) {
+        detailText = "Skipped: missing testing browser provider";
+      }
+      appendStepLog(5, `\u2714 ${detailText}
+`);
+      updateStep(5, "pass", detailText);
+    } catch (err) {
+      await handleStepFailure(5, err, "Step 5: Automated Unit Tests Failure", "Unit test specs reported failure");
+    }
   }
   if (isForceCommitRequested()) {
     handleForceCommit(5);
@@ -55150,51 +55458,55 @@ async function runGatekeeper() {
     console.log(source_default.red("\n\u2716 Pre-commit validation cancelled by user closing window.\n"));
     process.exit(1);
   }
-  _activeStepNum = 6;
-  startStep(6, "Compiling production bundle & verifying CD readiness...");
-  appendStepLog(6, `[Gatekeeper] Compiling Angular production build & verifying CD readiness in ${cwd}...
-`);
   let cdRes = {};
-  try {
-    await runAngularProductionBuild(cwd, projectPkg);
-    appendStepLog(6, `
+  if (consumeSkipStepRequest(6)) {
+    handleStepSkip(6);
+  } else {
+    _activeStepNum = 6;
+    startStep(6, "Compiling production bundle & verifying CD readiness...");
+    appendStepLog(6, `[Gatekeeper] Compiling Angular production build & verifying CD readiness in ${cwd}...
+`);
+    try {
+      await runAngularProductionBuild(cwd, projectPkg);
+      appendStepLog(6, `
 [Gatekeeper] Validating compiled distribution artifacts in dist/...
 `);
-    cdRes = validateCompiledArtifacts(cwd, { strict: isStrictMode });
-    updateBuildMetadata(cwd, projectPkg);
-    let cdDetail = `CD Verified: ${cdRes?.totalBundleSizeMb || "0"} MB`;
-    if (cdRes?.totalGzipSizeKb && cdRes.totalGzipSizeKb !== "0.0") {
-      cdDetail += ` (Gzip: ${cdRes.totalGzipSizeKb} KB)`;
+      cdRes = validateCompiledArtifacts(cwd, { strict: isStrictMode });
+      updateBuildMetadata(cwd, projectPkg);
+      let cdDetail = `CD Verified: ${cdRes?.totalBundleSizeMb || "0"} MB`;
+      if (cdRes?.totalGzipSizeKb && cdRes.totalGzipSizeKb !== "0.0") {
+        cdDetail += ` (Gzip: ${cdRes.totalGzipSizeKb} KB)`;
+      }
+      if (cdRes && cdRes.hasSpaRewrite) {
+        cdDetail += " | SPA: \u2714";
+        appendStepLog(6, `\u2714 SPA Deep Rewrite rule confirmed
+`);
+      } else {
+        cdDetail += " | SPA: \u26A0 Missing";
+        appendStepLog(6, `\u26A0 SPA Deep Rewrite rule missing
+`);
+      }
+      if (cdRes && cdRes.hasBaseHref) {
+        cdDetail += " | BaseHref: \u2714";
+        appendStepLog(6, `\u2714 Base href verified in index.html
+`);
+      }
+      if (cdRes && cdRes.assetAudit && cdRes.assetAudit.valid) {
+        cdDetail += " | Assets: \u2714";
+        appendStepLog(6, `\u2714 Asset integrity audit passed
+`);
+      }
+      if (cdRes && cdRes.releaseManifestCreated) {
+        cdDetail += " | Manifest: \u2714";
+        appendStepLog(6, `\u2714 CD Release Candidate Manifest created
+`);
+      }
+      appendStepLog(6, `\u2714 Production bundle verified: ${cdRes?.totalBundleSizeMb || "0"} MB
+`);
+      updateStep(6, "pass", cdDetail);
+    } catch (err) {
+      await handleStepFailure(6, err, "Step 6: Production Build Failure", "Production build compilation or CD artifact verification failed");
     }
-    if (cdRes && cdRes.hasSpaRewrite) {
-      cdDetail += " | SPA: \u2714";
-      appendStepLog(6, `\u2714 SPA Deep Rewrite rule confirmed
-`);
-    } else {
-      cdDetail += " | SPA: \u26A0 Missing";
-      appendStepLog(6, `\u26A0 SPA Deep Rewrite rule missing
-`);
-    }
-    if (cdRes && cdRes.hasBaseHref) {
-      cdDetail += " | BaseHref: \u2714";
-      appendStepLog(6, `\u2714 Base href verified in index.html
-`);
-    }
-    if (cdRes && cdRes.assetAudit && cdRes.assetAudit.valid) {
-      cdDetail += " | Assets: \u2714";
-      appendStepLog(6, `\u2714 Asset integrity audit passed
-`);
-    }
-    if (cdRes && cdRes.releaseManifestCreated) {
-      cdDetail += " | Manifest: \u2714";
-      appendStepLog(6, `\u2714 CD Release Candidate Manifest created
-`);
-    }
-    appendStepLog(6, `\u2714 Production bundle verified: ${cdRes?.totalBundleSizeMb || "0"} MB
-`);
-    updateStep(6, "pass", cdDetail);
-  } catch (err) {
-    await handleStepFailure(6, err, "Step 6: Production Build Failure", "Production build compilation or CD artifact verification failed");
   }
   if (isForceCommitRequested()) {
     handleForceCommit(6);
@@ -55204,18 +55516,22 @@ async function runGatekeeper() {
     console.log(source_default.red("\n\u2716 Pre-commit validation cancelled by user closing window.\n"));
     process.exit(1);
   }
-  _activeStepNum = 7;
-  startStep(7, "Scanning full project & staged files for credentials or repo bloat...");
-  appendStepLog(7, `[Gatekeeper] Scanning full project files & staged changes for credentials, API tokens, merge conflicts, and oversized files...
+  if (consumeSkipStepRequest(7)) {
+    handleStepSkip(7);
+  } else {
+    _activeStepNum = 7;
+    startStep(7, "Scanning full project & staged files for credentials or repo bloat...");
+    appendStepLog(7, `[Gatekeeper] Scanning full project files & staged changes for credentials, API tokens, merge conflicts, and oversized files...
 `);
-  try {
-    const diffOutput = getDiff(cwd);
-    scanSecurityRules(diffOutput, cwd);
-    appendStepLog(7, `\u2714 0 leaked secrets across project, 0 conflict markers, clean file stage (<10MB)
+    try {
+      const diffOutput = getDiff(cwd);
+      scanSecurityRules(diffOutput, cwd);
+      appendStepLog(7, `\u2714 0 leaked secrets across project, 0 conflict markers, clean file stage (<10MB)
 `);
-    updateStep(7, "pass", "0 leaked secrets across project, 0 conflict markers, clean file stage (<10MB)");
-  } catch (err) {
-    await handleStepFailure(7, err, "Step 7: Security & Secret Leak Warning", "Secret credentials, forbidden files, or conflict markers detected");
+      updateStep(7, "pass", "0 leaked secrets across project, 0 conflict markers, clean file stage (<10MB)");
+    } catch (err) {
+      await handleStepFailure(7, err, "Step 7: Security & Secret Leak Warning", "Secret credentials, forbidden files, or conflict markers detected");
+    }
   }
   if (isForceCommitRequested()) {
     handleForceCommit(7);
@@ -55225,57 +55541,70 @@ async function runGatekeeper() {
     console.log(source_default.red("\n\u2716 Pre-commit validation cancelled by user closing window.\n"));
     process.exit(1);
   }
-  _activeStepNum = 8;
-  startStep(8, "Auditing regression against knowledge base...");
-  appendStepLog(8, `[Gatekeeper] Performing AI Knowledge Base regression audit...
-`);
-  const aiConfig = {
-    AI_PROVIDER: process.env.AI_PROVIDER,
-    GEMINI_API_KEY: process.env.GEMINI_API_KEY,
-    OLLAMA_BASE_URL: process.env.OLLAMA_BASE_URL,
-    OLLAMA_MODEL: process.env.OLLAMA_MODEL,
-    OPENAI_API_KEY: process.env.OPENAI_API_KEY,
-    OPENAI_MODEL: process.env.OPENAI_MODEL,
-    ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY,
-    ANTHROPIC_MODEL: process.env.ANTHROPIC_MODEL,
-    DEEPSEEK_API_KEY: process.env.DEEPSEEK_API_KEY,
-    DEEPSEEK_MODEL: process.env.DEEPSEEK_MODEL,
-    GROQ_API_KEY: process.env.GROQ_API_KEY,
-    GROQ_MODEL: process.env.GROQ_MODEL,
-    OPENROUTER_API_KEY: process.env.OPENROUTER_API_KEY,
-    OPENROUTER_MODEL: process.env.OPENROUTER_MODEL
-  };
   let aiReport = "";
-  try {
-    const auditRes = await runAiKnowledgeBaseAudit(aiConfig, cwd);
-    if (auditRes) {
-      aiReport = auditRes.report || "";
-      if (!auditRes.passed) {
-        appendStepLog(8, `
+  if (consumeSkipStepRequest(8)) {
+    handleStepSkip(8);
+  } else {
+    _activeStepNum = 8;
+    startStep(8, "Auditing regression against knowledge base...");
+    appendStepLog(8, `[Gatekeeper] Performing AI Knowledge Base regression audit...
+`);
+    const aiConfig = {
+      AI_PROVIDER: process.env.AI_PROVIDER,
+      GEMINI_API_KEY: process.env.GEMINI_API_KEY,
+      OLLAMA_BASE_URL: process.env.OLLAMA_BASE_URL,
+      OLLAMA_MODEL: process.env.OLLAMA_MODEL,
+      OPENAI_API_KEY: process.env.OPENAI_API_KEY,
+      OPENAI_MODEL: process.env.OPENAI_MODEL,
+      ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY,
+      ANTHROPIC_MODEL: process.env.ANTHROPIC_MODEL,
+      DEEPSEEK_API_KEY: process.env.DEEPSEEK_API_KEY,
+      DEEPSEEK_MODEL: process.env.DEEPSEEK_MODEL,
+      GROQ_API_KEY: process.env.GROQ_API_KEY,
+      GROQ_MODEL: process.env.GROQ_MODEL,
+      OPENROUTER_API_KEY: process.env.OPENROUTER_API_KEY,
+      OPENROUTER_MODEL: process.env.OPENROUTER_MODEL
+    };
+    try {
+      const auditRes = await runAiKnowledgeBaseAudit(aiConfig, cwd);
+      if (auditRes) {
+        aiReport = auditRes.report || "";
+        if (!auditRes.passed) {
+          appendStepLog(8, `
 \u2716 [AI Audit Failed]
 ${aiReport}
 `);
-        updateStep(8, "error", aiReport);
-        finalizeProgress(false, aiReport);
-        if (isForceCommitRequested()) {
-          handleForceCommit(8);
-          return;
+          updateStep(8, "error", aiReport);
+          finalizeProgress(false, aiReport);
+          if (isForceCommitRequested()) {
+            handleForceCommit(8);
+            return;
+          }
+          if (consumeSkipStepRequest(8)) {
+            handleStepSkip(8);
+          } else {
+            const decision = await waitForUserDecisionOnFailure();
+            if (decision === "force_commit") {
+              handleForceCommit(8);
+              return;
+            }
+            if (decision?.action === "skip_step" || decision === "skip_step" || isSkipStepRequested(8)) {
+              consumeSkipStepRequest(8);
+              handleStepSkip(8);
+            } else {
+              process.exit(1);
+            }
+          }
+        } else {
+          const status = auditRes.skipped ? "skip" : "pass";
+          updateStep(8, status, aiReport);
         }
-        const decision = await waitForUserDecisionOnFailure();
-        if (decision === "force_commit") {
-          handleForceCommit(8);
-          return;
-        }
-        process.exit(1);
       } else {
-        const status = auditRes.skipped ? "skip" : "pass";
-        updateStep(8, status, aiReport);
+        updateStep(8, "skip");
       }
-    } else {
-      updateStep(8, "skip");
+    } catch (_err) {
+      await handleStepFailure(8, _err, "Step 8: AI Knowledge Base Audit Error", _err.message);
     }
-  } catch (_err) {
-    await handleStepFailure(8, _err, "Step 8: AI Knowledge Base Audit Error", _err.message);
   }
   if (isForceCommitRequested()) {
     handleForceCommit(8);

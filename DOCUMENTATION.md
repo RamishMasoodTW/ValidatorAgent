@@ -1,16 +1,16 @@
 # DEVELOPER TOOLING REFERENCE V3.0
-# Angular Gatekeeper
-### Complete Architecture, CI/CD Engine & Reference Manual
+# Angular Gatekeeper: Enterprise Shift-Left CI/CD Engine
+### Complete Architecture, 100-Point Pre-Flight Rubric & Reference Manual
 
 ---
 
 ## 📌 1. What is Angular Gatekeeper?
 
-**Angular Gatekeeper** is an enterprise-grade automated quality, security, CI/CD compliance, and merge-conflict prevention system built specifically for Angular engineering teams. It guarantees that broken builds, failing unit tests, strict type mismatches, security vulnerabilities, secret leaks, Linux OS path incompatibilities, and git merge conflicts never enter the repository history.
+**Angular Gatekeeper** is an enterprise-grade automated Shift-Left Quality, Security, Release-Readiness, and Merge-Conflict Prevention System built specifically for Angular engineering teams. By shifting validation directly to the local commit boundary (pre-commit), it guarantees that broken builds, failing unit tests, strict type mismatches, security vulnerabilities, secret leaks, Linux OS path incompatibilities, and git merge conflicts never enter the repository history.
 
 ### It protects your codebase with 3 Core Shields:
 
-1. **Pre-Commit CI/CD Quality Engine (8-Step Active Gatekeeper):** Automatically audits every `git commit` in real time. It executes cleanroom staged isolation, case-sensitivity checking, type checks, dependency vulnerability scanning, automated headless unit tests (with dynamic smoke-spec injection, unsupported argument recovery & rollback), production build compilation, CD artifact & SPA rewrite validation, cryptographic release manifest generation, secret leak scanning, and Multi-Provider AI regression auditing (Gemini 3.8/3.7 Flash, Claude, OpenAI, DeepSeek, Groq, or Local Ollama)—displaying every step live in a dark-themed WPF progress window with 100% synchronized terminal logs.
+1. **Shift-Left Pre-Commit CI/CD Quality Engine (8-Step Active Gatekeeper):** Automatically audits every `git commit` in real time. It executes cleanroom staged isolation, case-sensitivity checking, type checks, dependency vulnerability scanning, automated headless unit tests (with dynamic smoke-spec injection, unsupported argument recovery & rollback), production build compilation, CD artifact & SPA rewrite validation, cryptographic release manifest generation, full-project secret leak scanning, and Multi-Provider AI regression auditing (Gemini 3.8/3.7 Flash, Claude, OpenAI, DeepSeek, Groq, or Local Ollama)—displaying every step live in a dark-themed WPF progress window with 100% synchronized terminal logs, real-time interactive controls, and an instant **⚡ Force Commit** fail-safe bypass button.
 2. **Live Background Branch Conflict Watcher:** Runs silently as a low-overhead background daemon. Every few minutes, it fetches remote changes, checks for working-tree overwrite collisions, and simulates in-memory 3-way git merges (`git merge-tree`) against your active uncommitted and staged work. If a teammate pushes code to `main` or `develop` that clashes with your unsaved files, you receive an instant Windows desktop Toast notification with sound—long before you commit or push.
 3. **Smart IDE Auto-Resume & Multi-Project Resilience:** Once enabled in a repository, the tool configures workspace hooks. Opening the project folder in VS Code or Cursor automatically starts or resumes the background conflict watcher—even after a full computer restart.
 
@@ -66,12 +66,13 @@
 | **Broken Unit Tests & Missing Specs** | 95% | Runs headless test runner (`vitest` / `jest` / `karma`) with automatic unknown argument recovery; if zero test specs exist, auto-injects a smoke-spec, validates, and safely rolls it back. |
 | **Template & DOM XSS Vulnerabilities** | 95% | Flags unsanitized `[innerHTML]` bindings, `bypassSecurityTrustHtml` calls, and direct DOM mutations bypassing Angular Renderer2. |
 | **Dependency CVE Vulnerabilities** | 90% | Runs `npm audit --audit-level=high` to block packages containing High or Critical security CVEs. |
-| **Accidental Secret & Credential Leaks** | 98% | Scans staged diff against 30+ enterprise patterns (Google API keys, OpenAI tokens, AWS keys, Stripe, DB connection strings). |
+| **Accidental Secret & Credential Leaks** | 98% | Scans full repository files and staged diff against 30+ enterprise patterns (Google API keys, OpenAI tokens, AWS keys, Stripe, DB connection strings, passwords, client secrets). |
 | **Leftover Git Merge Conflict Markers** | 100% | Regex-scans code for `<<<<<<< HEAD`, `=======`, and `>>>>>>>` to prevent syntax corruption in CI. |
 | **CI Runner Disk & Repo Bloat (>10MB)** | 95% | Blocks accidental commits of `.env`, `.pem`, `.key`, and oversized binary files (>10MB). |
 | **Node.js CI Runner Version Mismatches** | 95% | Verifies active Node.js version against `package.json` "engines" and `.nvmrc`. |
 | **Conventional Commits Enforcement** | 95% | Validates commit messages conform to Conventional Commits standards (`feat:`, `fix:`, `refactor:`, `perf:`, `test:`, `docs:`, etc.). |
 | **Server Pipeline & Remote CI Parity** | 100% | Automatically generates `.github/workflows/ci.yml` and supports `--ci` runner mode to prevent bypasses via `git commit --no-verify`. |
+| **Emergency Fail-Safe Force Commit** | 100% | Provides an interactive ⚡ Force Commit button in the WPF window. If validations fail or require immediate bypass, developers can override quality gates and create the commit cleanly with 1 click directly from the UI without command-line flags. |
 
 ---
 
@@ -213,7 +214,8 @@ Whenever you commit code (`git commit`), Gatekeeper intercepts the process and r
 │ ├─ Reads resolved_issues.md, full project source code tree & active git diff        │
 │ ├─ Audits the entire codebase & diff to ensure past architectural mistakes are not  │
 │ │   repeated anywhere in the project (regardless of whether diff exists)           │
-│ ├─ Ignores documentation modifications to resolved_issues.md itself                │
+│ ├─ Strict Prompt Rule: AI never fails/critiques format or brevity of               │
+│ │   resolved_issues.md itself                                                      │
 │ └─ Subtitle: "AI Knowledge Base Audit & Insights (Google Gemini 3.8 / Multi-AI)"   │
 └────────────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -239,12 +241,18 @@ Angular Gatekeeper v3.0 introduces a plug-and-play Multi-Provider AI Architectur
 
 ## 🖥️ 7. Live Commit Progress Window (WPF Desktop UI)
 
-During every `git commit`, Gatekeeper displays a floating, real-time dark-mode validation window:
+During every `git commit`, Gatekeeper displays a floating, real-time dark-mode validation window titled **"Angular Gatekeeper — Shift-Left Pre-Commit CI/CD Quality Engine"**:
 - **Real-Time Visual State:** Each step transitions smoothly from `Pending ([ ])` → `Running (>>)` with glowing indicators → `Passed (OK / PASS)` or `Failed (ERR / FAILED)`.
 - **Dynamic Step Sub-Labels:** Displays informative sub-details beneath every step (e.g., `CD Verified: 1.46 MB | SPA: ✔ | BaseHref: ✔ | Manifest: ✔`, test specs count, security clean confirmation).
 - **Modern Themed Scrollbar:** Custom slim, rounded-corner scrollbar styled to match the dark aesthetic.
 - **Persistent on Failure:** If any check fails, the window stays open, highlights the failing step in red, and displays exact diagnostic output and remediation steps.
 - **Interactive AI Report & Diagnostic Box:** Displays architectural mentorship recommendations or compiler/test error logs with a 1-click "Copy Error Log" clipboard button.
+- **Interactive "⚡ Force Commit" Fail-Safe Button (Amber `#F59E0B`):**
+  - **In-Flight Bypass:** Clicking **⚡ Force Commit** at any moment while checks are running immediately stops remaining steps and creates the commit cleanly (`exit 0`).
+  - **Post-Failure Override:** If a validation check fails (e.g., Step 7 Secret Leak Warning or Step 4 TypeScript error), the window does not close and the Git commit is not prematurely aborted. The developer has two interactive choices:
+    - **Close (Red):** Dismisses the window and cleanly rejects the commit (`exit 1`) to allow the developer to fix the problem.
+    - **⚡ Force Commit (Amber):** Overrides the quality failure, bypasses all remaining checks, and commands Git to create the commit immediately without validation restrictions (`exit 0`).
+  - **Atomic Cross-Process IPC:** Powered by a high-speed lock-free action protocol (`%TEMP%\gk-action.json`) communicating directly between the detached WPF UI thread and the Node.js pre-commit hook engine.
 - **Non-Angular Bypass:** Remains completely invisible when committing non-Angular projects.
 - **Headless CI Support:** When executed with `--ci` or on CI servers (`process.env.CI`), GUI rendering is silently bypassed in favor of clean runner logs.
 
@@ -281,6 +289,7 @@ All commands use the `a-gatekeeper` prefix:
 | `a-gatekeeper disable` | Disables pre-commit hook (reverts to standard Git behavior) |
 | `a-gatekeeper status` | Displays current pre-commit hook status and active configuration |
 | `a-gatekeeper bypass` | Explains how to perform a single-commit bypass using `git commit --no-verify` |
+| **`⚡ Force Commit (GUI)`** | Interactive 1-click button in the WPF window: bypasses checks in-flight or overrides failures immediately |
 
 ### 🚢 CD Live Deployment Probe
 | Command | Action |

@@ -321,10 +321,13 @@ export async function scanDependencyVulnerabilities(cwd = process.cwd()) {
 
   console.log(chalk.blue('  Running dependency security audit (npm audit --audit-level=high)...'));
   try {
-    await execStreaming('npm audit --audit-level=high', { cwd });
+    await execStreaming('npm audit --audit-level=high', { cwd, stepNum: 3 });
     logSuccess('Dependency vulnerability audit passed: 0 High/Critical CVEs.');
     return true;
   } catch (err) {
+    if (err.isSkipped || err.isForceCommit || err.isClose) {
+      throw err;
+    }
     const output = (err.combined || err.stdout || err.stderr || err.message || '').trim();
 
     // Check if it's actual vulnerabilities or just no network / npm error
