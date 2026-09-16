@@ -207,7 +207,7 @@ export function scanSecurityRules(diffOutput = '', cwd = null) {
 }
 
 /**
- * Scans project source directories for forbidden environment / key files
+ * Scans project source directories for forbidden environment / key files'
  */
 export function scanProjectFilesIntegrity(cwd = process.cwd()) {
   if (!cwd || !fs.existsSync(cwd)) return;
